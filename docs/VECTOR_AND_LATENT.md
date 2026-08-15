@@ -78,6 +78,8 @@ Embedding coordinates are not canonical truth.
 
 ## Deterministic retrieval
 
+A model consumer must load `ai/bootstrap.json` and its mandatory contract `load_order` before using retrieved payloads. Vector retrieval selects canonical evidence; it is not a substitute for the epistemic/public-boundary/consumer contracts.
+
 Retrieve context with:
 
 ```bash
@@ -87,12 +89,29 @@ python tools/retrieve_vector_context.py \
   --top-k 5
 ```
 
+Before reading or rendering payloads, the CLI runs the deterministic vector-bundle validator. A modified, stale, malformed, symlinked, or externally supplied bundle that cannot be reproduced from the canonical substrate is refused.
+
+Empty, whitespace-only, or otherwise featureless queries are also refused. They do not fall through to all-zero similarity scores and alphabetical tie-breaking.
+
 Nearest neighbours use normalized dot product, equivalent to cosine similarity for the normalized vectors. Ties are resolved by canonical ID ascending.
 
 Primary vector matches are not immediately treated as a complete answer context. The retriever closes the selected set over:
 
 - public `source_refs`;
 - both endpoints of included relationships.
+
+Every rendered retrieval context carries:
+
+```text
+SUBSTRATE_VERSION
+SNAPSHOT_DATE
+SOURCE_COMMIT
+SUBSTRATE_SHA256
+```
+
+A saved/copied context can therefore still be traced to the exact substrate state that produced it.
+
+If retrieval output is written inside the repository, the destination is restricted to `dist/retrieved/`. Generated vector/projection/adapter/capsule bundles are not valid retrieval-output targets.
 
 The rendered context therefore carries evidence needed to interpret retrieved canonical items instead of saving prompt space by dropping provenance.
 
@@ -127,7 +146,7 @@ Validation rejects:
 - undeclared files;
 - unsafe in-repository output paths.
 
-`dist/vectors` is the only permitted in-repository build destination.
+`dist/vectors` is the only permitted in-repository vector-build destination. Retrieved text uses the separate `dist/retrieved/` subtree.
 
 ## Latent / prefix projection experiments
 
@@ -221,9 +240,14 @@ hidden_size
 num_hidden_layers
 num_attention_heads
 kv_layout_version
+tensor_dtype
+kv_cache_dtype
+quantization_id
 ```
 
-The compatibility checker is intentionally fail-closed. A tokenizer, architecture, model revision, dimensional, or KV-layout change invalidates the model-specific projection.
+`tensor_dtype` records the relevant model/projection tensor precision, `kv_cache_dtype` records the cache precision (or an explicit not-applicable value when no KV state exists), and `quantization_id` records the exact quantization identity or `none`.
+
+The compatibility checker is intentionally fail-closed. A tokenizer, architecture, model revision, dimensional, KV-layout, tensor precision, cache precision, or quantization change invalidates the model-specific projection.
 
 Example check:
 
