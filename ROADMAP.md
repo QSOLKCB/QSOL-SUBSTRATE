@@ -58,19 +58,22 @@ live-source freshness and frozen-snapshot consistency remain separate concerns.
 
 ## Phase 4 — Portable model adapters
 
-- [ ] Generic single-file substrate bundle.
-- [ ] Grok chat bootstrap.
-- [ ] xAI retrieval export.
-- [ ] Grok Build project rules/skill export.
-- [ ] Sider prompt/knowledge-base bundle.
-- [ ] Ollama Modelfile/system-context bundle.
-- [ ] OpenAI-compatible API bundle.
-- [ ] Anthropic-compatible context bundle.
-- [ ] Model-independent adapter manifest.
-- [ ] Record exact substrate version, commit, and adapter identity for reproducible runs.
+- [x] Generic single-file substrate bundle.
+- [x] Grok chat bootstrap.
+- [x] xAI retrieval export.
+- [x] Grok Build project rules/skill export.
+- [x] Sider prompt/knowledge-base bundle.
+- [x] Ollama Modelfile/system-context bundle.
+- [x] OpenAI-compatible API bundle.
+- [x] Anthropic-compatible context bundle.
+- [x] Model-independent adapter manifest.
+- [x] Record exact substrate version, commit, and adapter identity for reproducible runs.
 
 Adapters are disposable transport layers. They may change formatting and
-delivery, but must never redefine canonical substrate facts.
+delivery, but must never redefine canonical substrate facts. Phase 4 generates
+all adapter knowledge from one byte-identical canonical projection and records
+snapshot identity, source commit, substrate SHA-256, projection SHA-256, adapter
+identity, per-file hashes, and an aggregate adapter-bundle fingerprint.
 
 ## Phase 5 — Toolless Substrate Capsule
 
