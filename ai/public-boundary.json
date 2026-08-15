@@ -15,6 +15,15 @@
     "private_audit_manifest_must_remain_outside_public_output": true,
     "public_source_registry_is_immutable_to_private_export": true
   },
+  "validation_contract": {
+    "tool": "tools/validate_substrate.py",
+    "fingerprint_tool": "tools/fingerprint_substrate.py",
+    "workflow": ".github/workflows/validate-substrate.yml",
+    "report_schema": "schema/validation-report.schema.json",
+    "fingerprint_schema": "schema/substrate-fingerprint.schema.json",
+    "live_network_required": false,
+    "failure_mode": "fail_closed"
+  },
   "consumer_rules": [
     "do_not_infer_private_facts_from_omissions",
     "do_not_request_or_reconstruct_private_context_as_a_precondition_for_use",
@@ -32,5 +41,21 @@
     "source_path_escape",
     "ambiguous_source_selection",
     "private_audit_manifest_in_public_output"
+  ],
+  "validation_fail_closed_on": [
+    "schema_invalid",
+    "duplicate_or_unresolved_canonical_identity",
+    "unknown_or_dangling_public_provenance",
+    "nonpublic_or_ambiguous_visibility",
+    "alias_collision",
+    "duplicate_or_invalid_doi",
+    "dangling_relationship_endpoint",
+    "unknown_relationship_type",
+    "chronology_not_ordered",
+    "unresolved_project_publication_relationship",
+    "unresolved_release_tag_or_commit_identity",
+    "public_boundary_drift",
+    "secret_detection",
+    "private_reference_leak"
   ]
 }
