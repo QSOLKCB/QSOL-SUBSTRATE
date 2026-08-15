@@ -39,6 +39,13 @@ tools/
 
 tests/
 └── test_export_public_substrate.py
+
+schema/
+├── export-policy.schema.json
+├── export-allowlist.schema.json
+├── export-deny-policy.schema.json
+├── export-manifest.schema.json
+└── private-export-audit.schema.json
 ```
 
 `policy.json` defines the publication model and deterministic output rules.
@@ -46,6 +53,8 @@ tests/
 `include.json` is the only authority that can grant private-to-public publication. Each enabled directive must explicitly declare `visibility: "public"` and every exported field must independently declare `visibility: "public"`.
 
 `exclude.json` defines paths, field names, secret patterns, and private-reference patterns that cause export to stop.
+
+The five export schemas define the three configuration contracts plus the public export manifest and optional private audit manifest. They are registered in `ai/manifest.json` for Phase 3 validation.
 
 ## Running the exporter
 
@@ -57,9 +66,9 @@ python3 tools/export_public_substrate.py \
   --output /tmp/qsol-substrate-export
 ```
 
-The default output location should be outside the public repository. Writing under the QSOL-SUBSTRATE checkout requires the explicit `--allow-output-inside-repo` switch.
+The output directory must be **disjoint from both input repositories**. It may not equal, contain, or be contained by the private QSOL-CONTEXT root or the public QSOL-SUBSTRATE root. This restriction is not overridable by `--force`.
 
-Replacing an existing output requires `--force`.
+Replacing an existing disjoint output requires `--force`.
 
 ## Explicit publication grants
 
@@ -67,7 +76,7 @@ An enabled allowlist entry identifies:
 
 - one private source JSON file;
 - one exact object, either by JSON Pointer or exact match inside a selected collection;
-- one canonical public target collection;
+- one approved canonical public target collection;
 - whether creation of a previously absent public record is allowed;
 - the public record ID, record type, and epistemic state;
 - one or more already-public `src:*` provenance references;
@@ -90,7 +99,7 @@ Conceptual example:
   },
   "target": {
     "path": "projects/index.json",
-    "collection_pointer": "/projects",
+    "collection_pointer": "/records",
     "allow_create": false,
     "sort_by": "/id"
   },
@@ -114,7 +123,26 @@ This example is illustrative only and is not a publication grant.
 
 Unselected source fields are never copied. Private provenance arrays are never copied. Public `source_refs` are supplied by the allowlist and must resolve through the existing public `sources/index.json` registry.
 
-`sources/index.json` is immutable to the private exporter. New public evidence must first be added from public evidence through ordinary review.
+`sources/index.json` is **normatively immutable** to the private exporter. That invariant is enforced in code even if a local policy file accidentally removes it from `immutable_payload_files`. New public evidence must first be added from public evidence through ordinary review.
+
+## Approved canonical target collections
+
+Private export may write records only to explicitly supported record collections:
+
+```text
+identity/public.json      /records   identity | organization
+context/public.json       /claims    claim
+terminology/index.json    /records   term
+projects/index.json       /records   project
+publications/index.json   /records   publication
+relationships/graph.json  /nodes     research_topic
+relationships/graph.json  /edges     relationship
+chronology/current.jsonl  <root>     event
+```
+
+An arbitrary JSON array is **not** a writable record collection merely because a JSON Pointer resolves to it. New target collections require an explicit exporter code change and review.
+
+The record type and epistemic state are also checked against the canonical enums before a record can be emitted.
 
 ## Field-level visibility
 
@@ -165,14 +193,22 @@ The deny policy rejects configured classes including:
 
 - common GitHub, API, cloud, bearer, and private-key credential patterns;
 - secret-bearing field names;
+- credential/private-reference strings appearing as **JSON object keys or values**;
 - `.env`, secret, and credential source paths;
-- local filesystem references;
+- local filesystem references including common Linux workspace/root locations and macOS `/Users/...` paths;
+- Windows user paths;
 - localhost URLs;
 - direct URLs or Git references to the private QSOL-CONTEXT repository.
 
 Scanning is performed on selected source values and again over the complete generated public payload.
 
 A hit stops the export.
+
+## Source path safety
+
+Directive source paths must remain under the declared QSOL-CONTEXT root, must be JSON files, and must not match configured deny globs.
+
+Symlinked directive source paths are rejected rather than trusted. The exporter also evaluates the deny policy against the resolved root-relative path, so a harmless-looking alias cannot be used to route around a denied `secrets/**` or credential directory.
 
 ## Provenance
 
@@ -217,7 +253,9 @@ The staging directory includes:
 export-manifest.json
 ```
 
-It records:
+The configured export-manifest path is required to remain separate from every canonical payload file; a policy cannot redirect the manifest over `projects/index.json` or another payload path.
+
+The manifest records:
 
 - export policy;
 - source protocol, but no private source URL;
@@ -264,14 +302,18 @@ Export is refused when, among other conditions:
 - the source root does not identify itself as QSOL-CONTEXT;
 - an enabled directive lacks explicit public visibility;
 - an exported field lacks explicit public visibility;
+- a record type or epistemic state is outside the canonical enum;
 - source selection is ambiguous or matches zero/multiple records;
 - a source path escapes the declared private root;
-- a target is not an existing canonical payload file;
+- a directive source path contains a symlink or resolves through a denied path;
+- a target is not an existing canonical payload file and approved record collection;
+- a record type does not belong to its approved target collection;
 - a directive attempts to mutate the public source registry;
 - public provenance is missing or unknown;
-- a secret pattern is found;
+- a secret pattern is found in either a JSON key or value;
 - a forbidden field or private reference is found;
-- output would be written into the public repo without explicit permission;
+- the output overlaps either input repository in either direction;
+- the configured public export manifest collides with a canonical payload path;
 - a private audit manifest would land in the public bundle.
 
 The correct failure mode is:
