@@ -6,14 +6,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from probe_core import build_probe_bundle, build_scoring_oracle_run, load_built_cases, score_probe_run  # noqa: E402
+from probe_core import (  # noqa: E402
+    build_probe_bundle,
+    build_scoring_oracle_run,
+    checked_out_source_commit,
+    load_built_cases,
+    score_probe_run,
+)
 
 
 class YeahNahProbeTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.bundle = Path(self.tmp.name) / "probes"
-        build_probe_bundle(ROOT, self.bundle, "8" * 40)
+        build_probe_bundle(ROOT, self.bundle, checked_out_source_commit(ROOT))
         self.cases = [case for case in load_built_cases(self.bundle) if case["suite"] == "yeah-nah-1"]
 
     def tearDown(self):
