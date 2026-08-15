@@ -33,6 +33,13 @@ The project intends to use semantic versioning once formal releases begin.
 - Optional private audit manifest separated from public output.
 - Standard-library Phase 2 exporter safety tests.
 - Human documentation for the implemented export pipeline and review discipline.
+- Phase 3 fail-closed repository integrity validator and machine-readable validation report.
+- Phase 3 deterministic SHA-256 fingerprint over the canonical public payload.
+- Cross-file validation for provenance, canonical IDs, aliases, DOI uniqueness, relationship endpoints, chronology, project/publication/release identity, and public-boundary invariants.
+- Secret/private-reference scanning across canonical payloads and normative public machine contracts.
+- Strict bootstrap JSON Schemas for `ai/manifest.json` and `ai/public-boundary.json`.
+- Validation/fingerprint JSON Schemas and GitHub Actions enforcement.
+- Adversarial Phase 3 integrity regression tests.
 
 ### Design decisions
 
@@ -51,3 +58,10 @@ The project intends to use semantic versioning once formal releases begin.
 - Secret detection fails export even when the selected field would otherwise be redacted.
 - Public export manifests contain public-output fingerprints, not private source paths or hashes.
 - Generated export bundles are staging artifacts requiring human review, not self-authorising publication.
+- Phase 3 validation is network-independent and validates frozen-snapshot integrity rather than live-source freshness.
+- Canonical collection boundaries define which record types may appear in each registry, graph collection, and chronology stream.
+- Release identity must bind repository, tag, and commit to one trusted cited release source; independent partial matches are insufficient.
+- Release evidence must originate from the declared primary GitHub repository path, not merely contain a repository-like substring.
+- Validation findings must not echo detected secret-bearing object keys into logs or machine-readable reports.
+- Secret/private-reference detector classes are fail-closed configuration and may not be disabled by empty arrays.
+- The substrate fingerprint covers canonical public payload semantics, not documentation, tests, or tooling.
