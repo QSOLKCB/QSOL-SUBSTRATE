@@ -23,6 +23,9 @@ def identity(**updates):
         "num_hidden_layers": 32,
         "num_attention_heads": 32,
         "kv_layout_version": "v1",
+        "tensor_dtype": "float16",
+        "kv_cache_dtype": "float16",
+        "quantization_id": "none",
     }
     value.update(updates)
     return value
@@ -40,6 +43,18 @@ class ProjectionCompatibilityTests(unittest.TestCase):
 
     def test_kv_layout_change_invalidates(self):
         self.assertIn("kv_layout_version", compatibility_mismatches(identity(), identity(kv_layout_version="v2")))
+
+    def test_tensor_dtype_change_invalidates(self):
+        self.assertIn("tensor_dtype", compatibility_mismatches(identity(), identity(tensor_dtype="bfloat16")))
+
+    def test_kv_cache_dtype_change_invalidates(self):
+        self.assertIn("kv_cache_dtype", compatibility_mismatches(identity(), identity(kv_cache_dtype="bfloat16")))
+
+    def test_quantization_change_invalidates(self):
+        expected = identity()
+        actual = identity(quantization_id="q4_k_m")
+        self.assertIn("quantization_id", compatibility_mismatches(expected, actual))
+        self.assertNotEqual(compatibility_fingerprint(expected), compatibility_fingerprint(actual))
 
 
 if __name__ == "__main__":
