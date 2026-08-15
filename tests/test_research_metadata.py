@@ -77,6 +77,16 @@ class ResearchMetadataTests(unittest.TestCase):
         self.assertIn(RELEASE_COMMIT, guide)
         self.assertIn(SUBSTRATE_SHA, guide)
 
+    def test_followup_release_updates_metadata_before_tagging(self):
+        guide = (ROOT / "ZENODO_DEPOSITION.md").read_text(encoding="utf-8")
+        self.assertIn("**before creating the tag or GitHub release**", guide)
+        self.assertIn("update `.zenodo.json`, `CITATION.cff`, and `codemeta.json`", guide)
+        self.assertIn("remove any stale `v1.0.0` exact-commit binding", guide)
+        self.assertIn("create the new tag and GitHub release **on that exact metadata commit**", guide)
+        self.assertIn("after the release commit SHA is known", guide)
+        self.assertIn("A metadata file cannot deterministically embed the SHA of the same Git commit", guide)
+        self.assertIn("Never cut a follow-up release while those files still advertise `1.0.0`", guide)
+
 
 if __name__ == "__main__":
     unittest.main()
