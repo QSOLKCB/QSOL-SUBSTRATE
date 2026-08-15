@@ -366,17 +366,19 @@ A compact, well-structured substrate may outperform a much larger undifferentiat
 
 ## Phase 8 — Release discipline
 
-- [ ] Semantic versioning policy.
-- [ ] Release manifests.
-- [ ] Canonical substrate snapshot identity.
-- [ ] Immutable probe snapshots.
-- [ ] Release fingerprints.
-- [ ] Toolless capsule fingerprints.
-- [ ] Vector-index fingerprints.
-- [ ] Model-specific projection manifests.
-- [ ] Compatibility metadata for latent/KV artifacts.
-- [ ] Reproducible build commands.
-- [ ] Optional archival DOI workflow.
+- [x] Semantic versioning policy.
+- [x] Release manifests.
+- [x] Canonical substrate snapshot identity.
+- [x] Immutable probe snapshots.
+- [x] Release fingerprints.
+- [x] Toolless capsule fingerprints.
+- [x] Vector-index fingerprints.
+- [x] Model-specific projection manifests.
+- [x] Compatibility metadata for latent/KV artifacts.
+- [x] Reproducible build commands.
+- [x] Optional archival DOI workflow.
+
+Phase 8 compiles a deterministic release bill of materials under `dist/release/` and validates it by byte-for-byte rebuild. Release identity binds the exact Git source commit and canonical substrate SHA-256 while retaining separate fingerprints for adapters, tool-less profiles, vectors, projection contracts, and the immutable Phase 7 probe snapshot. CI builds `0.8.0-ci.0` only as a non-publishable integration candidate; a stable version or DOI is never fabricated by validation.
 
 Canonical substrate releases and derived projections must remain distinguishable.
 
