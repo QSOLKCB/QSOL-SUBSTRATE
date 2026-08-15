@@ -202,13 +202,15 @@ def _read_records(path: Path) -> list[dict[str, Any]]:
 
 def _safe_output(root: Path, output: Path) -> tuple[Path, Path]:
     root = root.resolve()
+    if output.exists() and output.is_symlink():
+        raise VectorError("refusing to replace symlinked vector output")
     output = output.resolve()
     if output == root or output in root.parents:
         raise VectorError("vector output may not replace or contain repository root")
     if root in output.parents and output != root / "dist" / "vectors":
         raise VectorError("in-repository vector output is restricted to dist/vectors")
-    if output.exists() and (output.is_symlink() or not output.is_dir()):
-        raise VectorError("refusing to replace non-directory or symlinked vector output")
+    if output.exists() and not output.is_dir():
+        raise VectorError("refusing to replace non-directory vector output")
     return root, output
 
 
@@ -329,6 +331,7 @@ def build_vector_bundle(root: Path, output: Path, source_commit: str) -> dict[st
     index = {
         "type": "qsol-vector-index",
         "schema_version": "1.0.0",
+        "substrate": identity,
         "chunking": CHUNKING_ID,
         "embedding_backend": EMBEDDING_ID,
         "dimension": DIMENSION,
@@ -411,9 +414,11 @@ def build_vector_bundle(root: Path, output: Path, source_commit: str) -> dict[st
 
 def validate_vector_bundle(root: Path, bundle: Path, schema_path: str = VECTOR_MANIFEST_SCHEMA) -> list[VectorFinding]:
     root = root.resolve()
+    if bundle.is_symlink():
+        return [VectorFinding("vector.bundle", str(bundle), "bundle may not be a symlink")]
     bundle = bundle.resolve()
     findings: list[VectorFinding] = []
-    if bundle.is_symlink() or not bundle.is_dir():
+    if not bundle.is_dir():
         return [VectorFinding("vector.bundle", str(bundle), "bundle must be a real directory")]
     try:
         manifest = _load_json(bundle / "manifest.json")
