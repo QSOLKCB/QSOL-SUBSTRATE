@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/release-policy.schema.json",
+  "title": "QSOL-SUBSTRATE release policy",
+  "type": "object",
+  "required": ["type", "schema_version", "release_spec_version", "versioning", "channels", "identity", "immutability", "archive"],
+  "properties": {
+    "type": {"const": "qsol-substrate-release-policy"},
+    "schema_version": {"const": "1.0.0"},
+    "release_spec_version": {"const": "1.0.0"},
+    "versioning": {
+      "type": "object",
+      "required": ["scheme", "tag_prefix", "major", "minor", "patch", "prerelease"],
+      "properties": {
+        "scheme": {"const": "semver-2.0.0"},
+        "tag_prefix": {"const": "v"},
+        "major": {"type": "string", "minLength": 1},
+        "minor": {"type": "string", "minLength": 1},
+        "patch": {"type": "string", "minLength": 1},
+        "prerelease": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "channels": {
+      "type": "object",
+      "required": ["stable", "candidate", "ci"],
+      "properties": {
+        "stable": {"$ref": "#/$defs/channel"},
+        "candidate": {"$ref": "#/$defs/channel"},
+        "ci": {
+          "allOf": [
+            {"$ref": "#/$defs/channel"},
+            {
+              "required": ["prerelease_prefix"],
+              "properties": {"prerelease_prefix": {"const": "ci."}}
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "required": ["release_version_is_snapshot_identity", "snapshot_identity_fields", "canonical_fingerprint_is_release_fingerprint", "derived_artifacts_are_canonical_truth", "missing_derived_artifact_is_false"],
+      "properties": {
+        "release_version_is_snapshot_identity": {"const": false},
+        "snapshot_identity_fields": {"const": ["snapshot_date", "source_commit", "substrate_sha256"]},
+        "canonical_fingerprint_is_release_fingerprint": {"const": false},
+        "derived_artifacts_are_canonical_truth": {"const": false},
+        "missing_derived_artifact_is_false": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "immutability": {
+      "type": "object",
+      "required": ["probe_snapshot_is_immutable_within_release", "source_commit_must_equal_checked_out_head", "tracked_source_tree_must_be_clean", "release_manifest_is_canonical_json", "release_checksums_exclude_the_checksum_file_itself"],
+      "properties": {
+        "probe_snapshot_is_immutable_within_release": {"const": true},
+        "source_commit_must_equal_checked_out_head": {"const": true},
+        "tracked_source_tree_must_be_clean": {"const": true},
+        "release_manifest_is_canonical_json": {"const": true},
+        "release_checksums_exclude_the_checksum_file_itself": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "archive": {
+      "type": "object",
+      "required": ["doi_optional", "default_provider", "doi_assignment_is_post_publication_metadata", "doi_assignment_changes_canonical_substrate", "recommended_resource_type", "license"],
+      "properties": {
+        "doi_optional": {"const": true},
+        "default_provider": {"const": "Zenodo"},
+        "doi_assignment_is_post_publication_metadata": {"const": true},
+        "doi_assignment_changes_canonical_substrate": {"const": false},
+        "recommended_resource_type": {"const": "Software"},
+        "license": {"const": "Apache-2.0"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "channel": {
+      "type": "object",
+      "required": ["publishable", "prerelease_required"],
+      "properties": {
+        "publishable": {"type": "boolean"},
+        "prerelease_required": {"type": "boolean"},
+        "prerelease_prefix": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
