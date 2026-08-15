@@ -76,13 +76,15 @@ def _load_json(path: Path) -> Any:
 
 def _safe_output(root: Path, output: Path) -> tuple[Path, Path]:
     root = root.resolve()
+    if output.exists() and output.is_symlink():
+        raise ProjectionError("refusing to replace symlinked projection output")
     output = output.resolve()
     if output == root or output in root.parents:
         raise ProjectionError("projection output may not replace or contain repository root")
     if root in output.parents and output != root / "dist" / "projections":
         raise ProjectionError("in-repository projection output is restricted to dist/projections")
-    if output.exists() and (output.is_symlink() or not output.is_dir()):
-        raise ProjectionError("refusing to replace non-directory or symlinked projection output")
+    if output.exists() and not output.is_dir():
+        raise ProjectionError("refusing to replace non-directory projection output")
     return root, output
 
 
@@ -259,9 +261,11 @@ def build_projection_bundle(root: Path, output: Path, source_commit: str) -> dic
 
 def validate_projection_bundle(root: Path, bundle: Path, schema_path: str = PROJECTION_MANIFEST_SCHEMA) -> list[ProjectionFinding]:
     root = root.resolve()
+    if bundle.is_symlink():
+        return [ProjectionFinding("projection.bundle", str(bundle), "bundle may not be a symlink")]
     bundle = bundle.resolve()
     findings: list[ProjectionFinding] = []
-    if bundle.is_symlink() or not bundle.is_dir():
+    if not bundle.is_dir():
         return [ProjectionFinding("projection.bundle", str(bundle), "bundle must be a real directory")]
     try:
         manifest = _load_json(bundle / "manifest.json")
