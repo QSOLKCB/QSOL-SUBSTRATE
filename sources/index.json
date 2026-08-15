@@ -4,7 +4,7 @@
   "snapshot_date": "2026-08-15",
   "visibility": "public",
   "sources": [
-    {"id":"src:github-profile-emergentmonk","class":"primary_repository","url":"https://github.com/EmergentMonk","summary":"Public GitHub profile identity for Trent Slade / EmergentMonk."},
+    {"id":"src:github-profile-emergentmonk","class":"owner_asserted","url":"https://github.com/EmergentMonk","summary":"Public GitHub profile identity for Trent Slade / EmergentMonk."},
     {"id":"src:qsol-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QSOL/blob/main/README.md","summary":"QSOL philosophy and expansion."},
     {"id":"src:qec-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QEC/blob/main/README.md","summary":"QEC scope, deterministic proof stack, release and DOI references."},
     {"id":"src:qsol-nexus-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QSOL-NEXUS/blob/main/README.md","summary":"QSOL NEXUS architecture and current release posture."},
