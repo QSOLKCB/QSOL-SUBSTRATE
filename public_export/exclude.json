@@ -69,8 +69,8 @@
       "regex": "\\bfile://[^\\s]+\\b"
     },
     {
-      "id": "unix-home-path",
-      "regex": "(?:^|[\\s\"'])/home/[A-Za-z0-9._-]+/"
+      "id": "unix-private-absolute-path",
+      "regex": "(?:^|[\\s\"'=:(])/(?:home|root|Users|workspace|workspaces|tmp|var/tmp|mnt|media)/[^\\s\"',;)}\\]]+"
     },
     {
       "id": "windows-user-path",
@@ -78,7 +78,7 @@
     },
     {
       "id": "localhost-url",
-      "regex": "https?://(?:localhost|127\\.0\\.0\\.1)(?::\\d+)?(?:/|\\b)"
+      "regex": "https?://(?:localhost|127\\.0\\.1)(?::\\d+)?(?:/|\\b)"
     }
   ]
 }
