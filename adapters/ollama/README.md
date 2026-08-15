@@ -1,19 +1,17 @@
 # Ollama / Local Model Adapter
 
-Local models can consume QSOL-SUBSTRATE without depending on a hosted vendor.
-
-Recommended architecture:
+Phase 4 implements the Ollama transport as:
 
 ```text
-compact system bootstrap
-        +
-local indexed public substrate
-        +
-user task
+dist/adapters/ollama/
+├── Modelfile.template
+└── system-context.txt
 ```
 
-A generated Modelfile may embed the compact consumer rules, while larger public records remain in a local retrieval store or task-specific bundle.
+`system-context.txt` contains the complete canonical projection. `Modelfile.template` embeds that exact context in an Ollama `SYSTEM` block and leaves the base model as the explicit runtime placeholder `REPLACE_WITH_BASE_MODEL`.
 
-The adapter should not compensate for a small context window by deleting provenance or uncertainty metadata. Prefer better selection and chunking.
+Replace the placeholder with an exact model tag or immutable local model reference before creating the model. The selected model is runtime configuration, not a QSOL-SUBSTRATE fact.
 
-Future work may add generated Modelfiles and deterministic local-model probe runners.
+The same system context may also be supplied through Ollama's API `system` field.
+
+See `docs/ADAPTERS.md`.
