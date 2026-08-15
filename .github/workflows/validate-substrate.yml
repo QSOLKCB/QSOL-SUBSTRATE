@@ -80,6 +80,12 @@ jobs:
       - name: Score scoring-oracle self-test
         run: python tools/score_probe_run.py --bundle dist/probes --run probe-oracle-run.json --output probe-oracle-report.json --markdown probe-oracle-report.md --require-perfect-oracle
 
+      - name: Build Phase 8 release candidate
+        run: python tools/build_release.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --version 0.8.0-ci.0 --channel ci --output dist/release
+
+      - name: Validate Phase 8 release candidate
+        run: python tools/validate_release.py --bundle dist/release
+
       - name: Publish integrity summary
         if: success()
         run: |
@@ -95,6 +101,7 @@ jobs:
           projections = json.loads(Path("dist/projections/manifest.json").read_text())
           probes = json.loads(Path("dist/probes/manifest.json").read_text())
           oracle = json.loads(Path("probe-oracle-report.json").read_text())
+          release = json.loads(Path("dist/release/manifest.json").read_text())
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
               out.write("## QSOL-SUBSTRATE integrity\n\n")
               out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
@@ -118,6 +125,9 @@ jobs:
               out.write(f"- Phase 7 probes: `{probes['probe_count']}` (`{probes['suite_counts']['substrate']}` substrate + `{probes['suite_counts']['yeah-nah-1']}` YEAH-NAH/1)\n")
               out.write(f"- Probe bundle SHA-256: `{probes['bundle_sha256']}`\n")
               out.write(f"- Scoring-oracle self-test: `{oracle['counts']['correct']}/{oracle['counts']['total']}`; empirical model result: `false`\n")
+              out.write(f"- Phase 8 CI release version: `{release['release']['version']}`; publishable: `{str(release['release']['publishable']).lower()}`\n")
+              out.write(f"- Release snapshot ID: `{release['substrate']['snapshot_id']}`\n")
+              out.write(f"- Release SHA-256: `{release['release_sha256']}`\n")
           PY
 
       - name: Upload validation and derived artifacts
@@ -136,5 +146,6 @@ jobs:
             dist/vectors/
             dist/projections/
             dist/probes/
+            dist/release/
           if-no-files-found: ignore
           retention-days: 30
