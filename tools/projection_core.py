@@ -49,6 +49,9 @@ COMPATIBILITY_FIELDS = (
     "num_hidden_layers",
     "num_attention_heads",
     "kv_layout_version",
+    "tensor_dtype",
+    "kv_cache_dtype",
+    "quantization_id",
 )
 
 
