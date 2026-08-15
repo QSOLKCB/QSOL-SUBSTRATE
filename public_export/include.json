@@ -1,0 +1,8 @@
+{
+  "type": "qsol-substrate-export-allowlist",
+  "schema_version": "1.0.0",
+  "default": "deny",
+  "source_protocol": "QSOL-CONTEXT",
+  "entries": [],
+  "note": "Intentionally empty. QSOL-SUBSTRATE ships with zero private-to-public publication grants; each future grant must be added explicitly and reviewed."
+}
