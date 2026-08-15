@@ -72,9 +72,17 @@ class PortableAdapterTests(unittest.TestCase):
     def test_tampered_knowledge_projection_fails(self):
         self._build()
         path = self.output / "generic/QSOL-SUBSTRATE.txt"
-        path.write_text(path.read_text(encoding="utf-8").replace("UNKNOWN != FALSE", "UNKNOWN == FALSE", 1), encoding="utf-8")
+        original = path.read_text(encoding="utf-8")
+        tampered = original.replace(
+            "QSOL-SUBSTRATE CANONICAL PROJECTION/1",
+            "QSOL-SUBSTRATE CANONICAL PROJECTION/TAMPERED",
+            1,
+        )
+        self.assertNotEqual(original, tampered)
+        path.write_text(tampered, encoding="utf-8")
         codes = self._codes()
         self.assertIn("adapter.file_hash", codes)
+        self.assertIn("adapter.projection_hash", codes)
 
     def test_tampered_nonknowledge_file_fails_bundle_hash(self):
         self._build()
