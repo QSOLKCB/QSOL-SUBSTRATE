@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/export-deny-policy.schema.json",
+  "title": "QSOL-SUBSTRATE export deny policy",
+  "type": "object",
+  "required": ["type", "schema_version", "default", "forbidden_source_path_globs", "forbidden_field_names", "secret_patterns", "private_reference_patterns"],
+  "properties": {
+    "type": {"const": "qsol-substrate-export-deny-policy"},
+    "schema_version": {"const": "1.0.0"},
+    "default": {"const": "deny_on_match"},
+    "forbidden_source_path_globs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "forbidden_field_names": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "secret_patterns": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/pattern"}
+    },
+    "private_reference_patterns": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/pattern"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pattern": {
+      "type": "object",
+      "required": ["id", "regex"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "regex": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  }
+}
