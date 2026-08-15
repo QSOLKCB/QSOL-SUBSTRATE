@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use QSOL-SUBSTRATE, please cite the archived software release and retain the exact version/commit identity."
+title: "QSOL-SUBSTRATE: A Deterministic, Provenance-Aware Public Context Substrate for AI Systems"
+type: software
+version: 1.0.0
+date-released: 2026-08-15
+commit: 4483582173abf62f61bcc18076b22c1db10b26ca
+license: Apache-2.0
+repository-code: "https://github.com/QSOLKCB/QSOL-SUBSTRATE"
+repository-artifact: "https://github.com/QSOLKCB/QSOL-SUBSTRATE/releases/tag/v1.0.0"
+abstract: >-
+  QSOL-SUBSTRATE is a public, vendor-neutral context substrate for AI systems.
+  It provides deterministic, provenance-aware context for identity, terminology,
+  projects, publications, relationships, chronology, and epistemic state while
+  preserving strict separation between canonical public facts and derived
+  adapters, tool-less capsules, vector indexes, latent/prefix experiments,
+  evaluation reports, release manifests, and archival metadata. Version 1.0.0
+  completes the Phase 0-8 roadmap and includes the 48-case Substrate Probe and
+  YEAH-NAH/1 Australian-pragmatics suite. Its central semantic rule is that
+  absence from the public substrate means unavailable, not false.
+authors:
+  - given-names: Trent
+    family-names: Slade
+    affiliation: QSOL-IMC
+    orcid: "https://orcid.org/0009-0002-4515-9237"
+keywords:
+  - artificial intelligence
+  - large language models
+  - LLM
+  - AI context substrate
+  - context engineering
+  - machine-readable knowledge
+  - epistemic provenance
+  - open-world semantics
+  - deterministic AI
+  - retrieval-augmented generation
+  - RAG
+  - vector retrieval
+  - model adapters
+  - AI hallucination reduction
+  - software reproducibility
+  - Australian pragmatics
+  - sarcasm detection
+  - YEAH-NAH/1
+  - QSOL
+  - QSOL-SUBSTRATE

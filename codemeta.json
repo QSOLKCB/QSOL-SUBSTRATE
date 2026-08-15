@@ -1,0 +1,63 @@
+{
+  "@context": "https://w3id.org/codemeta/3.1",
+  "@type": "SoftwareSourceCode",
+  "name": "QSOL-SUBSTRATE",
+  "description": "A public, vendor-neutral, deterministic and provenance-aware context substrate for AI systems. QSOL-SUBSTRATE separates canonical public facts from derived adapters, tool-less capsules, vector retrieval, latent/prefix experiment contracts, evaluation reports, release manifests, and archival metadata. Its core open-world semantic rule is that absence from the public substrate means unavailable, not false.",
+  "version": "1.0.0",
+  "datePublished": "2026-08-15",
+  "identifier": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/releases/tag/v1.0.0",
+  "codeRepository": "https://github.com/QSOLKCB/QSOL-SUBSTRATE",
+  "downloadUrl": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/archive/refs/tags/v1.0.0.zip",
+  "issueTracker": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/issues",
+  "continuousIntegration": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/actions",
+  "license": "https://spdx.org/licenses/Apache-2.0",
+  "programmingLanguage": [
+    "Python"
+  ],
+  "runtimePlatform": [
+    "Python 3.12"
+  ],
+  "applicationCategory": "Artificial Intelligence",
+  "keywords": [
+    "artificial intelligence",
+    "large language models",
+    "LLM",
+    "AI context substrate",
+    "context engineering",
+    "machine-readable knowledge",
+    "epistemic provenance",
+    "epistemic state",
+    "open-world semantics",
+    "deterministic AI",
+    "retrieval-augmented generation",
+    "RAG",
+    "vector retrieval",
+    "model adapters",
+    "tool-less AI context",
+    "AI hallucination reduction",
+    "software reproducibility",
+    "release provenance",
+    "Australian pragmatics",
+    "sarcasm detection",
+    "YEAH-NAH/1",
+    "QSOL",
+    "QSOL-SUBSTRATE"
+  ],
+  "author": {
+    "@type": "Person",
+    "@id": "https://orcid.org/0009-0002-4515-9237",
+    "givenName": "Trent",
+    "familyName": "Slade",
+    "name": "Trent Slade",
+    "affiliation": {
+      "@type": "Organization",
+      "name": "QSOL-IMC"
+    }
+  },
+  "producer": {
+    "@type": "Organization",
+    "name": "QSOLKCB",
+    "url": "https://github.com/QSOLKCB"
+  },
+  "releaseNotes": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/releases/tag/v1.0.0"
+}

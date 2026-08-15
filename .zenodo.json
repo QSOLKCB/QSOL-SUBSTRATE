@@ -1,0 +1,60 @@
+{
+  "creators": [
+    {
+      "name": "Slade, Trent",
+      "orcid": "0009-0002-4515-9237",
+      "affiliation": "QSOL-IMC"
+    }
+  ],
+  "title": "QSOL-SUBSTRATE: A Deterministic, Provenance-Aware Public Context Substrate for AI Systems",
+  "version": "1.0.0",
+  "publication_date": "2026-08-15",
+  "description": "<p>QSOL-SUBSTRATE is a public, vendor-neutral context substrate for artificial-intelligence systems. It provides deterministic, provenance-aware public context for identity, terminology, projects, publications, relationships, chronology, and epistemic state while preserving a strict boundary between canonical public facts and derived delivery mechanisms.</p><p>Version 1.0.0 completes the Phase 0-8 roadmap: documentation and machine contracts; a canonical public substrate; explicit-allow private-to-public export; schema and cross-file validation; deterministic fingerprints; portable model adapters; tool-less MICRO/STANDARD/FULL cold-boot capsules; deterministic vector retrieval; model-specific latent/prefix experiment contracts; a 48-case Substrate Probe including the YEAH-NAH/1 Australian-pragmatics suite; and release chain-of-custody.</p><p>The central semantic rule is that absence from the public substrate means unavailable, not false. Epistemic states are explicitly typed as known, retrieved, inferred, unknown, conflict, or fiction. Derived adapters, capsules, embeddings, vector indexes, projection recipes, evaluation reports, release manifests, and archive metadata may transport, select, test, or attest to canonical information, but they do not become independent canonical fact authority.</p><p>The companion FORMALIZATION.md specifies the software semantics, epistemic invariants, projection non-authority, provenance closure, deterministic fingerprinting, evaluation boundaries, and release identity for v1.0.0.</p>",
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "language": "eng",
+  "keywords": [
+    "artificial intelligence",
+    "large language models",
+    "LLM",
+    "AI context substrate",
+    "context engineering",
+    "machine-readable knowledge",
+    "epistemic provenance",
+    "epistemic state",
+    "open-world semantics",
+    "deterministic AI",
+    "retrieval-augmented generation",
+    "RAG",
+    "vector retrieval",
+    "model adapters",
+    "tool-less AI context",
+    "AI hallucination reduction",
+    "software reproducibility",
+    "release provenance",
+    "Australian pragmatics",
+    "sarcasm detection",
+    "YEAH-NAH/1",
+    "QSOL",
+    "QSOL-SUBSTRATE"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/releases/tag/v1.0.0",
+      "relation": "isIdenticalTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/commit/4483582173abf62f61bcc18076b22c1db10b26ca",
+      "relation": "isIdenticalTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://github.com/QSOLKCB/QSOL-SUBSTRATE",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ],
+  "notes": "Formalizes immutable GitHub release v1.0.0 at commit 4483582173abf62f61bcc18076b22c1db10b26ca. Canonical substrate SHA-256: fb6e7a694ff1279af67d4aaf776e232e31025d9737011f6768fdc79c0f63eb25. The canonical substrate is truth storage; adapters, capsules, vectors, latent/prefix recipes, probes, release manifests, and archive records are derived projections or attestations. Absence from the public substrate means unavailable, not false."
+}
