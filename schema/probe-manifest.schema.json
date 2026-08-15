@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/probe-manifest.schema.json",
+  "title": "QSOL-SUBSTRATE deterministic probe manifest",
+  "type": "object",
+  "required": ["type", "schema_version", "probe_spec_version", "substrate", "artifact_class", "empirical_model_results_in_ci", "scoring_oracle_is_empirical_result", "conditions", "probe_count", "suite_counts", "category_counts", "files", "bundle_sha256"],
+  "properties": {
+    "type": {"const": "qsol-substrate-probe-manifest"},
+    "schema_version": {"const": "1.0.0"},
+    "probe_spec_version": {"const": "1.0.0"},
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "version": {"type": "string"},
+        "version_kind": {"const": "snapshot"},
+        "schema_version": {"const": "1.0.0"},
+        "snapshot_date": {"type": "string", "format": "date"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "artifact_class": {"const": "deterministic_evaluation_protocol"},
+    "empirical_model_results_in_ci": {"const": false},
+    "scoring_oracle_is_empirical_result": {"const": false},
+    "conditions": {"const": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+    "probe_count": {"type": "integer", "minimum": 1},
+    "suite_counts": {
+      "type": "object",
+      "required": ["substrate", "yeah-nah-1"],
+      "properties": {
+        "substrate": {"type": "integer", "minimum": 1},
+        "yeah-nah-1": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "category_counts": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "integer", "minimum": 1}},
+    "files": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"enum": ["conditions.json", "scoring-contract.json", "substrate-probe.jsonl", "yeah-nah-1.jsonl"]},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

@@ -68,6 +68,18 @@ jobs:
       - name: Validate model projection experiment bundle
         run: python tools/validate_projection_bundle.py --bundle dist/projections
 
+      - name: Build deterministic Phase 7 probe bundle
+        run: python tools/build_probes.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/probes
+
+      - name: Validate Phase 7 probe bundle
+        run: python tools/validate_probe_bundle.py --bundle dist/probes
+
+      - name: Build scoring-oracle self-test
+        run: python tools/build_probe_oracle.py --bundle dist/probes --output probe-oracle-run.json
+
+      - name: Score scoring-oracle self-test
+        run: python tools/score_probe_run.py --bundle dist/probes --run probe-oracle-run.json --output probe-oracle-report.json --markdown probe-oracle-report.md --require-perfect-oracle
+
       - name: Publish integrity summary
         if: success()
         run: |
@@ -81,6 +93,8 @@ jobs:
           vectors = json.loads(Path("dist/vectors/manifest.json").read_text())
           retrieval = json.loads(Path("dist/vectors/retrieval-report.json").read_text())
           projections = json.loads(Path("dist/projections/manifest.json").read_text())
+          probes = json.loads(Path("dist/probes/manifest.json").read_text())
+          oracle = json.loads(Path("probe-oracle-report.json").read_text())
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
               out.write("## QSOL-SUBSTRATE integrity\n\n")
               out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
@@ -101,6 +115,9 @@ jobs:
               out.write(f"- Reference retrieval average closed context: `{retrieval['average_closed_context_portable_tokens']}` portable tokens\n")
               out.write(f"- Projection recipes: `{len(projections['recipes'])}`\n")
               out.write(f"- Projection bundle SHA-256: `{projections['bundle_sha256']}`\n")
+              out.write(f"- Phase 7 probes: `{probes['probe_count']}` (`{probes['suite_counts']['substrate']}` substrate + `{probes['suite_counts']['yeah-nah-1']}` YEAH-NAH/1)\n")
+              out.write(f"- Probe bundle SHA-256: `{probes['bundle_sha256']}`\n")
+              out.write(f"- Scoring-oracle self-test: `{oracle['counts']['correct']}/{oracle['counts']['total']}`; empirical model result: `false`\n")
           PY
 
       - name: Upload validation and derived artifacts
@@ -111,9 +128,13 @@ jobs:
           path: |
             validation-report.json
             substrate-fingerprint.json
+            probe-oracle-run.json
+            probe-oracle-report.json
+            probe-oracle-report.md
             dist/adapters/
             dist/toolless/
             dist/vectors/
             dist/projections/
+            dist/probes/
           if-no-files-found: ignore
           retention-days: 30

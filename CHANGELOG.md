@@ -74,10 +74,21 @@ The project intends to use semantic versioning once formal releases begin.
 - Fail-closed vector validator that recompiles the complete expected bundle and rejects altered vectors, metadata, symlinks, undeclared files, and unsafe output paths.
 - Phase 6 deterministic epistemic-prefix artifact carrying stable interpretation rules rather than mutable canonical facts.
 - Reproducible model-specific experiment recipes for soft prompts/prefix tuning, virtual tokens, LoRA, KV-cache prefill, reusable prefix state, and hybrid epistemic-prefix plus factual-text delivery.
-- Model-projection compatibility schema and checker covering model revision, architecture, tokenizer identity/hash, dimensions, attention layout, and KV-layout version.
-- Deterministic YEAH-NAH/1 textual/prefix/hybrid delivery matrix for later Phase 7 model-behaviour comparison.
+- Model-projection compatibility schema and checker covering model revision, architecture, tokenizer identity/hash, dimensions, attention layout, KV-layout version, tensor/KV precision, and quantization identity.
+- Deterministic YEAH-NAH/1 textual/prefix/hybrid delivery matrix for Phase 7 model-behaviour comparison.
 - Phase 6 vector/projection regression tests and GitHub Actions build/validation artifact upload.
 - Human documentation for vector retrieval semantics, latent/prefix experiment contracts, compatibility invalidation, and Phase 7 measurement boundaries.
+- Phase 7 deterministic 48-case Substrate Probe: 24 substrate epistemic/factual cases plus 24 `YEAH-NAH/1` pragmatic-humour cases.
+- Eight declared Phase 7 comparison conditions: naked, MICRO, STANDARD, FULL, vector, latent-prefix, hybrid, and tool-enabled.
+- Strict Phase 7 JSON Schemas for probe manifests, model-run envelopes, report cards, and cross-condition comparisons.
+- Deterministic Phase 7 scorer for factual accuracy, unsupported assertions, `UNKNOWN` precision/recall, alias resolution, provenance fidelity, contradiction handling, claim boundaries, token efficiency, hallucination rate, and same-model substrate uplift.
+- YEAH-NAH/1 scoring for sarcasm precision/recall, literal-meaning errors, banter misclassification, hostility false positives, understatement severity preservation, confidence Brier score, and cultural-context uplift.
+- Context-paired `Nice one, mate`, `yeah nah` / `nah yeah`, deadpan, high-severity understatement, mock/actual-hostility, affectionate-insult, self-deprecation, relationship-context, uncertainty, and speaker-confirmed sarcasm controls.
+- Deterministic Phase 7 probe-bundle fingerprint bound to the exact substrate source identity as well as test payload bytes.
+- Fail-closed probe validation that recompiles the expected bundle, rejects symlinks/extra files/tampering, and validates the probe bundle before scoring.
+- A labelled `scoring_oracle` CI self-test that proves the scorer can recover declared ground truth but is mechanically forbidden from empirical comparison tables.
+- Phase 7 model-run comparison engine requiring identical probe/substrate identity and computing uplift only against the same model's naked baseline.
+- Human documentation for real model-run provenance, scoring, comparison, and the boundary between protocol validation and empirical model evidence.
 
 ### Design decisions
 
@@ -102,10 +113,10 @@ The project intends to use semantic versioning once formal releases begin.
 - Release evidence must originate from the declared primary GitHub repository path, not merely contain a repository-like substring.
 - Validation findings must not echo detected secret-bearing object keys into logs or machine-readable reports.
 - Secret/private-reference detector classes are fail-closed configuration and may not be disabled by empty arrays.
-- The substrate fingerprint covers canonical public payload semantics, not documentation, tests, or tooling.
+- The substrate fingerprint covers canonical public payload semantics, not documentation, tests, tooling, or evaluation artifacts.
 - Phase 4 adapters are generated projections, never canonical fact stores.
 - Every Phase 4 knowledge-bearing adapter embeds one byte-identical canonical projection body and records its `projection_sha256`.
-- Until formal release SemVer exists, adapter provenance uses `snapshot-YYYY-MM-DD` plus exact source commit and canonical substrate SHA-256.
+- Until formal release SemVer exists, derived-artifact provenance uses `snapshot-YYYY-MM-DD` plus exact source commit and canonical substrate SHA-256.
 - Runtime model IDs, API keys, collection IDs, and local model choices are transport configuration and are not canonical substrate facts.
 - Adapter output may change formatting and delivery but may not enrich, reinterpret, promote, or otherwise redefine canonical substrate facts.
 - Phase 5 capsules are generated frozen public context images, not new canonical truth stores.
@@ -115,9 +126,9 @@ The project intends to use semantic versioning once formal releases begin.
 - The `FULL` profile must contain every canonical payload item represented by the compiler or the build fails closed.
 - Tool-less currentness is bounded by the embedded snapshot date; without directly supplied newer evidence, unresolved post-snapshot state remains `UNKNOWN`.
 - Claim-boundary lines are epistemic guards derived from explicit canonical project tags and are validated independently; they are not additional project facts.
-- A Phase 5 capsule is valid only when its complete bytes equal the deterministic renderer output for the declared canonical substrate and source commit; recognized-record parsing alone is insufficient.
+- A Phase 5 capsule is valid only when its complete bytes equal the deterministic renderer output for the declared canonical substrate and source commit.
 - In-repository capsule generation is restricted to `dist/toolless`; generated-artifact tooling may never replace canonical source, tooling, or contract directories.
-- Capsule manifests are recomputed metadata, not trusted claims: profile selection, kind counts, identity, hashes, byte counts, token counts, and bundle membership must all resolve from canonical state.
+- Capsule manifests are recomputed metadata, not trusted claims: profile selection, kind counts, identity, hashes, byte counts, token counts, and bundle membership resolve from canonical state.
 - CI-derived artifact identity is stamped from the exact checked-out commit rather than from a different PR ref.
 - Pragmatic humour classification is interpretive evidence: `SARCASM = INFERRED UNLESS SPEAKER_CONFIRMED`, and `UNCERTAIN != SARCASTIC`.
 - Phase 6 vector coordinates are retrieval machinery, not facts, provenance, epistemic labels, or confidence scores.
@@ -126,5 +137,12 @@ The project intends to use semantic versioning once formal releases begin.
 - Retrieval-size measurements do not imply downstream answer quality; model-behaviour uplift belongs to Phase 7.
 - Stable epistemic/pragmatic rules are preferred candidates for latent/prefix projection; mutable public facts remain textual or retrieval-selected where they stay inspectable and citable.
 - Soft-prompt, virtual-token, LoRA, KV-cache, and reusable-prefix checkmarks denote implemented experiment contracts, not fabricated claims that generic CI trained or captured model-specific artifacts.
-- Model-specific projections fail compatibility when any declared model revision, architecture, tokenizer, dimension, attention, or KV-layout identity changes.
+- Model-specific projections fail compatibility when any declared model revision, architecture, tokenizer, dimension, attention, KV-layout, tensor/KV precision, or quantization identity changes.
 - No vector index, soft prompt, LoRA adapter, prefix state, or KV cache may become an independent canonical source of truth.
+- Phase 7 probe cases and expected answers are deterministic evaluation inputs, not additional canonical public facts.
+- Phase 7 scoring is based on a strict structured response envelope while preserving raw model prose for audit; an unversioned second LLM is not the primary grader.
+- Probe scoring validates the deterministic probe bundle before trusting its ground truth.
+- The probe bundle fingerprint is bound to both probe bytes and exact source substrate identity.
+- A scoring oracle validates scoring plumbing only and is not empirical model evidence; comparison tooling rejects it mechanically.
+- Empirical comparison requires identical probe-bundle and substrate identities, and uplift is measured against the same model's naked baseline.
+- A textual copy of an epistemic prefix is not evidence that a real latent/KV/LoRA condition was executed; model-specific Phase 6 compatibility evidence remains required.
