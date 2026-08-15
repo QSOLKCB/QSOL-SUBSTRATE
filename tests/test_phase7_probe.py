@@ -97,7 +97,7 @@ class Phase7ProbeTests(unittest.TestCase):
             self._build("a" * 40)
 
     def test_uncommitted_probe_source_changes_fail_closed(self):
-        with mock.patch("probe_core._git_output", side_effect=[self.commit + "\n", " M probe/conditions.json\n"]):
+        with mock.patch("probe_core_hardening._git_output", side_effect=[self.commit + "\n", " M probe/conditions.json\n"]):
             with self.assertRaises(ProbeError):
                 self._build()
 
