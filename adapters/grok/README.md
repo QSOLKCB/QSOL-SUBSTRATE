@@ -1,13 +1,14 @@
 # Grok Adapter
 
-QSOL-SUBSTRATE can be supplied to Grok through whatever public context mechanism is available in the chosen xAI product surface: repository/project context, file upload, knowledge retrieval, project rules, or reusable agent skills.
+Phase 4 implements two Grok-family transports:
 
-Adapter rules:
+1. `dist/adapters/grok/chat-bootstrap.txt` — complete chat/file bootstrap;
+2. `dist/adapters/xai-retrieval/` — persistent xAI Collections retrieval document plus upload metadata.
 
-- keep the bootstrap compact;
-- retrieve larger public records selectively;
-- do not ask Grok to treat substrate content as higher priority than xAI system or safety instructions;
-- preserve unknown/conflict responses rather than rewarding confident guessing;
-- record the substrate commit and model identifier during evaluations.
+The same canonical projection is used by both. Delivery changes; facts do not.
 
-Future work may add generated Grok Build project rules and a retrieval-collection export.
+The generated bundle preserves `known`, `retrieved`, `inferred`, `unknown`, `conflict`, and `fiction` semantics and records the exact substrate snapshot, source commit, substrate fingerprint, projection fingerprint, and adapter identity.
+
+Runtime collection IDs, API keys, and model IDs are deliberately excluded from canonical substrate state.
+
+See `docs/ADAPTERS.md`.

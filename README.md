@@ -23,8 +23,10 @@ Read:
 4. [`docs/PUBLIC_SUBSTRATE.md`](docs/PUBLIC_SUBSTRATE.md)
 5. [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md)
 6. [`docs/EXPORT_PIPELINE.md`](docs/EXPORT_PIPELINE.md)
-7. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
-8. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
+7. [`docs/VALIDATION.md`](docs/VALIDATION.md)
+8. [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
+9. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+10. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
 
 ### AI systems
 
@@ -73,23 +75,51 @@ python3 tools/export_public_substrate.py \
 
 The exporter is **explicit-allow only**. QSOL-SUBSTRATE ships with **zero private publication grants** in `public_export/include.json`.
 
-A private-to-public export requires an enabled directive that names the exact private source object, every field allowed to cross the boundary, the public target record, and already-public `src:*` provenance references.
-
-There is no wildcard-copy mode.
-
-The exporter:
-
-- canonicalises the existing public payload first;
-- copies only explicitly allowed fields;
-- refuses missing or ambiguous public visibility;
-- refuses unknown public provenance;
-- keeps the public source registry immutable to private export;
-- scans selected values and final output for secret/private-reference patterns;
-- emits a deterministic `export-manifest.json` and bundle SHA-256;
-- optionally emits a **private** audit manifest outside the public bundle;
-- produces a reviewable staging bundle rather than committing or publishing automatically.
+A private-to-public export requires an enabled directive that names the exact private source object, every field allowed to cross the boundary, the public target record, and already-public `src:*` provenance references. There is no wildcard-copy mode.
 
 See [`docs/EXPORT_PIPELINE.md`](docs/EXPORT_PIPELINE.md).
+
+## Validation and fingerprinting
+
+Phase 3 validates the frozen public snapshot before it is treated as coherent substrate state:
+
+```bash
+python tools/validate_substrate.py --json-report validation-report.json
+python tools/fingerprint_substrate.py --output substrate-fingerprint.json
+```
+
+Validation covers schemas, canonical IDs, provenance, aliases, DOI uniqueness, relationships, chronology, release identity, public-boundary invariants, secret/private-reference leakage, and deterministic SHA-256 substrate identity.
+
+See [`docs/VALIDATION.md`](docs/VALIDATION.md).
+
+## Portable model adapters
+
+Phase 4 deterministically compiles the same canonical public substrate into eight disposable transport bundles:
+
+```bash
+python tools/build_adapters.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/adapters
+
+python tools/validate_adapter_bundle.py --bundle dist/adapters
+```
+
+Generated transports cover:
+
+- generic single-file context;
+- Grok chat bootstrap;
+- xAI Collections retrieval;
+- Grok Build project rules + skill;
+- Sider prompt + knowledge base;
+- Ollama Modelfile template + system context;
+- OpenAI-compatible Responses context;
+- Anthropic-compatible Messages context.
+
+Every adapter records the substrate snapshot version, exact source commit, canonical substrate SHA-256, canonical projection SHA-256, adapter identity, per-file hashes, and aggregate adapter-bundle fingerprint.
+
+Adapters may change formatting and delivery. **They may not redefine canonical substrate facts.** Runtime model IDs, API keys, collection IDs, and local model choices are not substrate facts.
+
+See [`docs/ADAPTERS.md`](docs/ADAPTERS.md).
 
 ## What this repository is for
 
@@ -101,7 +131,7 @@ QSOL-SUBSTRATE is designed to support:
 - project and terminology disambiguation across the QSOL ecosystem;
 - provenance-aware answers about public QSOL research and software;
 - hallucination reduction where errors arise from missing or ambiguous QSOL-specific context;
-- model adapters that can transform one canonical substrate into vendor-specific prompt or retrieval formats;
+- model adapters that transform one canonical substrate into vendor-specific prompt or retrieval formats without redefining facts;
 - deterministic, reviewable private-to-public context publication without making private context a consumer dependency.
 
 It is **not** intended to override a model's safety system, replace primary sources, expose private context, or guarantee factual correctness outside the information it actually contains.
@@ -134,8 +164,8 @@ QSOL-SUBSTRATE/
 ├── docs/                  # prose for humans
 ├── ai/                    # normative AI contracts
 ├── public_export/         # Phase 2 publication policy/allow/deny contracts
-├── tools/                 # deterministic maintainer-side tooling
-├── tests/                 # standard-library safety tests
+├── tools/                 # deterministic export, validation, fingerprint, adapter tooling
+├── tests/                 # safety/integrity/adapter regressions
 ├── sources/               # provenance/source registry
 ├── identity/              # public identity
 ├── context/               # public recurring context
@@ -145,8 +175,10 @@ QSOL-SUBSTRATE/
 ├── relationships/         # project/research graph
 ├── chronology/            # public event stream
 ├── schema/                # validation schemas
-└── adapters/              # target-specific onboarding guidance
+└── adapters/              # target-specific adapter guidance
 ```
+
+Generated adapter artifacts live under `dist/adapters/` during builds and CI; they are derived projections rather than additional canonical records.
 
 ## Epistemic states
 
@@ -178,12 +210,14 @@ model
 model_version_or_identifier
 substrate_version
 substrate_commit
-adapter
+substrate_sha256
+adapter_identity
+adapter_bundle_sha256
 probe_set
 execution_date
 ```
 
-Private-to-public export review should additionally retain the public `export-manifest.json` and bundle fingerprint. A separate private audit manifest may be retained locally when internal source traceability is required.
+Until formal release SemVer is introduced, Phase 4 adapter bundles use `snapshot-YYYY-MM-DD` as the explicit substrate snapshot version and always pair it with the full source commit and canonical SHA-256.
 
 ## Maintainer
 
@@ -191,9 +225,9 @@ QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOL
 
 ## Status
 
-**Phase 2 — Export pipeline is implemented.** Phase 1 provides the canonical public payload; Phase 2 adds explicit-allow private-source publication policy, field-level export rules, secret/private-reference scanning, deterministic canonicalisation, export manifests/fingerprints, private-audit separation, and fail-closed omission/provenance handling.
+**Phases 0–4 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, and eight generated portable model adapters with reproducible adapter identity.
 
-Phase 3 automated schema/referential/provenance validation and CI, generated portable adapters, Toolless Substrate Capsules, vector/latent projections, and Substrate Probe comparisons remain on the roadmap.
+Toolless Substrate Capsules, vector/latent projections, Substrate Probe comparisons, and formal release discipline remain on the roadmap.
 
 ---
 

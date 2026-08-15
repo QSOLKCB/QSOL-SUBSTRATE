@@ -1,13 +1,17 @@
 # Sider Adapter
 
-The Sider integration should use a compact persistent bootstrap together with indexed or uploaded QSOL-SUBSTRATE records.
+Phase 4 implements the Sider transport as a deterministic two-file bundle:
 
-Recommended split:
+```text
+dist/adapters/sider/
+├── prompt.txt
+└── knowledge-base.md
+```
 
-- persistent prompt: epistemic rules, public-boundary semantics, retrieval precedence;
-- knowledge base: larger canonical substrate payload;
-- task prompt: the user's actual question.
+`prompt.txt` contains compact persistent epistemic/bootstrap rules. `knowledge-base.md` contains the complete canonical public substrate projection.
 
-This makes it possible to compare multiple underlying models against the same substrate while changing only the model.
+This split allows the selected underlying model to change without changing the substrate evidence supplied to it.
 
-Do not copy private QSOL-CONTEXT records into Sider merely because the public adapter exists.
+The adapter never reads or copies private QSOL-CONTEXT data.
+
+See `docs/ADAPTERS.md` for build, identity, and validation rules.

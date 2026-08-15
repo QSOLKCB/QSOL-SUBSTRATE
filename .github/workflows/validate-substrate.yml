@@ -38,22 +38,44 @@ jobs:
       - name: Build substrate fingerprint
         run: python tools/fingerprint_substrate.py --output substrate-fingerprint.json
 
-      - name: Publish fingerprint summary
+      - name: Resolve adapter source commit
+        id: adapter-source
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_SHA: ${{ github.sha }}
+        run: |
+          if [ -n "$PR_HEAD_SHA" ]; then
+            echo "sha=$PR_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$EVENT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build portable adapters
+        run: python tools/build_adapters.py --source-commit "${{ steps.adapter-source.outputs.sha }}" --output dist/adapters
+
+      - name: Validate portable adapters
+        run: python tools/validate_adapter_bundle.py --bundle dist/adapters
+
+      - name: Publish integrity summary
         if: success()
         run: |
           python - <<'PY'
           import json
           import os
           from pathlib import Path
-          data = json.loads(Path("substrate-fingerprint.json").read_text())
+          fingerprint = json.loads(Path("substrate-fingerprint.json").read_text())
+          adapters = json.loads(Path("dist/adapters/manifest.json").read_text())
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
               out.write("## QSOL-SUBSTRATE integrity\n\n")
-              out.write(f"- Snapshot: `{data['snapshot_date']}`\n")
-              out.write(f"- SHA-256: `{data['substrate_sha256']}`\n")
-              out.write(f"- Canonical payload files: `{len(data['files'])}`\n")
+              out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
+              out.write(f"- Substrate SHA-256: `{fingerprint['substrate_sha256']}`\n")
+              out.write(f"- Canonical payload files: `{len(fingerprint['files'])}`\n")
+              out.write(f"- Portable adapters: `{len(adapters['adapters'])}`\n")
+              out.write(f"- Adapter source commit: `{adapters['substrate']['source_commit']}`\n")
+              out.write(f"- Adapter bundle SHA-256: `{adapters['adapter_bundle_sha256']}`\n")
           PY
 
-      - name: Upload validation artifacts
+      - name: Upload validation and adapter artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -61,5 +83,6 @@ jobs:
           path: |
             validation-report.json
             substrate-fingerprint.json
+            dist/adapters/
           if-no-files-found: ignore
           retention-days: 30
