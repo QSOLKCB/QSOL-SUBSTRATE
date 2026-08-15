@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/validation-report.schema.json",
+  "title": "QSOL-SUBSTRATE validation report",
+  "type": "object",
+  "required": ["type", "schema_version", "valid", "snapshot_date", "record_count", "source_count", "relationship_count", "publication_count", "event_count", "substrate_sha256", "findings"],
+  "properties": {
+    "type": {"const": "qsol-substrate-validation-report"},
+    "schema_version": {"const": "1.0.0"},
+    "valid": {"type": "boolean"},
+    "snapshot_date": {"type": ["string", "null"]},
+    "record_count": {"type": "integer", "minimum": 0},
+    "source_count": {"type": "integer", "minimum": 0},
+    "relationship_count": {"type": "integer", "minimum": 0},
+    "publication_count": {"type": "integer", "minimum": 0},
+    "event_count": {"type": "integer", "minimum": 0},
+    "substrate_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "path", "message"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "minLength": 1},
+          "message": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
