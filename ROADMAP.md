@@ -250,36 +250,53 @@ This architecture keeps frequently changing public facts inspectable and textual
 
 Build a deterministic evaluation suite for measuring whether substrate delivery actually improves model behaviour.
 
-- [ ] Deterministic question set.
-- [ ] Exact-known-fact tests.
-- [ ] `unknown`-answer tests.
-- [ ] Unsupported-assertion tests.
-- [ ] Provenance preservation tests.
-- [ ] Entity/alias disambiguation tests.
-- [ ] Contradiction handling tests.
-- [ ] Snapshot/freshness tests.
-- [ ] Satire/fiction boundary tests.
-- [ ] Formalization-versus-empirical-claim tests.
-- [ ] Project relationship tests.
-- [ ] Publication/DOI identity tests.
-- [ ] Reproducible model report-card format.
+A checked Phase 7 item means the **probe corpus, response contract, scorer, metric, report-card format, or comparison protocol is executable and reproducible**. Generic repository CI does not claim that it ran hosted/open-weight models. Empirical model results require explicit model-run records and are separate evidence.
+
+- [x] Deterministic question set.
+- [x] Exact-known-fact tests.
+- [x] `unknown`-answer tests.
+- [x] Unsupported-assertion tests.
+- [x] Provenance preservation tests.
+- [x] Entity/alias disambiguation tests.
+- [x] Contradiction handling tests.
+- [x] Snapshot/freshness tests.
+- [x] Satire/fiction boundary tests.
+- [x] Formalization-versus-empirical-claim tests.
+- [x] Project relationship tests.
+- [x] Publication/DOI identity tests.
+- [x] Reproducible model-run and report-card formats.
+- [x] Fail-closed deterministic probe-bundle validation.
+- [x] Scoring-oracle self-test that is mechanically excluded from empirical comparisons.
+
+Generated protocol bundle:
+
+```text
+dist/probes/
+├── substrate-probe.jsonl
+├── yeah-nah-1.jsonl
+├── conditions.json
+├── scoring-contract.json
+└── manifest.json
+```
+
+The reference corpus contains 48 cases: 24 substrate epistemic/factual probes and 24 `YEAH-NAH/1` pragmatic probes. Model runs bind the exact probe-bundle SHA-256 and substrate identity before they can be scored.
 
 ### YEAH-NAH/1 — Australian Pragmatic Humour Probe
 
 Build a deterministic cultural-pragmatics stress test for sarcasm, deadpan, understatement, banter, mock hostility, affectionate insult, and polarity reversal in Australian English. The purpose is not to assume that Australian speech is sarcastic; it is to test whether a model can avoid naive literalism without over-classifying ambiguous language as sarcasm or hostility.
 
-- [ ] Context-paired literal-versus-sarcastic utterance set.
-- [ ] Deadpan interpretation tests.
-- [ ] Understatement tests, including high-severity contexts expressed mildly.
-- [ ] Mock-hostility versus actual-hostility tests.
-- [ ] Affectionate-insult and familiar-banter tests.
-- [ ] Positive/negative polarity-reversal tests.
-- [ ] Contextual `yeah nah` / `nah yeah` interpretation tests.
-- [ ] Relationship-familiarity and conversational-context controls.
-- [ ] Sarcasm-confidence and uncertainty-calibration tests.
-- [ ] Speaker-confirmed sarcasm controls that distinguish explicit confirmation from model inference.
-- [ ] Cross-model comparison for small open-weight and hosted models.
-- [ ] Compare naked, textual-substrate, vector-selected, latent-prefix, hybrid, and tool-enabled conditions.
+- [x] Context-paired literal-versus-sarcastic utterance set.
+- [x] Deadpan interpretation tests.
+- [x] Understatement tests, including high-severity contexts expressed mildly.
+- [x] Mock-hostility versus actual-hostility tests.
+- [x] Affectionate-insult and familiar-banter tests.
+- [x] Positive/negative polarity-reversal tests.
+- [x] Contextual `yeah nah` / `nah yeah` interpretation tests.
+- [x] Relationship-familiarity and conversational-context controls.
+- [x] Sarcasm-confidence and uncertainty-calibration tests.
+- [x] Speaker-confirmed sarcasm controls that distinguish explicit confirmation from model inference.
+- [x] Cross-model comparison protocol for small open-weight and hosted models.
+- [x] Compare naked, textual-substrate, vector-selected, latent-prefix, hybrid, and tool-enabled conditions.
 
 Normative interpretation guards for the probe:
 
@@ -294,13 +311,13 @@ CONTEXT > TOKEN_POLARITY
 
 Measure at least:
 
-- [ ] Sarcasm precision and recall.
-- [ ] Literal-meaning error rate.
-- [ ] Banter misclassification rate.
-- [ ] Hostility false-positive rate.
-- [ ] Understatement severity-preservation rate.
-- [ ] Confidence calibration.
-- [ ] Cultural-context dependence and uplift from substrate delivery.
+- [x] Sarcasm precision and recall.
+- [x] Literal-meaning error rate.
+- [x] Banter misclassification rate.
+- [x] Hostility false-positive rate.
+- [x] Understatement severity-preservation rate.
+- [x] Confidence calibration via Brier score.
+- [x] Cultural-context dependence and uplift from substrate delivery.
 
 `YEAH-NAH/1` is a pragmatic interpretation probe, not a canonical-fact source. A sarcasm classification remains `inferred` unless the speaker or cited evidence explicitly confirms the intended meaning.
 
@@ -328,23 +345,24 @@ TOOL-ENABLED RETRIEVAL
 
 Measure:
 
-- [ ] Factual accuracy.
-- [ ] Unsupported assertion rate.
-- [ ] `UNKNOWN` precision.
-- [ ] `UNKNOWN` recall.
-- [ ] Alias resolution accuracy.
-- [ ] Provenance fidelity.
-- [ ] Contradiction handling.
-- [ ] Claim-boundary preservation.
-- [ ] Context/token efficiency.
-- [ ] Substrate uplift over naked-model baseline.
-- [ ] Hallucination reduction relative to baseline.
+- [x] Factual accuracy.
+- [x] Unsupported assertion rate.
+- [x] `UNKNOWN` precision.
+- [x] `UNKNOWN` recall.
+- [x] Alias resolution accuracy.
+- [x] Provenance fidelity.
+- [x] Contradiction handling.
+- [x] Claim-boundary preservation.
+- [x] Context/token efficiency from the actual runner's tokenizer usage.
+- [x] Substrate uplift over the same model's naked baseline.
+- [x] Hallucination reduction relative to the same model's naked baseline.
+- [x] Reject comparisons across mismatched probe/substrate identities.
 
 A central research question is:
 
 > How much substrate is enough?
 
-A compact, well-structured substrate may outperform a much larger undifferentiated context dump.
+A compact, well-structured substrate may outperform a much larger undifferentiated context dump. Phase 7 supplies the machinery to measure that claim; it does not fabricate the empirical answer.
 
 ## Phase 8 — Release discipline
 
@@ -385,4 +403,4 @@ A substrate should become more portable, more compact, and more useful without b
 
 The canonical public substrate remains the source of truth.
 
-Everything else — prose bundles, vector indexes, adapters, soft prompts, KV caches, and model-specific latent projections — is a reproducible projection of that source.
+Everything else — prose bundles, vector indexes, adapters, soft prompts, KV caches, model-specific latent projections, and probe/report artifacts — is a reproducible projection or evaluation of that source.
