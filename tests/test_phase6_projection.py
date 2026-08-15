@@ -20,9 +20,11 @@ from projection_core import (  # noqa: E402
 from toolless_core import _canonical_items, _load_json  # noqa: E402
 from vector_core import (  # noqa: E402
     DIMENSION,
+    VectorError,
     _context_closure,
     _read_records,
     build_vector_bundle,
+    render_retrieved_context,
     retrieve,
     validate_vector_bundle,
 )
@@ -60,6 +62,9 @@ class Phase6ProjectionTests(unittest.TestCase):
             "num_hidden_layers": 32,
             "num_attention_heads": 32,
             "kv_layout_version": "v1",
+            "tensor_dtype": "float16",
+            "kv_cache_dtype": "float16",
+            "quantization_id": "none",
         }
         value.update(updates)
         return value
@@ -112,12 +117,30 @@ class Phase6ProjectionTests(unittest.TestCase):
         ranked = retrieve(rows, embeddings, "publication:uff-v5.2.0 10.5281/zenodo.21911644", top_k=5)
         self.assertIn("publication:uff-v5.2.0", [row["canonical_id"] for row in ranked])
 
+    def test_zero_feature_query_is_rejected(self):
+        self._build_vectors()
+        rows = _read_records(self.vectors / "records.jsonl")
+        embeddings = (self.vectors / "embeddings.f16").read_bytes()
+        with self.assertRaisesRegex(VectorError, "no embedding features"):
+            retrieve(rows, embeddings, "   \t\n", top_k=5)
+
     def test_retrieval_closure_adds_public_provenance(self):
         self._build_vectors()
         rows = _read_records(self.vectors / "records.jsonl")
         closed = _context_closure(["publication:uff-v5.2.0"], rows)
         self.assertIn("publication:uff-v5.2.0", closed)
         self.assertIn("src:uff-v5.2.0-release", closed)
+
+    def test_rendered_context_carries_exact_source_identity(self):
+        manifest = self._build_vectors()
+        rows = _read_records(self.vectors / "records.jsonl")
+        closed = _context_closure(["publication:uff-v5.2.0"], rows)
+        text = render_retrieved_context(rows, closed, manifest["substrate"])
+        identity = manifest["substrate"]
+        self.assertIn(f"SUBSTRATE_VERSION={identity['version']}", text)
+        self.assertIn(f"SNAPSHOT_DATE={identity['snapshot_date']}", text)
+        self.assertIn(f"SOURCE_COMMIT={identity['source_commit']}", text)
+        self.assertIn(f"SUBSTRATE_SHA256={identity['substrate_sha256']}", text)
 
     def test_reference_retrieval_report_is_provenance_closed_and_compact(self):
         self._build_vectors()
