@@ -130,7 +130,18 @@ The formalization document is intentionally allowed to be deposited as a compani
 
 The metadata files in this repository were prepared **after** the immutable `v1.0.0` tag. Therefore, do not assume that archiving that old tag through an automated integration will ingest metadata that is not present inside the tag snapshot.
 
-For automated future release ingestion, merge this metadata/formalization change and cut a subsequent release (for example a metadata-only patch release) from a commit that actually contains:
+For automated future release ingestion, merge this metadata/formalization change and prepare a subsequent release (for example a metadata-only patch release) using the following order:
+
+1. choose the new release version and tag, for example `1.0.1` / `v1.0.1`;
+2. **before creating the tag or GitHub release**, update `.zenodo.json`, `CITATION.cff`, and `codemeta.json` so their version and release/tag identifiers describe that new release rather than `1.0.0` / `v1.0.0`;
+3. remove any stale `v1.0.0` exact-commit binding from metadata intended to describe the new release;
+4. commit the updated metadata and formalization;
+5. create the new tag and GitHub release **on that exact metadata commit**;
+6. after the release commit SHA is known, record that exact SHA in the Zenodo record's related identifiers and in subsequent citation/archive metadata.
+
+A metadata file cannot deterministically embed the SHA of the same Git commit that contains that file: changing the embedded SHA changes the commit SHA. Therefore the safe pre-tag requirement is **no stale commit identity**, followed by an external/post-publication binding to the exact tagged commit once it exists.
+
+At minimum, the commit used for the automated release must actually contain:
 
 ```text
 .zenodo.json
@@ -139,7 +150,7 @@ codemeta.json
 FORMALIZATION.md
 ```
 
-Do not retag `v1.0.0`.
+Never cut a follow-up release while those files still advertise `1.0.0`, `v1.0.0`, or the v1.0.0 release commit. Do not retag `v1.0.0`.
 
 ## After Zenodo assigns a DOI
 
