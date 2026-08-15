@@ -1,129 +1,166 @@
 from __future__ import annotations
 
-import hashlib
-import json
-import re
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
-from jsonschema import Draft202012Validator, FormatChecker
+import release_core_base as base
+from adapter_core import validate_adapter_bundle
+from probe_core import validate_probe_bundle
+from projection_core import validate_projection_bundle
+from toolless_core import validate_toolless_bundle
+from vector_core import validate_vector_bundle
 
-from substrate_integrity import build_fingerprint, canonical_json_bytes
+ReleaseError = base.ReleaseError
+RELEASE_SPEC_VERSION = base.RELEASE_SPEC_VERSION
+SCHEMA_VERSION = base.SCHEMA_VERSION
+RELEASE_SCHEMA = base.RELEASE_SCHEMA
+POLICY_SCHEMA = base.POLICY_SCHEMA
+ARCHIVE_SCHEMA = base.ARCHIVE_SCHEMA
+EXPECTED_RELEASE_FILES = base.EXPECTED_RELEASE_FILES
+HEX40_RE = base.HEX40_RE
+HEX64_RE = base.HEX64_RE
+parse_semver = base.parse_semver
+validate_release_version = base.validate_release_version
+release_fingerprint = base.release_fingerprint
+_read_json = base._read_json
+_schema_validate = base._schema_validate
+_sha256 = base._sha256
+_git_output = base._git_output
+_safe_output = base._safe_output
+_component = base._component
+_probe_snapshot = base._probe_snapshot
+_file_row = base._file_row
+_write_bundle = base._write_bundle
+_expected_checksums = base._expected_checksums
+canonical_json_bytes = base.canonical_json_bytes
+build_fingerprint = base.build_fingerprint
 
-RELEASE_SPEC_VERSION = "1.0.0"
-SCHEMA_VERSION = "1.0.0"
-RELEASE_SCHEMA = "schema/release-manifest.schema.json"
-POLICY_SCHEMA = "schema/release-policy.schema.json"
-ARCHIVE_SCHEMA = "schema/archive-metadata.schema.json"
-EXPECTED_RELEASE_FILES = {
-    "archive-metadata.json",
-    "build-plan.json",
-    "manifest.json",
-    "probe-snapshot.json",
-    "SHA256SUMS.txt",
+REPRODUCIBILITY_SOURCE_DIRS = {
+    ".github",
+    "adapters",
+    "ai",
+    "chronology",
+    "context",
+    "identity",
+    "projects",
+    "public_export",
+    "publications",
+    "relationships",
+    "release",
+    "schema",
+    "sources",
+    "terminology",
+    "tests",
+    "tools",
 }
-SEMVER_RE = re.compile(
-    r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
-    r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
-    r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
-)
-HEX40_RE = re.compile(r"^[0-9a-f]{40}$")
-HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
+REPRODUCIBILITY_SOURCE_FILES = {"requirements-validation.txt"}
 
 
-class ReleaseError(RuntimeError):
-    pass
-
-
-def _sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ReleaseError(f"cannot load JSON {path}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise ReleaseError(f"{path} must contain a JSON object")
-    return value
-
-
-def _schema_validate(root: Path, schema_path: str, value: dict[str, Any], label: str) -> None:
-    schema = _read_json(root / schema_path)
-    errors = sorted(
-        Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(value),
-        key=lambda err: list(err.absolute_path),
-    )
-    if errors:
-        first = errors[0]
-        location = "/".join(str(part) for part in first.absolute_path) or "<root>"
-        raise ReleaseError(f"{label} schema validation failed at {location}: {first.message}")
-
-
-def parse_semver(version: str) -> dict[str, Any]:
-    match = SEMVER_RE.fullmatch(version)
-    if not match:
-        raise ReleaseError(f"invalid SemVer 2.0.0 version: {version}")
-    prerelease = match.group(4)
-    if prerelease:
-        for item in prerelease.split("."):
-            if item.isdigit() and len(item) > 1 and item.startswith("0"):
-                raise ReleaseError(f"numeric prerelease identifiers may not contain leading zeroes: {version}")
-    return {
-        "major": int(match.group(1)),
-        "minor": int(match.group(2)),
-        "patch": int(match.group(3)),
-        "prerelease": prerelease,
-        "build": match.group(5),
-    }
-
-
-def validate_release_version(version: str, channel: str) -> dict[str, Any]:
-    parsed = parse_semver(version)
-    if channel not in {"stable", "candidate", "ci"}:
-        raise ReleaseError(f"unsupported release channel: {channel}")
-    prerelease = parsed["prerelease"]
-    if channel == "stable" and prerelease is not None:
-        raise ReleaseError("stable releases may not use a prerelease identifier")
-    if channel in {"candidate", "ci"} and prerelease is None:
-        raise ReleaseError(f"{channel} releases require a prerelease identifier")
-    if channel == "ci" and not str(prerelease).startswith("ci."):
-        raise ReleaseError("ci release versions must use a ci.* prerelease identifier")
-    return parsed
-
-
-def snapshot_identity(snapshot_date: str, substrate_sha256: str) -> str:
+def snapshot_identity(snapshot_date: str, source_commit: str, substrate_sha256: str) -> str:
+    if not HEX40_RE.fullmatch(source_commit):
+        raise ReleaseError("snapshot source_commit must be a 40-character lowercase Git SHA")
     if not HEX64_RE.fullmatch(substrate_sha256):
         raise ReleaseError("canonical substrate fingerprint must be lowercase SHA-256")
-    return f"snapshot-{snapshot_date}@sha256:{substrate_sha256}"
+    return f"snapshot-{snapshot_date}@git:{source_commit}@sha256:{substrate_sha256}"
 
 
-def release_fingerprint(value: dict[str, Any]) -> str:
-    material = dict(value)
-    material.pop("release_sha256", None)
-    return _sha256(canonical_json_bytes(material))
+def _is_reproducibility_source(path: str) -> bool:
+    normalized = path.replace("\\", "/").lstrip("./")
+    if normalized in REPRODUCIBILITY_SOURCE_FILES:
+        return True
+    head = normalized.split("/", 1)[0]
+    return head in REPRODUCIBILITY_SOURCE_DIRS
 
 
-def build_reproducible_plan(version: str, channel: str) -> dict[str, Any]:
+def verify_source_revision(root: Path, source_commit: str) -> None:
+    if not HEX40_RE.fullmatch(source_commit):
+        raise ReleaseError("source_commit must be a 40-character lowercase Git SHA")
+    head = _git_output(root, "rev-parse", "HEAD^{commit}")
+    if head != source_commit:
+        raise ReleaseError(f"declared source_commit {source_commit} does not equal checked-out HEAD {head}")
+    dirty = _git_output(root, "status", "--porcelain", "--untracked-files=no")
+    if dirty:
+        raise ReleaseError("tracked source tree contains uncommitted changes")
+    untracked = _git_output(root, "ls-files", "--others", "--exclude-standard")
+    offending = sorted(path for path in untracked.splitlines() if path and _is_reproducibility_source(path))
+    if offending:
+        raise ReleaseError(f"untracked reproducibility source is not bound to source_commit: {offending[0]}")
+
+
+def _resolve_tag_commit(root: Path, tag: str) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{tag}^{{commit}}"],
+            cwd=root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError as exc:
+        raise ReleaseError(f"cannot resolve stable tag {tag}") from exc
+    if proc.returncode == 1:
+        return None
+    if proc.returncode != 0:
+        raise ReleaseError(f"cannot resolve stable tag {tag}")
+    target = proc.stdout.strip()
+    if not HEX40_RE.fullmatch(target):
+        raise ReleaseError(f"stable tag {tag} did not resolve to a commit")
+    return target
+
+
+def verify_stable_tag_binding(root: Path, version: str, channel: str, source_commit: str) -> None:
+    if channel != "stable":
+        return
+    tag = f"v{version}"
+    target = _resolve_tag_commit(root, tag)
+    if target is not None and target != source_commit:
+        raise ReleaseError(f"stable tag {tag} already points to {target}, not release source_commit {source_commit}")
+
+
+def _validate_publishability(channel: str, publishable: bool) -> None:
+    expected = channel == "stable"
+    if publishable is not expected:
+        raise ReleaseError(f"release publishability mismatch: channel={channel} requires publishable={str(expected).lower()}")
+
+
+def build_reproducible_plan(
+    version: str,
+    channel: str,
+    archive_status: str = "unassigned",
+    doi: str | None = None,
+) -> dict[str, Any]:
     validate_release_version(version, channel)
+    release_command = (
+        "python tools/build_release.py --source-commit $SOURCE_COMMIT --version $VERSION "
+        "--channel $CHANNEL --archive-status $ARCHIVE_STATUS"
+    )
+    variables: dict[str, Any] = {
+        "SOURCE_COMMIT": "exact checked-out Git commit",
+        "VERSION": version,
+        "CHANNEL": channel,
+        "ARCHIVE_STATUS": archive_status,
+        "DOI": doi,
+    }
+    if doi is not None:
+        release_command += " --doi $DOI"
+    release_command += " --output dist/release"
     return {
         "type": "qsol-substrate-release-build-plan",
         "schema_version": SCHEMA_VERSION,
         "release_spec_version": RELEASE_SPEC_VERSION,
         "version": version,
         "channel": channel,
-        "variables": {
-            "SOURCE_COMMIT": "exact checked-out Git commit",
-            "VERSION": version,
-            "CHANNEL": channel,
-        },
+        "variables": variables,
         "network_required": False,
+        "prerequisites": {
+            "python": "3.12+",
+            "validation_dependencies": "requirements-validation.txt dependencies must already be installed, or supplied from an offline wheelhouse before this plan begins",
+            "dependency_installation_is_part_of_plan": False,
+        },
         "commands": [
-            "python -m pip install --disable-pip-version-check -r requirements-validation.txt",
             "python -m unittest discover -s tests -v",
             "python tools/validate_substrate.py --json-report validation-report.json",
             "python tools/fingerprint_substrate.py --output substrate-fingerprint.json",
@@ -137,19 +174,25 @@ def build_reproducible_plan(version: str, channel: str) -> dict[str, Any]:
             "python tools/validate_projection_bundle.py --bundle dist/projections",
             "python tools/build_probes.py --source-commit $SOURCE_COMMIT --output dist/probes",
             "python tools/validate_probe_bundle.py --bundle dist/probes",
-            "python tools/build_release.py --source-commit $SOURCE_COMMIT --version $VERSION --channel $CHANNEL --output dist/release",
+            release_command,
             "python tools/validate_release.py --bundle dist/release",
         ],
     }
 
 
-def build_archive_metadata(version: str, source_commit: str, substrate_sha256: str) -> dict[str, Any]:
-    return {
+def build_archive_metadata(
+    version: str,
+    source_commit: str,
+    substrate_sha256: str,
+    status: str = "unassigned",
+    doi: str | None = None,
+) -> dict[str, Any]:
+    value = {
         "type": "qsol-substrate-archive-metadata",
         "schema_version": SCHEMA_VERSION,
         "provider": "Zenodo",
-        "status": "unassigned",
-        "doi": None,
+        "status": status,
+        "doi": doi,
         "resource_type": "Software",
         "title": "QSOL-SUBSTRATE",
         "version": version,
@@ -157,123 +200,84 @@ def build_archive_metadata(version: str, source_commit: str, substrate_sha256: s
         "source_commit": source_commit,
         "substrate_sha256": substrate_sha256,
         "notes": [
-            "Archival DOI assignment is optional and occurs after immutable release identity has been computed.",
-            "A DOI records an archive location; it does not redefine canonical substrate facts or fingerprints.",
+            "Archival DOI assignment is optional post-publication metadata bound by rebuilding this release metadata against the same exact canonical snapshot.",
+            "A DOI records an archive location; it does not redefine canonical substrate facts or the canonical substrate fingerprint.",
         ],
     }
+    return value
 
 
-def _git_output(root: Path, *args: str) -> str:
-    try:
-        proc = subprocess.run(
-            ["git", *args],
-            cwd=root,
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except (OSError, subprocess.CalledProcessError) as exc:
-        raise ReleaseError(f"git identity check failed: {' '.join(args)}") from exc
-    return proc.stdout.strip()
+def _validate_archive_binding(
+    root: Path,
+    archive: dict[str, Any],
+    version: str,
+    source_commit: str,
+    substrate_sha256: str,
+) -> None:
+    _schema_validate(root, ARCHIVE_SCHEMA, archive, "archive metadata")
+    if archive.get("version") != version:
+        raise ReleaseError("archive metadata version does not match release")
+    if archive.get("source_commit") != source_commit:
+        raise ReleaseError("archive metadata source_commit does not match release")
+    if archive.get("substrate_sha256") != substrate_sha256:
+        raise ReleaseError("archive metadata canonical fingerprint does not match release")
+    if archive.get("status") == "unassigned" and archive.get("doi") is not None:
+        raise ReleaseError("unassigned archive metadata may not carry a DOI")
 
 
-def verify_source_revision(root: Path, source_commit: str) -> None:
-    if not HEX40_RE.fullmatch(source_commit):
-        raise ReleaseError("source_commit must be a 40-character lowercase Git SHA")
-    head = _git_output(root, "rev-parse", "HEAD^{commit}")
-    if head != source_commit:
-        raise ReleaseError(f"declared source_commit {source_commit} does not equal checked-out HEAD {head}")
-    dirty = _git_output(root, "status", "--porcelain", "--untracked-files=no")
-    if dirty:
-        raise ReleaseError("tracked source tree contains uncommitted changes")
+def _finding_text(finding: Any) -> str:
+    code = getattr(finding, "code", "invalid")
+    path = getattr(finding, "path", "<bundle>")
+    message = getattr(finding, "message", str(finding))
+    return f"[{code}] {path}: {message}"
 
 
-def _safe_output(root: Path, output: Path) -> Path:
-    root = root.resolve()
-    if output.exists() and output.is_symlink():
-        raise ReleaseError("refusing symlinked release output")
-    resolved = output.resolve()
-    if resolved == root or resolved in root.parents:
-        raise ReleaseError("release output may not replace or contain repository root")
-    if root in resolved.parents and resolved != root / "dist" / "release":
-        raise ReleaseError("in-repository release output is restricted to dist/release")
-    if resolved.exists() and not resolved.is_dir():
-        raise ReleaseError("release output must be a directory")
-    return resolved
+def _run_component_validator(
+    label: str,
+    validator: Callable[[Path, Path], list[Any]],
+    root: Path,
+    bundle: Path,
+) -> None:
+    findings = validator(root, bundle)
+    if findings:
+        raise ReleaseError(f"{label} component validation failed: {_finding_text(findings[0])}")
 
 
-def _component(root: Path, rel_manifest: str, bundle_key: str, source_commit: str, substrate_sha256: str) -> tuple[dict[str, Any], dict[str, Any]]:
-    path = root / rel_manifest
-    data = _read_json(path)
-    substrate = data.get("substrate")
-    if not isinstance(substrate, dict):
-        raise ReleaseError(f"{rel_manifest} lacks substrate identity")
-    if substrate.get("source_commit") != source_commit:
-        raise ReleaseError(f"{rel_manifest} source_commit does not match release")
-    if substrate.get("substrate_sha256") != substrate_sha256:
-        raise ReleaseError(f"{rel_manifest} canonical fingerprint does not match release")
-    bundle_sha = data.get(bundle_key)
-    if not isinstance(bundle_sha, str) or not HEX64_RE.fullmatch(bundle_sha):
-        raise ReleaseError(f"{rel_manifest} lacks valid {bundle_key}")
-    entry = {
-        "manifest": rel_manifest,
-        "manifest_sha256": _sha256(path.read_bytes()),
-        "bundle_sha256": bundle_sha,
-    }
-    return data, entry
+def _validate_component_bundles(root: Path) -> None:
+    checks: tuple[tuple[str, Callable[[Path, Path], list[Any]], str], ...] = (
+        ("adapters", validate_adapter_bundle, "dist/adapters"),
+        ("toolless", validate_toolless_bundle, "dist/toolless"),
+        ("vectors", validate_vector_bundle, "dist/vectors"),
+        ("projections", validate_projection_bundle, "dist/projections"),
+        ("probes", validate_probe_bundle, "dist/probes"),
+    )
+    for label, validator, rel_path in checks:
+        _run_component_validator(label, validator, root, root / rel_path)
 
 
-def _probe_snapshot(probe_manifest: dict[str, Any], source_commit: str, substrate_sha256: str) -> dict[str, Any]:
-    return {
-        "type": "qsol-substrate-probe-snapshot",
-        "schema_version": SCHEMA_VERSION,
-        "probe_spec_version": probe_manifest.get("probe_spec_version"),
-        "immutable": True,
-        "source_commit": source_commit,
-        "substrate_sha256": substrate_sha256,
-        "probe_count": probe_manifest.get("probe_count"),
-        "bundle_sha256": probe_manifest.get("bundle_sha256"),
-        "files": probe_manifest.get("files"),
-    }
-
-
-def _file_row(path: str, data: bytes) -> dict[str, Any]:
-    return {"path": path, "sha256": _sha256(data), "bytes": len(data)}
-
-
-def _write_bundle(output: Path, generated: dict[str, bytes], manifest: dict[str, Any]) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temp = Path(tempfile.mkdtemp(prefix=".qsol-release-", dir=output.parent))
-    try:
-        for name, data in generated.items():
-            (temp / name).write_bytes(data)
-        manifest_bytes = canonical_json_bytes(manifest)
-        (temp / "manifest.json").write_bytes(manifest_bytes)
-        checksum_rows = []
-        for name in sorted(set(generated) | {"manifest.json"}):
-            checksum_rows.append(f"{_sha256((temp / name).read_bytes())}  {name}\n")
-        (temp / "SHA256SUMS.txt").write_text("".join(checksum_rows), encoding="utf-8")
-        if output.exists():
-            shutil.rmtree(output)
-        temp.replace(output)
-    except Exception:
-        if temp.exists():
-            shutil.rmtree(temp)
-        raise
-
-
-def build_release_bundle(root: Path, output: Path, source_commit: str, version: str, channel: str) -> dict[str, Any]:
+def build_release_bundle(
+    root: Path,
+    output: Path,
+    source_commit: str,
+    version: str,
+    channel: str,
+    archive_status: str = "unassigned",
+    doi: str | None = None,
+) -> dict[str, Any]:
     root = root.resolve()
     output = _safe_output(root, output)
     validate_release_version(version, channel)
     verify_source_revision(root, source_commit)
+    verify_stable_tag_binding(root, version, channel, source_commit)
 
     policy = _read_json(root / "release/policy.json")
     _schema_validate(root, POLICY_SCHEMA, policy, "release policy")
     canonical = build_fingerprint(root)
     substrate_sha = canonical["substrate_sha256"]
     snapshot_date = canonical["snapshot_date"]
+
+    # Never seal a component merely because its manifest still looks plausible.
+    _validate_component_bundles(root)
 
     adapters, adapter_entry = _component(root, "dist/adapters/manifest.json", "adapter_bundle_sha256", source_commit, substrate_sha)
     toolless, toolless_entry = _component(root, "dist/toolless/manifest.json", "bundle_sha256", source_commit, substrate_sha)
@@ -305,10 +309,10 @@ def build_release_bundle(root: Path, output: Path, source_commit: str, version: 
         }
     )
 
-    build_plan = build_reproducible_plan(version, channel)
+    archive = build_archive_metadata(version, source_commit, substrate_sha, archive_status, doi)
+    _validate_archive_binding(root, archive, version, source_commit, substrate_sha)
+    build_plan = build_reproducible_plan(version, channel, archive_status, doi)
     build_plan_bytes = canonical_json_bytes(build_plan)
-    archive = build_archive_metadata(version, source_commit, substrate_sha)
-    _schema_validate(root, ARCHIVE_SCHEMA, archive, "archive metadata")
     archive_bytes = canonical_json_bytes(archive)
 
     generated = {
@@ -317,6 +321,7 @@ def build_release_bundle(root: Path, output: Path, source_commit: str, version: 
         "probe-snapshot.json": probe_snapshot_bytes,
     }
     file_rows = [_file_row(name, data) for name, data in sorted(generated.items())]
+    publishable = channel == "stable"
 
     manifest: dict[str, Any] = {
         "type": "qsol-substrate-release-manifest",
@@ -327,13 +332,13 @@ def build_release_bundle(root: Path, output: Path, source_commit: str, version: 
             "version": version,
             "channel": channel,
             "tag": f"v{version}",
-            "publishable": channel == "stable",
+            "publishable": publishable,
         },
         "substrate": {
             "protocol": "QSOL-SUBSTRATE",
             "schema_version": SCHEMA_VERSION,
             "snapshot_date": snapshot_date,
-            "snapshot_id": snapshot_identity(snapshot_date, substrate_sha),
+            "snapshot_id": snapshot_identity(snapshot_date, source_commit, substrate_sha),
             "source_commit": source_commit,
             "substrate_sha256": substrate_sha,
         },
@@ -349,37 +354,36 @@ def build_release_bundle(root: Path, output: Path, source_commit: str, version: 
             "build_plan_sha256": _sha256(build_plan_bytes),
             "source_commit_verified": True,
             "tracked_source_clean": True,
+            "untracked_reproducibility_sources_absent": True,
             "network_required": False,
         },
         "archive": {
             "metadata_file": "archive-metadata.json",
             "metadata_sha256": _sha256(archive_bytes),
             "doi_required": False,
-            "doi": None,
-            "provider": "Zenodo",
-            "status": "unassigned",
+            "doi": archive["doi"],
+            "provider": archive["provider"],
+            "status": archive["status"],
         },
         "files": file_rows,
     }
+    _validate_publishability(channel, publishable)
     manifest["release_sha256"] = release_fingerprint(manifest)
     _schema_validate(root, RELEASE_SCHEMA, manifest, "release manifest")
     _write_bundle(output, generated, manifest)
     return manifest
 
 
-def _expected_checksums(bundle: Path) -> str:
-    rows = []
-    for name in sorted(EXPECTED_RELEASE_FILES - {"SHA256SUMS.txt"}):
-        rows.append(f"{_sha256((bundle / name).read_bytes())}  {name}\n")
-    return "".join(rows)
-
-
 def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: bool = True) -> list[str]:
     root = root.resolve()
-    bundle = bundle.resolve()
+    candidate = bundle if bundle.is_absolute() else root / bundle
     findings: list[str] = []
     try:
-        if not bundle.is_dir() or bundle.is_symlink():
+        # Check the user-supplied path before resolve(), otherwise a symlink is erased by resolution.
+        if candidate.is_symlink():
+            raise ReleaseError("release bundle must be a real directory, not a symlink")
+        bundle = candidate.resolve()
+        if not bundle.is_dir():
             raise ReleaseError("release bundle must be a real directory")
         actual = {path.name for path in bundle.iterdir()}
         if actual != EXPECTED_RELEASE_FILES:
@@ -389,14 +393,25 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
 
         manifest = _read_json(bundle / "manifest.json")
         _schema_validate(root, RELEASE_SCHEMA, manifest, "release manifest")
-        validate_release_version(manifest["release"]["version"], manifest["release"]["channel"])
+        version = manifest["release"]["version"]
+        channel = manifest["release"]["channel"]
+        validate_release_version(version, channel)
+        if manifest["release"]["tag"] != f"v{version}":
+            raise ReleaseError("release tag does not match version")
+        _validate_publishability(channel, manifest["release"]["publishable"])
         verify_source_revision(root, manifest["substrate"]["source_commit"])
+        verify_stable_tag_binding(root, version, channel, manifest["substrate"]["source_commit"])
 
         canonical = build_fingerprint(root)
         if manifest["substrate"]["substrate_sha256"] != canonical["substrate_sha256"]:
             raise ReleaseError("release canonical fingerprint does not match current substrate")
-        if manifest["substrate"]["snapshot_id"] != snapshot_identity(canonical["snapshot_date"], canonical["substrate_sha256"]):
-            raise ReleaseError("release snapshot identity does not match canonical substrate")
+        expected_snapshot = snapshot_identity(
+            canonical["snapshot_date"],
+            manifest["substrate"]["source_commit"],
+            canonical["substrate_sha256"],
+        )
+        if manifest["substrate"]["snapshot_id"] != expected_snapshot:
+            raise ReleaseError("release snapshot identity does not match canonical substrate and source commit")
         if manifest["release_sha256"] != release_fingerprint(manifest):
             raise ReleaseError("release fingerprint mismatch")
 
@@ -408,11 +423,28 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
             raise ReleaseError("SHA256SUMS.txt does not match release files")
 
         archive = _read_json(bundle / "archive-metadata.json")
-        _schema_validate(root, ARCHIVE_SCHEMA, archive, "archive metadata")
+        _validate_archive_binding(
+            root,
+            archive,
+            version,
+            manifest["substrate"]["source_commit"],
+            manifest["substrate"]["substrate_sha256"],
+        )
+        archive_bytes = (bundle / "archive-metadata.json").read_bytes()
+        archive_manifest = manifest["archive"]
+        if archive_manifest["metadata_sha256"] != _sha256(archive_bytes):
+            raise ReleaseError("archive metadata hash mismatch")
+        for key in ("provider", "status", "doi"):
+            if archive_manifest[key] != archive[key]:
+                raise ReleaseError(f"archive manifest {key} does not match archive metadata")
+
         plan = _read_json(bundle / "build-plan.json")
-        expected_plan = build_reproducible_plan(manifest["release"]["version"], manifest["release"]["channel"])
+        expected_plan = build_reproducible_plan(version, channel, archive["status"], archive["doi"])
         if plan != expected_plan:
             raise ReleaseError("reproducible build plan mismatch")
+
+        # Component validation is a core trust check and remains active even with --no-rebuild.
+        _validate_component_bundles(root)
 
         probes = _read_json(root / "dist/probes/manifest.json")
         expected_probe_snapshot = _probe_snapshot(
@@ -445,8 +477,10 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
                     root,
                     rebuilt_dir,
                     manifest["substrate"]["source_commit"],
-                    manifest["release"]["version"],
-                    manifest["release"]["channel"],
+                    version,
+                    channel,
+                    archive["status"],
+                    archive["doi"],
                 )
                 for name in EXPECTED_RELEASE_FILES:
                     if (rebuilt_dir / name).read_bytes() != (bundle / name).read_bytes():

@@ -30,10 +30,7 @@
         "ci": {
           "allOf": [
             {"$ref": "#/$defs/channel"},
-            {
-              "required": ["prerelease_prefix"],
-              "properties": {"prerelease_prefix": {"const": "ci."}}
-            }
+            {"required": ["prerelease_prefix"], "properties": {"prerelease_prefix": {"const": "ci."}}}
           ]
         }
       },
@@ -53,11 +50,14 @@
     },
     "immutability": {
       "type": "object",
-      "required": ["probe_snapshot_is_immutable_within_release", "source_commit_must_equal_checked_out_head", "tracked_source_tree_must_be_clean", "release_manifest_is_canonical_json", "release_checksums_exclude_the_checksum_file_itself"],
+      "required": ["probe_snapshot_is_immutable_within_release", "source_commit_must_equal_checked_out_head", "tracked_source_tree_must_be_clean", "untracked_reproducibility_sources_forbidden", "component_bundles_must_validate_before_sealing", "stable_tag_collision_must_fail_closed", "release_manifest_is_canonical_json", "release_checksums_exclude_the_checksum_file_itself"],
       "properties": {
         "probe_snapshot_is_immutable_within_release": {"const": true},
         "source_commit_must_equal_checked_out_head": {"const": true},
         "tracked_source_tree_must_be_clean": {"const": true},
+        "untracked_reproducibility_sources_forbidden": {"const": true},
+        "component_bundles_must_validate_before_sealing": {"const": true},
+        "stable_tag_collision_must_fail_closed": {"const": true},
         "release_manifest_is_canonical_json": {"const": true},
         "release_checksums_exclude_the_checksum_file_itself": {"const": true}
       },
@@ -65,12 +65,13 @@
     },
     "archive": {
       "type": "object",
-      "required": ["doi_optional", "default_provider", "doi_assignment_is_post_publication_metadata", "doi_assignment_changes_canonical_substrate", "recommended_resource_type", "license"],
+      "required": ["doi_optional", "default_provider", "doi_assignment_is_post_publication_metadata", "doi_assignment_changes_canonical_substrate", "assigned_metadata_must_rebuild_deterministically", "recommended_resource_type", "license"],
       "properties": {
         "doi_optional": {"const": true},
         "default_provider": {"const": "Zenodo"},
         "doi_assignment_is_post_publication_metadata": {"const": true},
         "doi_assignment_changes_canonical_substrate": {"const": false},
+        "assigned_metadata_must_rebuild_deterministically": {"const": true},
         "recommended_resource_type": {"const": "Software"},
         "license": {"const": "Apache-2.0"}
       },
