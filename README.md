@@ -27,8 +27,9 @@ Read:
 8. [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 9. [`docs/TOOLLESS.md`](docs/TOOLLESS.md)
 10. [`docs/VECTOR_AND_LATENT.md`](docs/VECTOR_AND_LATENT.md)
-11. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
-12. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
+11. [`docs/SUBSTRATE_PROBE.md`](docs/SUBSTRATE_PROBE.md)
+12. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+13. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
 
 ### AI systems
 
@@ -106,16 +107,7 @@ python tools/build_adapters.py \
 python tools/validate_adapter_bundle.py --bundle dist/adapters
 ```
 
-Generated transports cover:
-
-- generic single-file context;
-- Grok chat bootstrap;
-- xAI Collections retrieval;
-- Grok Build project rules + skill;
-- Sider prompt + knowledge base;
-- Ollama Modelfile template + system context;
-- OpenAI-compatible Responses context;
-- Anthropic-compatible Messages context.
+Generated transports cover generic single-file context, Grok chat, xAI Collections, Grok Build, Sider, Ollama, OpenAI-compatible Responses context, and Anthropic-compatible Messages context.
 
 Every adapter records the substrate snapshot version, exact source commit, canonical substrate SHA-256, canonical projection SHA-256, adapter identity, per-file hashes, and aggregate adapter-bundle fingerprint.
 
@@ -189,7 +181,7 @@ dist/vectors/
 
 `qsol-record-chunk-v1` uses one canonical item per deterministic retrieval chunk. `qsol-hash-embed-v1` produces a dependency-free 256-dimensional float16 reference embedding so CI can reproduce the complete index without network access or a vendor embedding service.
 
-Canonical IDs, source paths, payload hashes, `source_refs`, epistemic state, visibility, and canonical payload objects remain outside embedding coordinates. Retrieval closes selected results over public provenance and relationship endpoints before context is delivered.
+Canonical IDs, source paths, payload hashes, `source_refs`, epistemic state, visibility, and canonical payload objects remain outside embedding coordinates. Retrieval validates the vector bundle before use and closes selected results over public provenance and relationship endpoints before context is delivered.
 
 The included reference report compares provenance-closed vector-selected context size with fixed MICRO/STANDARD/FULL budgets. It is a retrieval-size experiment, **not** a downstream answer-quality claim.
 
@@ -205,29 +197,67 @@ python tools/validate_projection_bundle.py --bundle dist/projections
 
 Phase 6 defines reproducible experiment recipes for soft prompts/prefix tuning, prompt-tuned virtual tokens, LoRA epistemic adapters, prefilled KV caches, reusable prefix states, and hybrid epistemic-prefix + factual-text delivery.
 
-Generic CI intentionally does **not** claim that model-specific weights were trained or that a universal KV cache exists. Real model-specific artifacts must bind to an exact compatibility identity covering model revision, architecture, tokenizer identity/hash, dimensions, attention layout, and KV-layout version. A mismatch invalidates the projection.
+Generic CI intentionally does **not** claim that model-specific weights were trained or that a universal KV cache exists. Real model-specific artifacts must bind to an exact compatibility identity covering model revision, architecture, tokenizer identity/hash, dimensions, attention layout, KV-layout version, tensor/KV precision, and quantization identity. A mismatch invalidates the projection.
 
 The deterministic epistemic-prefix artifact carries stable interpretation rules while mutable factual material remains textual or retrieval-selected. It also freezes the YEAH-NAH/1 textual/prefix/hybrid delivery matrix for Phase 7 model-behavior measurement.
 
 See [`docs/VECTOR_AND_LATENT.md`](docs/VECTOR_AND_LATENT.md).
 
+## Substrate Probe and YEAH-NAH/1
+
+Phase 7 makes the delivery experiments measurable. It defines a deterministic 48-case evaluation protocol rather than claiming that a successful build means a model improved:
+
+```text
+24 substrate epistemic/factual probes
+24 YEAH-NAH/1 pragmatic probes
+```
+
+Build and validate it with:
+
+```bash
+python tools/build_probes.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/probes
+
+python tools/validate_probe_bundle.py --bundle dist/probes
+```
+
+The protocol compares the same model under eight conditions:
+
+```text
+NAKED
+MICRO
+STANDARD
+FULL
+VECTOR
+LATENT-PREFIX
+HYBRID
+TOOL-ENABLED
+```
+
+Real model runners emit a strict `qsol-probe-model-run` envelope containing raw output plus structured epistemic/pragmatic fields. The deterministic scorer produces schema-validated report cards and the comparison engine computes uplift against the **same model's naked baseline** while refusing mismatched substrate/probe identities.
+
+Phase 7 measures factual accuracy, unsupported assertions, `UNKNOWN` precision/recall, alias resolution, provenance fidelity, contradiction handling, claim-boundary preservation, token efficiency, substrate uplift, and hallucination reduction.
+
+`YEAH-NAH/1` adds sarcasm precision/recall, literal-meaning error, banter misclassification, hostility false positives, high-severity understatement preservation, confidence calibration, and cultural-context uplift. Its core guards include:
+
+```text
+SARCASM = INFERRED UNLESS SPEAKER_CONFIRMED
+UNCERTAIN != SARCASTIC
+BANTER != HOSTILITY
+UNDERSTATEMENT != LOW_SEVERITY
+CONTEXT > TOKEN_POLARITY
+```
+
+CI runs a perfect-answer **scoring oracle only to validate the scorer**. The oracle is marked non-empirical and is mechanically forbidden from entering empirical comparison tables. A real model result requires an explicit model run.
+
+See [`docs/SUBSTRATE_PROBE.md`](docs/SUBSTRATE_PROBE.md).
+
 ## What this repository is for
 
-QSOL-SUBSTRATE is designed to support:
+QSOL-SUBSTRATE is designed to support public context onboarding, retrieval-augmented generation, reproducible model comparison, QSOL entity disambiguation, provenance-aware answers, hallucination reduction, disposable model transports, tool-less inference, deterministic vector retrieval, model-specific projection experiments, and deterministic model-behaviour evaluation.
 
-- public context onboarding for Grok, GPT-family models, Claude, Gemini, Qwen, DeepSeek, local open-weight models, and future systems;
-- retrieval-augmented generation and knowledge-base ingestion;
-- reproducible model comparison using a common context snapshot;
-- project and terminology disambiguation across the QSOL ecosystem;
-- provenance-aware answers about public QSOL research and software;
-- hallucination reduction where errors arise from missing or ambiguous QSOL-specific context;
-- model adapters that transform one canonical substrate into vendor-specific prompt or retrieval formats without redefining facts;
-- deterministic self-contained capsules for tool-less inference environments;
-- deterministic vector-selected context with provenance closure;
-- reproducible model-specific prefix/KV/LoRA experiment contracts with explicit invalidation rules;
-- deterministic, reviewable private-to-public context publication without making private context a consumer dependency.
-
-It is **not** intended to override a model's safety system, replace primary sources, expose private context, or guarantee factual correctness outside the information it actually contains.
+It is **not** intended to override a model's safety system, replace primary sources, expose private context, fabricate model benchmarks, or guarantee factual correctness outside the information it actually contains.
 
 ## Trust hierarchy
 
@@ -257,8 +287,9 @@ QSOL-SUBSTRATE/
 ├── docs/                  # prose for humans
 ├── ai/                    # normative AI contracts
 ├── public_export/         # Phase 2 publication policy/allow/deny contracts
-├── tools/                 # export, integrity, adapter, capsule, vector, and projection tooling
-├── tests/                 # safety/integrity/adapter/capsule/projection regressions
+├── probe/                 # deterministic Phase 7 probe source cases
+├── tools/                 # export, integrity, adapter, capsule, vector, projection, probe tooling
+├── tests/                 # adversarial/regression suites
 ├── sources/               # provenance/source registry
 ├── identity/              # public identity
 ├── context/               # public recurring context
@@ -271,7 +302,7 @@ QSOL-SUBSTRATE/
 └── adapters/              # target-specific adapter guidance
 ```
 
-Generated derived artifacts live under `dist/adapters/`, `dist/toolless/`, `dist/vectors/`, and `dist/projections/` during builds and CI. None is an additional canonical record store.
+Generated derived/evaluation artifacts live under `dist/adapters/`, `dist/toolless/`, `dist/vectors/`, `dist/projections/`, and `dist/probes/` during builds and CI. None is an additional canonical record store.
 
 ## Epistemic states
 
@@ -301,13 +332,16 @@ Model evaluations should record at least:
 ```text
 model
 model_version_or_identifier
+provider_or_runtime
 substrate_version
 substrate_commit
 substrate_sha256
+probe_bundle_sha256
+comparison_condition
 derived_artifact_kind
 adapter_identity_or_capsule_profile_or_projection_identity
 derived_artifact_sha256
-probe_set
+input_output_token_usage
 execution_date
 ```
 
@@ -319,9 +353,9 @@ QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOL
 
 ## Status
 
-**Phases 0–6 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, eight generated portable model adapters, deterministic MICRO/STANDARD/FULL tool-less context capsules, a deterministic provenance-aware vector retrieval projection, and reproducible model-specific latent/prefix experiment contracts with exact compatibility invalidation.
+**Phases 0–7 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, eight generated portable model adapters, deterministic MICRO/STANDARD/FULL tool-less context capsules, provenance-aware vector retrieval, reproducible model-specific latent/prefix experiment contracts, and a deterministic 48-case model-behaviour probe/report-card protocol including YEAH-NAH/1.
 
-Substrate Probe model-behavior comparisons and formal release discipline remain on the roadmap.
+Formal release discipline remains on the roadmap. Real empirical model report cards are generated by explicit Phase 7 model runs; generic CI validates the protocol and scorer but does not fabricate model benchmarks.
 
 ---
 
