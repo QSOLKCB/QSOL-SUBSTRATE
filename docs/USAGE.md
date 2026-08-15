@@ -32,6 +32,8 @@ Adapters may reformat delivery but cannot redefine canonical facts.
 
 ## RAG / vector retrieval use
 
+**Load `ai/bootstrap.json` first and follow its mandatory contract `load_order` before supplying any retrieved payload to a model.** Vector-selected context supplements the machine contract; it does not replace the epistemic, public-boundary, retrieval, or consumer contracts.
+
 Build the deterministic Phase 6 reference index:
 
 ```bash
@@ -49,6 +51,10 @@ python tools/retrieve_vector_context.py \
   --top-k 5
 ```
 
+The retrieval CLI validates the complete vector bundle against the canonical substrate before emitting any payload. A tampered, stale, malformed, symlinked, or otherwise non-reproducible bundle is refused rather than treated as canonical context. Empty or featureless queries are also refused instead of returning arbitrary tie-broken records.
+
+Every rendered context carries the substrate snapshot version, snapshot date, exact source commit, and canonical substrate SHA-256. If a context is saved inside this repository, `--output` is restricted to the dedicated `dist/retrieved/` subtree so retrieval output cannot overwrite vector, projection, adapter, or capsule artifacts.
+
 The reference index keeps canonical IDs, provenance, epistemic state, visibility, and payload objects outside embedding coordinates. Similarity score is retrieval rank, not factual confidence.
 
 If a learned embedding backend is introduced later, pin its exact model/revision/preprocessing identity. Do not silently swap embedding models while claiming the same derived artifact identity.
@@ -65,7 +71,7 @@ python tools/build_projections.py \
 
 The recipes cover soft prompts/prefix tuning, virtual tokens, LoRA, KV-cache prefill, reusable prefix states, and hybrid epistemic-prefix + factual-text conditions.
 
-Any actual model-specific artifact must have a compatibility identity matching `schema/model-projection-compatibility.schema.json`. A model revision, architecture, tokenizer, dimension, attention, or KV-layout change invalidates the artifact.
+Any actual model-specific artifact must have a compatibility identity matching `schema/model-projection-compatibility.schema.json`. A model revision, architecture, tokenizer, dimension, attention, KV-layout, tensor dtype, KV-cache dtype, or quantization change invalidates the artifact.
 
 Use:
 
