@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/export-manifest.schema.json",
+  "title": "QSOL-SUBSTRATE public export manifest",
+  "type": "object",
+  "required": ["type", "schema_version", "export_policy", "source_protocol", "canonicalization", "omission_semantics", "config_sha256", "applied_directives", "files", "bundle_sha256", "redaction_applied"],
+  "properties": {
+    "type": {"const": "qsol-substrate-export-manifest"},
+    "schema_version": {"const": "1.0.0"},
+    "export_policy": {"const": "explicit_allow_only"},
+    "source_protocol": {"const": "QSOL-CONTEXT"},
+    "canonicalization": {
+      "type": "object",
+      "required": ["json", "jsonl", "utf8", "trailing_newline"],
+      "properties": {
+        "json": {"const": "qsol-canonical-json-v1"},
+        "jsonl": {"const": "qsol-canonical-jsonl-v1"},
+        "utf8": {"const": true},
+        "trailing_newline": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "omission_semantics": {"const": "unavailable_not_false"},
+    "config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "applied_directives": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "redaction_applied": {"type": "boolean"}
+  },
+  "additionalProperties": false
+}
