@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -235,7 +234,7 @@ def load_probe_sources(root: Path) -> tuple[list[dict[str, Any]], list[dict[str,
                 raise ProbeError(f"{path}: expected must be an object")
             _validate_expected(expected, expected_suite, path)
 
-    if conditions.get("type") != "qsol-probe-condition-matrix":
+    if not isinstance(conditions, dict) or conditions.get("type") != "qsol-probe-condition-matrix":
         raise ProbeError("conditions.json: wrong type")
     items = conditions.get("conditions")
     if not isinstance(items, list):
@@ -256,6 +255,14 @@ def _category_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
     return dict(sorted(result.items()))
 
 
+def _bundle_hash(identity: dict[str, Any], file_rows: list[dict[str, Any]]) -> str:
+    material = canonical_json_bytes(identity) + b"\0"
+    material += "".join(
+        f"{row['path']}\0{row['sha256']}\0{row['bytes']}\n" for row in file_rows
+    ).encode("utf-8")
+    return _sha256(material)
+
+
 def build_probe_bundle(root: Path, output: Path, source_commit: str) -> dict[str, Any]:
     root, output = _safe_output(root, output)
     identity, _ = _identity(root, source_commit)
@@ -271,9 +278,6 @@ def build_probe_bundle(root: Path, output: Path, source_commit: str) -> dict[str
         {"path": path, "sha256": _sha256(data), "bytes": len(data)}
         for path, data in sorted(files.items())
     ]
-    material = "".join(
-        f"{row['path']}\0{row['sha256']}\0{row['bytes']}\n" for row in file_rows
-    ).encode("utf-8")
     all_rows = general + yeah_nah
     manifest = {
         "type": "qsol-substrate-probe-manifest",
@@ -285,13 +289,10 @@ def build_probe_bundle(root: Path, output: Path, source_commit: str) -> dict[str
         "scoring_oracle_is_empirical_result": False,
         "conditions": list(CONDITION_IDS),
         "probe_count": len(all_rows),
-        "suite_counts": {
-            "substrate": len(general),
-            "yeah-nah-1": len(yeah_nah),
-        },
+        "suite_counts": {"substrate": len(general), "yeah-nah-1": len(yeah_nah)},
         "category_counts": _category_counts(all_rows),
         "files": file_rows,
-        "bundle_sha256": _sha256(material),
+        "bundle_sha256": _bundle_hash(identity, file_rows),
     }
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -385,6 +386,17 @@ def validate_probe_bundle(root: Path, bundle: Path, schema_path: str = PROBE_MAN
     return findings
 
 
+def _require_valid_bundle(root: Path, bundle: Path) -> dict[str, Any]:
+    findings = validate_probe_bundle(root, bundle)
+    if findings:
+        first = findings[0]
+        raise ProbeError(f"probe bundle validation failed: {first.code}: {first.path}")
+    manifest = _load_json(bundle / "manifest.json")
+    if not isinstance(manifest, dict):
+        raise ProbeError("probe manifest must be an object")
+    return manifest
+
+
 def load_built_cases(bundle: Path) -> list[dict[str, Any]]:
     return _load_jsonl(bundle / "substrate-probe.jsonl") + _load_jsonl(bundle / "yeah-nah-1.jsonl")
 
@@ -407,8 +419,11 @@ def _response_defaults(probe_id: str) -> dict[str, Any]:
     }
 
 
-def build_scoring_oracle_run(bundle: Path, condition: str = "naked") -> dict[str, Any]:
-    manifest = _load_json(bundle / "manifest.json")
+def build_scoring_oracle_run(bundle: Path, condition: str = "naked", root: Path | None = None) -> dict[str, Any]:
+    if root is not None:
+        manifest = _require_valid_bundle(root, bundle)
+    else:
+        manifest = _load_json(bundle / "manifest.json")
     if condition not in CONDITION_IDS:
         raise ProbeError(f"unknown condition: {condition}")
     responses: list[dict[str, Any]] = []
@@ -437,19 +452,11 @@ def build_scoring_oracle_run(bundle: Path, condition: str = "naked") -> dict[str
         "schema_version": "1.0.0",
         "run_id": f"scoring-oracle:{condition}",
         "execution_kind": "scoring_oracle",
-        "model": {
-            "id": "qsol/scoring-oracle",
-            "revision": PROBE_SPEC_VERSION,
-            "provider": "QSOL-SUBSTRATE",
-        },
+        "model": {"id": "qsol/scoring-oracle", "revision": PROBE_SPEC_VERSION, "provider": "QSOL-SUBSTRATE"},
         "condition": condition,
         "probe_bundle_sha256": manifest["bundle_sha256"],
         "substrate": manifest["substrate"],
-        "usage": {
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "tokenizer": "not_applicable",
-        },
+        "usage": {"input_tokens": 0, "output_tokens": 0, "tokenizer": "not_applicable"},
         "responses": responses,
     }
 
@@ -499,7 +506,7 @@ def _validate_run_shape(root: Path, run: dict[str, Any]) -> None:
 
 
 def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
-    manifest = _load_json(bundle / "manifest.json")
+    manifest = _require_valid_bundle(root, bundle)
     if run.get("probe_bundle_sha256") != manifest.get("bundle_sha256"):
         raise ProbeError("model run is bound to a different probe bundle")
     if run.get("substrate") != manifest.get("substrate"):
@@ -525,12 +532,11 @@ def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, 
     scored: list[dict[str, Any]] = []
     for response in responses:
         case = case_by_id[response["probe_id"]]
-        correct = _case_correct(case, response)
         scored.append({
             "probe_id": case["id"],
             "suite": case["suite"],
             "category": case["category"],
-            "correct": correct,
+            "correct": _case_correct(case, response),
             "expected_epistemic_state": case["expected"]["epistemic_state"],
             "actual_epistemic_state": response["epistemic_state"],
             "confidence": response["confidence"],
@@ -540,21 +546,18 @@ def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, 
     correct_count = sum(1 for item in scored if item["correct"])
     substrate_scored = [item for item in scored if item["suite"] == "substrate"]
     yn_scored = [item for item in scored if item["suite"] == "yeah-nah-1"]
+    response_by_id = {response["probe_id"]: response for response in responses}
 
     factual_categories = {"exact_known_fact", "project_relationship", "publication_doi"}
     factual = [item for item in substrate_scored if item["category"] in factual_categories]
     aliases = [item for item in substrate_scored if item["category"] == "alias_resolution"]
     contradictions = [item for item in substrate_scored if item["category"] == "contradiction"]
-    boundaries = [
-        item for item in substrate_scored
-        if item["category"] in {"satire_boundary", "formalization_boundary"}
-    ]
+    boundaries = [item for item in substrate_scored if item["category"] in {"satire_boundary", "formalization_boundary"}]
     provenance_cases = [
         case_by_id[item["probe_id"]]
         for item in substrate_scored
         if "provenance_refs" in case_by_id[item["probe_id"]]["expected"]
     ]
-    response_by_id = {response["probe_id"]: response for response in responses}
     provenance_hits = sum(
         int(set(case["expected"]["provenance_refs"]).issubset(set(response_by_id[case["id"]]["provenance_refs"])))
         for case in provenance_cases
@@ -583,10 +586,7 @@ def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, 
     }
     sarcasm_tp = len(sarcasm_expected_yes & sarcasm_predicted_yes)
 
-    literal_traps = [
-        case for case in cases
-        if case["suite"] == "yeah-nah-1" and "literal-trap" in case.get("tags", [])
-    ]
+    literal_traps = [case for case in cases if case["suite"] == "yeah-nah-1" and "literal-trap" in case.get("tags", [])]
     literal_trap_errors = sum(
         int(response_by_id[case["id"]].get("intent_polarity") != case["expected"].get("intent_polarity"))
         for case in literal_traps
@@ -628,9 +628,7 @@ def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, 
     brier = round(sum(brier_values) / len(brier_values), 6) if brier_values else None
 
     input_tokens = int(run["usage"]["input_tokens"])
-    token_eff = None
-    if input_tokens > 0:
-        token_eff = round(correct_count / (input_tokens / 1000.0), 6)
+    token_eff = round(correct_count / (input_tokens / 1000.0), 6) if input_tokens > 0 else None
 
     metrics = {
         "overall_accuracy": _rate(correct_count, total),
@@ -657,8 +655,7 @@ def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, 
     }
 
     category_metrics: dict[str, float | None] = {}
-    categories = sorted({item["category"] for item in scored})
-    for category in categories:
+    for category in sorted({item["category"] for item in scored}):
         bucket = [item for item in scored if item["category"] == category]
         category_metrics[category] = _rate(sum(item["correct"] for item in bucket), len(bucket))
 
@@ -673,12 +670,7 @@ def score_probe_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, 
         "probe_bundle_sha256": run["probe_bundle_sha256"],
         "substrate": run["substrate"],
         "usage": run["usage"],
-        "counts": {
-            "total": total,
-            "correct": correct_count,
-            "substrate": len(substrate_scored),
-            "yeah_nah_1": len(yn_scored),
-        },
+        "counts": {"total": total, "correct": correct_count, "substrate": len(substrate_scored), "yeah_nah_1": len(yn_scored)},
         "metrics": metrics,
         "yeah_nah_1": yn_metrics,
         "category_accuracy": category_metrics,
@@ -695,8 +687,7 @@ def compare_probe_reports(root: Path, reports: list[dict[str, Any]]) -> dict[str
     if not reports:
         raise ProbeError("at least one report is required")
     for report in reports:
-        errors = _schema_errors(root, PROBE_REPORT_SCHEMA, report)
-        if errors:
+        if _schema_errors(root, PROBE_REPORT_SCHEMA, report):
             raise ProbeError("invalid report supplied for comparison")
         if report.get("execution_kind") == "scoring_oracle":
             raise ProbeError("scoring-oracle reports cannot be used as empirical comparisons")
@@ -761,7 +752,7 @@ def compare_probe_reports(root: Path, reports: list[dict[str, Any]]) -> dict[str
 def report_markdown(report: dict[str, Any]) -> str:
     m = report["metrics"]
     y = report["yeah_nah_1"]
-    lines = [
+    return "\n".join([
         f"# QSOL-SUBSTRATE Probe Report — {report['model']['id']} / {report['condition']}",
         "",
         f"- Run: `{report['run_id']}`",
@@ -781,8 +772,7 @@ def report_markdown(report: dict[str, Any]) -> str:
         "",
         "> A scoring-oracle report validates the scorer. It is not an empirical model benchmark.",
         "",
-    ]
-    return "\n".join(lines)
+    ])
 
 
 def comparison_markdown(comparison: dict[str, Any]) -> str:
