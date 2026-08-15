@@ -148,6 +148,10 @@ execution_date
 
 This makes it possible to distinguish model changes from context changes.
 
+## Maintainer
+
+QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOLKCB organization. This statement is intentionally part of the public first-party documentation so relationship records that identify the maintainer can cite repository evidence rather than relying on inference.
+
 ## Status
 
 **Phase 1 — Canonical public substrate is implemented.** The repository now contains public identity/context, canonical terminology and aliases, a selective active-public project registry, a verified DOI/publication registry, a project/research relationship graph, and a materially relevant public chronology.
