@@ -2,12 +2,21 @@
 
 All notable changes to QSOL-SUBSTRATE should be recorded here.
 
-The project intends to use semantic versioning once formal releases begin.
+Release versioning follows the normative SemVer 2.0.0 policy in `release/policy.json`; CI prerelease identities are not public release claims.
 
 ## Unreleased
 
 ### Added
 
+- Phase 8 machine-readable SemVer/channel policy at `release/policy.json`, separating stable, candidate, and non-publishable CI identities.
+- Phase 8 deterministic release compiler and fail-closed validator at `tools/build_release.py`, `tools/release_core.py`, and `tools/validate_release.py`.
+- Strict release-policy, release-manifest, immutable probe-snapshot, and archival-metadata JSON Schemas.
+- Canonical snapshot identity binding snapshot date, exact Git source commit, and canonical substrate SHA-256 independently of the human release version.
+- Release bill of materials binding adapter, tool-less profile, vector-index/embedding, projection-contract, and immutable Phase 7 probe fingerprints.
+- Deterministic `build-plan.json`, `probe-snapshot.json`, `archive-metadata.json`, release manifest, aggregate release SHA-256, and `SHA256SUMS.txt` output under generated `dist/release/`.
+- Optional Zenodo-oriented archival DOI metadata workflow that explicitly treats DOI assignment as archive metadata rather than canonical fact authority.
+- Phase 8 CI integration that builds and byte-for-byte revalidates a deliberately non-publishable `0.8.0-ci.0` release candidate.
+- Phase 8 release regression tests and human release-discipline documentation.
 - Human-facing repository README.
 - Human documentation for purpose, architecture, usage, privacy/export boundaries, provenance, and model adapters.
 - `AGENTS.md` repository instructions for coding and AI agents.
@@ -116,7 +125,7 @@ The project intends to use semantic versioning once formal releases begin.
 - The substrate fingerprint covers canonical public payload semantics, not documentation, tests, tooling, or evaluation artifacts.
 - Phase 4 adapters are generated projections, never canonical fact stores.
 - Every Phase 4 knowledge-bearing adapter embeds one byte-identical canonical projection body and records its `projection_sha256`.
-- Until formal release SemVer exists, derived-artifact provenance uses `snapshot-YYYY-MM-DD` plus exact source commit and canonical substrate SHA-256.
+- Until a stable public release is cut, derived-artifact provenance continues to carry snapshot date, exact source commit, and canonical substrate SHA-256 in addition to any CI/candidate release label.
 - Runtime model IDs, API keys, collection IDs, and local model choices are transport configuration and are not canonical substrate facts.
 - Adapter output may change formatting and delivery but may not enrich, reinterpret, promote, or otherwise redefine canonical substrate facts.
 - Phase 5 capsules are generated frozen public context images, not new canonical truth stores.
@@ -146,3 +155,10 @@ The project intends to use semantic versioning once formal releases begin.
 - A scoring oracle validates scoring plumbing only and is not empirical model evidence; comparison tooling rejects it mechanically.
 - Empirical comparison requires identical probe-bundle and substrate identities, and uplift is measured against the same model's naked baseline.
 - A textual copy of an epistemic prefix is not evidence that a real latent/KV/LoRA condition was executed; model-specific Phase 6 compatibility evidence remains required.
+- Phase 8 release version labels do not replace canonical snapshot identity; the exact source commit and canonical substrate SHA-256 remain independently verifiable.
+- Release manifests are chain-of-custody records over canonical and derived identities, not new canonical fact stores.
+- Tool-less, vector, projection, adapter, and probe fingerprints remain distinct inside a release instead of being collapsed into one ambiguous checksum.
+- Generic CI may validate projection compatibility contracts but may not fabricate model-specific latent/KV binaries or claim they were executed.
+- The immutable Phase 7 probe snapshot is bound into release identity so empirical results cannot silently drift to a different exam paper.
+- CI release candidates are explicitly non-publishable and may not be represented as stable releases.
+- Archival DOI assignment is optional post-publication metadata and does not redefine canonical substrate facts or fingerprints.

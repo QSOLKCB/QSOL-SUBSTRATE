@@ -1,0 +1,9 @@
+# Python runtime/cache artifacts are not reproducibility source inputs.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local test/tool caches.
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
