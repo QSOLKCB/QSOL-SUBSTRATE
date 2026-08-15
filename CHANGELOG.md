@@ -51,6 +51,20 @@ The project intends to use semantic versioning once formal releases begin.
 - OpenAI Responses-style and Anthropic Messages-style request templates with runtime model/task placeholders.
 - Phase 4 adapter regression tests and GitHub Actions build/validation artifact upload.
 - Human documentation for adapter provenance, generation, transport boundaries, and validation.
+- Phase 5 deterministic tool-less capsule compiler at `tools/build_toolless.py`.
+- Phase 5 fail-closed capsule validator at `tools/validate_toolless_capsule.py`.
+- `MICRO`, `STANDARD`, and `FULL` self-contained public substrate profiles under generated `dist/toolless/` output.
+- Model-independent `qsol-portable-token-v1` budgeting contract with deterministic NFKC/UTF-8 accounting.
+- Priority-aware whole-record selection with source-reference, relationship-endpoint, and canonical-ID dependency closure.
+- Tool-less cold-boot rules declaring no browsing/retrieval/filesystem/repository/tool access and a frozen snapshot freshness ceiling.
+- Strategic repeated epistemic guards for the `MICRO` small-model profile.
+- Project-tag-derived inline claim-boundary guards for satire, formalization/formal assurance, and archived AI-observation material.
+- Strict JSON Schema for generated tool-less manifests with per-profile hashes, token counts, inclusion/omission counts, and aggregate bundle SHA-256.
+- Canonical-object equality validation so re-hashed transformed facts still fail closed.
+- Phase 5 regression tests and GitHub Actions build/validation artifact upload.
+- Human documentation for tool-less profile semantics, token budgeting, serialization, provenance closure, claim boundaries, and reproducible identity.
+- Phase 5 hardening that re-renders every expected capsule byte from canonical state, recomputes compact-profile selection and composition metadata, rejects symlinked/extra artifact files, and binds frozen identity to the canonical manifest.
+- `YEAH-NAH/1` Australian pragmatic-humour probe added to the future Substrate Probe roadmap, with sarcasm, deadpan, understatement, banter, hostility, and uncertainty-calibration targets.
 
 ### Design decisions
 
@@ -81,3 +95,15 @@ The project intends to use semantic versioning once formal releases begin.
 - Until formal release SemVer exists, adapter provenance uses `snapshot-YYYY-MM-DD` plus exact source commit and canonical substrate SHA-256.
 - Runtime model IDs, API keys, collection IDs, and local model choices are transport configuration and are not canonical substrate facts.
 - Adapter output may change formatting and delivery but may not enrich, reinterpret, promote, or otherwise redefine canonical substrate facts.
+- Phase 5 capsules are generated frozen public context images, not new canonical truth stores.
+- A tool-less capsule may omit records only at whole-record boundaries; omission remains unavailable, not false.
+- Included records bring their public provenance and relationship dependencies with them rather than leaving dangling references to save context.
+- `qsol-portable-token-v1` is a deterministic build budget and makes no claim of equality with any vendor/model tokenizer.
+- The `FULL` profile must contain every canonical payload item represented by the compiler or the build fails closed.
+- Tool-less currentness is bounded by the embedded snapshot date; without directly supplied newer evidence, unresolved post-snapshot state remains `UNKNOWN`.
+- Claim-boundary lines are epistemic guards derived from explicit canonical project tags and are validated independently; they are not additional project facts.
+- A Phase 5 capsule is valid only when its complete bytes equal the deterministic renderer output for the declared canonical substrate and source commit; recognized-record parsing alone is insufficient.
+- In-repository capsule generation is restricted to `dist/toolless`; generated-artifact tooling may never replace canonical source, tooling, or contract directories.
+- Capsule manifests are recomputed metadata, not trusted claims: profile selection, kind counts, identity, hashes, byte counts, token counts, and bundle membership must all resolve from canonical state.
+- CI-derived artifact identity is stamped from the exact checked-out commit rather than from a different PR ref.
+- Pragmatic humour classification is interpretive evidence: `SARCASM = INFERRED UNLESS SPEAKER_CONFIRMED`, and `UNCERTAIN != SARCASTIC`.
