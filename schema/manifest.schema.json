@@ -3,7 +3,7 @@
   "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/manifest.schema.json",
   "title": "QSOL-SUBSTRATE machine manifest",
   "type": "object",
-  "required": ["type", "protocol", "schema_version", "status", "snapshot_date", "visibility", "human_entrypoint", "machine_entrypoint", "normative_machine_files", "canonical_payload_files", "export_contract_files", "export_schemas", "machine_contract_schemas", "export_tool", "export_documentation", "validation", "validation_schemas", "schema", "adapter_roots", "license", "canonicality"],
+  "required": ["type", "protocol", "schema_version", "status", "snapshot_date", "visibility", "human_entrypoint", "machine_entrypoint", "normative_machine_files", "canonical_payload_files", "export_contract_files", "export_schemas", "machine_contract_schemas", "export_tool", "export_documentation", "validation", "validation_schemas", "adapter_build", "schema", "adapter_roots", "license", "canonicality"],
   "properties": {
     "type": {"const": "qsol-substrate-manifest"},
     "protocol": {"const": "QSOL-SUBSTRATE"},
@@ -62,12 +62,27 @@
       },
       "additionalProperties": false
     },
+    "adapter_build": {
+      "type": "object",
+      "required": ["tool", "validation_tool", "manifest_schema", "documentation", "output_root", "adapter_spec_version", "adapter_count", "source_commit_required"],
+      "properties": {
+        "tool": {"const": "tools/build_adapters.py"},
+        "validation_tool": {"const": "tools/validate_adapter_bundle.py"},
+        "manifest_schema": {"const": "schema/adapter-manifest.schema.json"},
+        "documentation": {"const": "docs/ADAPTERS.md"},
+        "output_root": {"const": "dist/adapters"},
+        "adapter_spec_version": {"const": "1.0.0"},
+        "adapter_count": {"const": 8},
+        "source_commit_required": {"const": true}
+      },
+      "additionalProperties": false
+    },
     "schema": {"const": "schema/substrate.schema.json"},
-    "adapter_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "adapter_roots": {"const": ["adapters/generic", "adapters/grok", "adapters/xai", "adapters/grok-build", "adapters/sider", "adapters/ollama", "adapters/openai", "adapters/anthropic"]},
     "license": {"const": "Apache-2.0"},
     "canonicality": {
       "type": "object",
-      "required": ["human_prose_is_explanatory", "structured_machine_contracts_are_normative_for_machine_semantics", "live_primary_sources_can_supersede_stale_payload_state", "registry_omission_means_unavailable_not_false", "phase_1_payload_is_selective_not_exhaustive", "private_export_default_is_zero_publication_grants", "private_export_is_staging_not_self_authorising_publication", "validation_fails_closed_on_unresolved_integrity", "substrate_fingerprint_scope"],
+      "required": ["human_prose_is_explanatory", "structured_machine_contracts_are_normative_for_machine_semantics", "live_primary_sources_can_supersede_stale_payload_state", "registry_omission_means_unavailable_not_false", "phase_1_payload_is_selective_not_exhaustive", "private_export_default_is_zero_publication_grants", "private_export_is_staging_not_self_authorising_publication", "validation_fails_closed_on_unresolved_integrity", "substrate_fingerprint_scope", "adapters_are_transport_only", "adapter_fact_redefinition_forbidden"],
       "properties": {
         "human_prose_is_explanatory": {"const": true},
         "structured_machine_contracts_are_normative_for_machine_semantics": {"const": true},
@@ -77,7 +92,9 @@
         "private_export_default_is_zero_publication_grants": {"const": true},
         "private_export_is_staging_not_self_authorising_publication": {"const": true},
         "validation_fails_closed_on_unresolved_integrity": {"const": true},
-        "substrate_fingerprint_scope": {"const": "canonical_public_payload"}
+        "substrate_fingerprint_scope": {"const": "canonical_public_payload"},
+        "adapters_are_transport_only": {"const": true},
+        "adapter_fact_redefinition_forbidden": {"const": true}
       },
       "additionalProperties": false
     }
