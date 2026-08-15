@@ -22,8 +22,9 @@ Read:
 3. [`docs/USAGE.md`](docs/USAGE.md)
 4. [`docs/PUBLIC_SUBSTRATE.md`](docs/PUBLIC_SUBSTRATE.md)
 5. [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md)
-6. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
-7. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
+6. [`docs/EXPORT_PIPELINE.md`](docs/EXPORT_PIPELINE.md)
+7. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+8. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
 
 ### AI systems
 
@@ -45,7 +46,7 @@ AI consumers must not infer private facts from omissions, fill missing relations
 
 ## Canonical public payload
 
-Phase 1 adds a selective canonical public snapshot:
+Phase 1 established a selective canonical public snapshot:
 
 ```text
 sources/index.json
@@ -60,6 +61,36 @@ chronology/current.jsonl
 
 The snapshot is intentionally selective rather than exhaustive. `docs/PUBLIC_SUBSTRATE.md` defines its inclusion, omission, relationship, publication, and freshness semantics.
 
+## Private-to-public export
+
+Phase 2 implements a fail-closed exporter for maintainers who have a local private QSOL-CONTEXT checkout:
+
+```bash
+python3 tools/export_public_substrate.py \
+  --source-root ../QSOL-CONTEXT \
+  --output /tmp/qsol-substrate-export
+```
+
+The exporter is **explicit-allow only**. QSOL-SUBSTRATE ships with **zero private publication grants** in `public_export/include.json`.
+
+A private-to-public export requires an enabled directive that names the exact private source object, every field allowed to cross the boundary, the public target record, and already-public `src:*` provenance references.
+
+There is no wildcard-copy mode.
+
+The exporter:
+
+- canonicalises the existing public payload first;
+- copies only explicitly allowed fields;
+- refuses missing or ambiguous public visibility;
+- refuses unknown public provenance;
+- keeps the public source registry immutable to private export;
+- scans selected values and final output for secret/private-reference patterns;
+- emits a deterministic `export-manifest.json` and bundle SHA-256;
+- optionally emits a **private** audit manifest outside the public bundle;
+- produces a reviewable staging bundle rather than committing or publishing automatically.
+
+See [`docs/EXPORT_PIPELINE.md`](docs/EXPORT_PIPELINE.md).
+
 ## What this repository is for
 
 QSOL-SUBSTRATE is designed to support:
@@ -70,7 +101,8 @@ QSOL-SUBSTRATE is designed to support:
 - project and terminology disambiguation across the QSOL ecosystem;
 - provenance-aware answers about public QSOL research and software;
 - hallucination reduction where errors arise from missing or ambiguous QSOL-specific context;
-- model adapters that can transform one canonical substrate into vendor-specific prompt or retrieval formats.
+- model adapters that can transform one canonical substrate into vendor-specific prompt or retrieval formats;
+- deterministic, reviewable private-to-public context publication without making private context a consumer dependency.
 
 It is **not** intended to override a model's safety system, replace primary sources, expose private context, or guarantee factual correctness outside the information it actually contains.
 
@@ -86,6 +118,8 @@ When sources disagree, consumers should prefer, in order:
 
 Inference must remain labelled as inference.
 
+Private QSOL-CONTEXT state does not become public authority merely because it is canonical in the private repository. Private candidate facts require explicit publication authority and public provenance before they can enter QSOL-SUBSTRATE.
+
 ## Repository layout
 
 ```text
@@ -99,6 +133,9 @@ QSOL-SUBSTRATE/
 ├── SECURITY.md
 ├── docs/                  # prose for humans
 ├── ai/                    # normative AI contracts
+├── public_export/         # Phase 2 publication policy/allow/deny contracts
+├── tools/                 # deterministic maintainer-side tooling
+├── tests/                 # standard-library safety tests
 ├── sources/               # provenance/source registry
 ├── identity/              # public identity
 ├── context/               # public recurring context
@@ -128,9 +165,9 @@ These states are defined normatively in `ai/epistemic-contract.json`.
 
 QSOL-SUBSTRATE must be safe to clone, index, mirror, quote, and hand to arbitrary AI systems. Private QSOL context belongs elsewhere.
 
-A future export pipeline may generate portions of this repository from private canonical context, but publication is **explicit-allow only** and must fail closed when visibility or provenance is ambiguous.
+The Phase 2 exporter can use a private QSOL-CONTEXT checkout as an optional maintainer-side source, but public consumers never require that private repository. Publication remains **explicit-allow only** and fails closed when visibility, provenance, source selection, or boundary checks are unsafe.
 
-See [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md) and `ai/public-boundary.json`.
+See [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md), [`docs/EXPORT_PIPELINE.md`](docs/EXPORT_PIPELINE.md), and `ai/public-boundary.json`.
 
 ## Versioning and reproducibility
 
@@ -146,7 +183,7 @@ probe_set
 execution_date
 ```
 
-This makes it possible to distinguish model changes from context changes.
+Private-to-public export review should additionally retain the public `export-manifest.json` and bundle fingerprint. A separate private audit manifest may be retained locally when internal source traceability is required.
 
 ## Maintainer
 
@@ -154,9 +191,9 @@ QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOL
 
 ## Status
 
-**Phase 1 — Canonical public substrate is implemented.** The repository now contains public identity/context, canonical terminology and aliases, a selective active-public project registry, a verified DOI/publication registry, a project/research relationship graph, and a materially relevant public chronology.
+**Phase 2 — Export pipeline is implemented.** Phase 1 provides the canonical public payload; Phase 2 adds explicit-allow private-source publication policy, field-level export rules, secret/private-reference scanning, deterministic canonicalisation, export manifests/fingerprints, private-audit separation, and fail-closed omission/provenance handling.
 
-Export automation, schema/referential validation, deterministic fingerprints, CI, generated model adapters, and Substrate Probe comparisons remain on the roadmap.
+Phase 3 automated schema/referential/provenance validation and CI, generated portable adapters, Toolless Substrate Capsules, vector/latent projections, and Substrate Probe comparisons remain on the roadmap.
 
 ---
 
