@@ -10,15 +10,38 @@ QSOL-SUBSTRATE separates canonical meaning from presentation and vendor transpor
 
 ### Machine contract
 
-`ai/` contains compact, structured instructions for AI consumers. These files define load order, epistemic states, public-boundary behaviour, retrieval precedence, and consumer obligations.
+`ai/` contains compact, structured instructions for AI consumers. These files define mandatory contract load order, epistemic states, public-boundary behaviour, retrieval precedence, and consumer obligations.
+
+The bootstrap deliberately separates **mandatory contract loading** from **selective payload retrieval**. Consumers load the normative machine contract first, then retrieve only the canonical payload records needed for the current task.
 
 ### Schema
 
-`schema/` defines structural validation for canonical substrate records. As the knowledge payload grows, additional schemas can be added without changing the high-level contract.
+`schema/` defines structural validation for canonical substrate records. The shared canonical record schema includes identity, organization, project, repository, publication, research-topic, term, event, relationship, source, claim, adapter, and probe record types.
 
-### Knowledge payload
+### Canonical public knowledge payload
 
-Future public identity, project, publication, chronology, terminology, and research records form the actual context dataset. Payload records should remain separable from the consumer contract.
+Phase 1 implements the public context dataset under these roots:
+
+```text
+sources/index.json
+identity/public.json
+context/public.json
+terminology/index.json
+projects/index.json
+publications/index.json
+relationships/graph.json
+chronology/current.jsonl
+```
+
+These records provide the currently selected public identity/context, QSOL terminology and aliases, active-project registry, verified publication/DOI registry, project/research relationship graph, provenance source registry, and materially relevant chronology.
+
+The payload is **selective, not exhaustive**. Missing records and missing relationship edges mean unavailable/unknown from this snapshot, not false.
+
+Payload records remain separable from the consumer contract so the knowledge layer can evolve without turning every query into a full-dataset load.
+
+### Provenance snapshots
+
+`sources/index.json` stores live source locators together with snapshot evidence. First-party repository documents retain an exact commit-pinned URL; release records retain the release tag commit. This preserves the evidence used by the substrate snapshot while still allowing live primary sources to supersede stale state later.
 
 ### Adapters
 
@@ -43,6 +66,25 @@ private canonical context (optional source)
 ```
 
 The private source is not required for consumers and is never assumed to be accessible.
+
+## Retrieval flow
+
+```text
+ai/bootstrap.json
+       |
+       v
+mandatory machine contracts
+       |
+       v
+identify task-relevant records
+       |
+       v
+selective canonical payload retrieval
+       |
+       +--> sources/index.json when provenance resolution is required
+```
+
+This preserves the `smallest_sufficient_context` rule as the registries grow.
 
 ## Trust precedence
 
