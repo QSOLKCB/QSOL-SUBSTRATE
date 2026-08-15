@@ -32,7 +32,7 @@
       "properties": {
         "schema": {"const": "schema/model-projection-compatibility.schema.json"},
         "required_exact_match_fields": {
-          "const": ["projection_kind", "model_id", "model_revision", "architecture", "tokenizer_id", "tokenizer_sha256", "context_length", "hidden_size", "num_hidden_layers", "num_attention_heads", "kv_layout_version"]
+          "const": ["projection_kind", "model_id", "model_revision", "architecture", "tokenizer_id", "tokenizer_sha256", "context_length", "hidden_size", "num_hidden_layers", "num_attention_heads", "kv_layout_version", "tensor_dtype", "kv_cache_dtype", "quantization_id"]
         },
         "invalidate_on_any_mismatch": {"const": true},
         "tokenizer_or_architecture_change_requires_regeneration": {"const": true}
