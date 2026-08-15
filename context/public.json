@@ -1,0 +1,14 @@
+{
+  "type":"qsol-substrate-public-context",
+  "schema_version":"1.0.0",
+  "snapshot_date":"2026-08-15",
+  "visibility":"public",
+  "scope":"recurring_public_design_and_research_context_not_private_biography",
+  "claims":[
+    {"id":"claim:qsol-minimalism","record_type":"claim","visibility":"public","epistemic_state":"known","summary":"QSOL explicitly prioritizes small, fast, local-first, transparent software with clarity over complexity.","source_refs":["src:qsol-readme"],"tags":["minimalism","local-first","transparency"]},
+    {"id":"claim:determinism-provenance","record_type":"claim","visibility":"public","epistemic_state":"known","summary":"Multiple current QSOL projects use deterministic replay, canonical hashing, provenance receipts, or explicit reproducibility contracts as core methods.","source_refs":["src:qec-readme","src:spectral-readme","src:e8-music-readme","src:uff-readme","src:res-rag-readme"],"tags":["determinism","reproducibility","provenance"]},
+    {"id":"claim:claim-boundaries","record_type":"claim","visibility":"public","epistemic_state":"known","summary":"Current research repositories repeatedly separate computational/formal assurance from stronger empirical, physical, psychological, or ontological claims.","source_refs":["src:qec-readme","src:spectral-readme","src:e8-music-readme","src:uff-readme","src:res-rag-readme","src:deepseekc64-readme"],"tags":["epistemics","claim-boundary","formal-assurance"]},
+    {"id":"claim:offline-first","record_type":"claim","visibility":"public","epistemic_state":"known","summary":"Offline-first and dependency-light browser tools recur across the public QSOL software ecosystem.","source_refs":["src:qsol-readme","src:spectral-readme","src:e8-music-readme","src:games-v1.2.0-release"],"tags":["offline-first","browser-native"]}
+  ],
+  "nonclaims":["these recurring patterns do not imply every QSOLKCB repository follows every listed principle","this file is not a complete biography, private memory store, or exhaustive project inventory"]
+}
