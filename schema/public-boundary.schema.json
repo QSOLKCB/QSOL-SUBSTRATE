@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/public-boundary.schema.json",
+  "title": "QSOL-SUBSTRATE public boundary contract",
+  "type": "object",
+  "required": ["type", "schema_version", "repository_visibility", "publication_model", "absence_semantics", "private_source_access_required", "export_contract", "validation_contract", "consumer_rules", "export_fail_closed_on", "validation_fail_closed_on"],
+  "properties": {
+    "type": {"const": "qsol-substrate-public-boundary"},
+    "schema_version": {"const": "1.0.0"},
+    "repository_visibility": {"const": "public"},
+    "publication_model": {"const": "explicit_allow_only"},
+    "absence_semantics": {"const": "unavailable_not_false"},
+    "private_source_access_required": {"const": false},
+    "export_contract": {
+      "type": "object",
+      "required": ["policy", "allowlist", "deny_policy", "tool", "default_publication_grants", "output_is_reviewable_staging_bundle", "private_audit_manifest_must_remain_outside_public_output", "public_source_registry_is_immutable_to_private_export"],
+      "properties": {
+        "policy": {"const": "public_export/policy.json"},
+        "allowlist": {"const": "public_export/include.json"},
+        "deny_policy": {"const": "public_export/exclude.json"},
+        "tool": {"const": "tools/export_public_substrate.py"},
+        "default_publication_grants": {"const": 0},
+        "output_is_reviewable_staging_bundle": {"const": true},
+        "private_audit_manifest_must_remain_outside_public_output": {"const": true},
+        "public_source_registry_is_immutable_to_private_export": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "validation_contract": {
+      "type": "object",
+      "required": ["tool", "fingerprint_tool", "workflow", "report_schema", "fingerprint_schema", "live_network_required", "failure_mode"],
+      "properties": {
+        "tool": {"const": "tools/validate_substrate.py"},
+        "fingerprint_tool": {"const": "tools/fingerprint_substrate.py"},
+        "workflow": {"const": ".github/workflows/validate-substrate.yml"},
+        "report_schema": {"const": "schema/validation-report.schema.json"},
+        "fingerprint_schema": {"const": "schema/substrate-fingerprint.schema.json"},
+        "live_network_required": {"const": false},
+        "failure_mode": {"const": "fail_closed"}
+      },
+      "additionalProperties": false
+    },
+    "consumer_rules": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "export_fail_closed_on": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "validation_fail_closed_on": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}

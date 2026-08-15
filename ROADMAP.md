@@ -39,20 +39,22 @@ The shipped allowlist contains zero private-to-public publication grants.
 
 ## Phase 3 — Validation and CI
 
-- [ ] JSON Schema validation.
-- [ ] Referential-integrity validation.
-- [ ] Provenance validation.
-- [ ] Alias collision checks.
-- [ ] DOI uniqueness checks.
-- [ ] Relationship endpoint validation.
-- [ ] Chronology ordering validation.
-- [ ] Public-boundary checks.
-- [ ] Secret/private-reference scanning.
-- [ ] SHA-256 substrate fingerprint.
-- [ ] GitHub Actions validation workflow.
+- [x] JSON Schema validation.
+- [x] Referential-integrity validation.
+- [x] Provenance validation.
+- [x] Alias collision checks.
+- [x] DOI uniqueness checks.
+- [x] Relationship endpoint validation.
+- [x] Chronology ordering validation.
+- [x] Public-boundary checks.
+- [x] Secret/private-reference scanning.
+- [x] SHA-256 substrate fingerprint.
+- [x] GitHub Actions validation workflow.
 
-Validation should fail closed when canonical identity, provenance, visibility,
-relationships, or release identity cannot be resolved safely.
+Validation fails closed when canonical identity, provenance, visibility,
+relationships, chronology, publication/release identity, or the public boundary
+cannot be resolved safely. The integrity validator is deliberately network-free:
+live-source freshness and frozen-snapshot consistency remain separate concerns.
 
 ## Phase 4 — Portable model adapters
 

@@ -10,20 +10,24 @@
     "default": {"const": "deny_on_match"},
     "forbidden_source_path_globs": {
       "type": "array",
-      "items": {"type": "string"},
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
       "uniqueItems": true
     },
     "forbidden_field_names": {
       "type": "array",
+      "minItems": 1,
       "items": {"type": "string", "minLength": 1},
       "uniqueItems": true
     },
     "secret_patterns": {
       "type": "array",
+      "minItems": 1,
       "items": {"$ref": "#/$defs/pattern"}
     },
     "private_reference_patterns": {
       "type": "array",
+      "minItems": 1,
       "items": {"$ref": "#/$defs/pattern"}
     }
   },
