@@ -24,18 +24,18 @@ not false.
 
 ## Phase 2 — Export pipeline
 
-- [ ] Define explicit-allow export policy from private QSOL-CONTEXT.
-- [ ] Add field-level visibility rules.
-- [ ] Add redaction and secret scanning.
-- [ ] Add deterministic canonicalisation.
-- [ ] Add export manifest and fingerprint.
-- [ ] Fail closed on unknown visibility or provenance.
-- [ ] Preserve public/private omission semantics during export.
-- [ ] Guarantee that generated public records contain no private source references.
+- [x] Define explicit-allow export policy from private QSOL-CONTEXT.
+- [x] Add field-level visibility rules.
+- [x] Add redaction and secret scanning.
+- [x] Add deterministic canonicalisation.
+- [x] Add export manifest and fingerprint.
+- [x] Fail closed on unknown visibility or provenance.
+- [x] Preserve public/private omission semantics during export.
+- [x] Guarantee that generated public records contain no private source references.
 
-The export pipeline must treat publication as an explicit act. Private context
-must never become public merely because a field was not explicitly marked
-private.
+The export pipeline treats publication as an explicit act. Private context
+never becomes public merely because a field was not explicitly marked private.
+The shipped allowlist contains zero private-to-public publication grants.
 
 ## Phase 3 — Validation and CI
 
