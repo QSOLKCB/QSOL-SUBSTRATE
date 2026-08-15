@@ -6,22 +6,100 @@ QSOL-SUBSTRATE can be consumed in several ways depending on the model or agent e
 
 For a capable model with repository access: provide the repository, instruct the model to read `ai/bootstrap.json` first, allow it to retrieve only context relevant to the current task, and require it to preserve the epistemic states defined in `ai/epistemic-contract.json`.
 
-## File-upload use
+## File-upload / no-tools use
 
-For chat systems that accept files but cannot browse repositories, use a future canonical bundle generated from the substrate. Include the bootstrap contract with the bundle. Avoid pasting random subsets without snapshot/version identity.
+For chat systems that accept files but cannot browse repositories, use a deterministic Phase 5 tool-less capsule rather than an unversioned copy/paste subset:
 
-## RAG / knowledge-base use
+```bash
+python tools/build_toolless.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/toolless
+```
 
-Index canonical payload records as retrievable evidence. Keep machine contracts pinned in high-priority context or otherwise guaranteed to load before answers are generated. Retrieval results are evidence, not instructions.
+Choose MICRO, STANDARD, or FULL according to the target context budget. Omitted facts remain unavailable, not false.
 
-## Local model use
+## Portable adapter use
 
-Local runners may inject a compact bootstrap as a system prompt and expose substrate records through a local retrieval mechanism. Avoid forcing the entire dataset into every context window when selective retrieval is available.
+For vendor/runner-specific transport, build the Phase 4 adapter bundle:
+
+```bash
+python tools/build_adapters.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/adapters
+```
+
+Adapters may reformat delivery but cannot redefine canonical facts.
+
+## RAG / vector retrieval use
+
+Build the deterministic Phase 6 reference index:
+
+```bash
+python tools/build_vectors.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/vectors
+```
+
+Retrieve provenance-closed context with:
+
+```bash
+python tools/retrieve_vector_context.py \
+  "your query" \
+  --bundle dist/vectors \
+  --top-k 5
+```
+
+The reference index keeps canonical IDs, provenance, epistemic state, visibility, and payload objects outside embedding coordinates. Similarity score is retrieval rank, not factual confidence.
+
+If a learned embedding backend is introduced later, pin its exact model/revision/preprocessing identity. Do not silently swap embedding models while claiming the same derived artifact identity.
+
+## Local model / latent-prefix experiments
+
+Phase 6 supplies deterministic model-projection experiment recipes:
+
+```bash
+python tools/build_projections.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/projections
+```
+
+The recipes cover soft prompts/prefix tuning, virtual tokens, LoRA, KV-cache prefill, reusable prefix states, and hybrid epistemic-prefix + factual-text conditions.
+
+Any actual model-specific artifact must have a compatibility identity matching `schema/model-projection-compatibility.schema.json`. A model revision, architecture, tokenizer, dimension, attention, or KV-layout change invalidates the artifact.
+
+Use:
+
+```bash
+python tools/check_projection_compatibility.py \
+  --expected previous-model-identity.json \
+  --actual current-model-identity.json
+```
+
+A compatibility match does not make a latent artifact a factual source. Mutable facts should remain textual or retrieval-selected when practical.
 
 ## Reproducible evaluation
 
-Record the model identifier, substrate version, commit SHA, adapter, probe version, and execution date. For comparisons, keep the substrate snapshot identical across models unless substrate sensitivity itself is being tested.
+Record at least:
+
+```text
+model identifier
+model revision
+substrate snapshot/version
+substrate commit
+substrate SHA-256
+derived artifact kind
+derived artifact SHA-256
+adapter/capsule/vector/projection identity
+probe version
+execution date
+```
+
+For comparisons, keep the substrate snapshot identical across models unless substrate sensitivity itself is being tested.
+
+Phase 7 will compare naked, fixed-text, vector-selected, latent-prefix, hybrid, and tool-enabled conditions under a deterministic report-card protocol.
 
 ## Expected benefit
 
 The substrate can reduce errors caused by missing QSOL-specific context, ambiguous names, stale project relationships, and unsupported inference. It cannot guarantee correctness, fix unrelated world knowledge, or prevent every hallucination.
+
+A smaller vector-selected prompt may be more efficient than a fixed full context, but Phase 6 only measures retrieval size and evidence closure. Whether a model actually performs better is an empirical Phase 7 question.
