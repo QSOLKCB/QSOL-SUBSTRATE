@@ -38,8 +38,8 @@ jobs:
       - name: Build substrate fingerprint
         run: python tools/fingerprint_substrate.py --output substrate-fingerprint.json
 
-      - name: Resolve adapter source commit
-        id: adapter-source
+      - name: Resolve derived-artifact source commit
+        id: artifact-source
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EVENT_SHA: ${{ github.sha }}
@@ -51,10 +51,16 @@ jobs:
           fi
 
       - name: Build portable adapters
-        run: python tools/build_adapters.py --source-commit "${{ steps.adapter-source.outputs.sha }}" --output dist/adapters
+        run: python tools/build_adapters.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/adapters
 
       - name: Validate portable adapters
         run: python tools/validate_adapter_bundle.py --bundle dist/adapters
+
+      - name: Build tool-less capsules
+        run: python tools/build_toolless.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/toolless
+
+      - name: Validate tool-less capsules
+        run: python tools/validate_toolless_capsule.py --bundle dist/toolless
 
       - name: Publish integrity summary
         if: success()
@@ -65,6 +71,7 @@ jobs:
           from pathlib import Path
           fingerprint = json.loads(Path("substrate-fingerprint.json").read_text())
           adapters = json.loads(Path("dist/adapters/manifest.json").read_text())
+          toolless = json.loads(Path("dist/toolless/manifest.json").read_text())
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
               out.write("## QSOL-SUBSTRATE integrity\n\n")
               out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
@@ -73,9 +80,15 @@ jobs:
               out.write(f"- Portable adapters: `{len(adapters['adapters'])}`\n")
               out.write(f"- Adapter source commit: `{adapters['substrate']['source_commit']}`\n")
               out.write(f"- Adapter bundle SHA-256: `{adapters['adapter_bundle_sha256']}`\n")
+              out.write(f"- Tool-less capsule bundle SHA-256: `{toolless['bundle_sha256']}`\n")
+              for profile in toolless["profiles"]:
+                  out.write(
+                      f"- {profile['name']}: `{profile['portable_tokens']}/{profile['token_budget']}` portable tokens, "
+                      f"`{profile['included_items']}` included / `{profile['omitted_items']}` omitted items\n"
+                  )
           PY
 
-      - name: Upload validation and adapter artifacts
+      - name: Upload validation and derived artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -84,5 +97,6 @@ jobs:
             validation-report.json
             substrate-fingerprint.json
             dist/adapters/
+            dist/toolless/
           if-no-files-found: ignore
           retention-days: 30
