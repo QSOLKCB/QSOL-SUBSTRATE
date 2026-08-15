@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/toolless-manifest.schema.json",
+  "title": "QSOL-SUBSTRATE tool-less capsule manifest",
+  "type": "object",
+  "required": ["type", "schema_version", "capsule_spec_version", "substrate", "tokenizer", "selection", "profiles", "bundle_sha256"],
+  "properties": {
+    "type": {"const": "qsol-substrate-toolless-manifest"},
+    "schema_version": {"const": "1.0.0"},
+    "capsule_spec_version": {"const": "1.0.0"},
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "version": {"type": "string", "pattern": "^snapshot-[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "version_kind": {"const": "snapshot"},
+        "schema_version": {"const": "1.0.0"},
+        "snapshot_date": {"type": "string", "format": "date"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "tokenizer": {
+      "type": "object",
+      "required": ["id", "normalization", "word_charge", "punctuation_charge", "model_tokenizer_equivalence_claimed"],
+      "properties": {
+        "id": {"const": "qsol-portable-token-v1"},
+        "normalization": {"const": "NFKC"},
+        "word_charge": {"const": "ceil(utf8_bytes/4)"},
+        "punctuation_charge": {"const": 1},
+        "model_tokenizer_equivalence_claimed": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "selection": {
+      "type": "object",
+      "required": ["whole_record_only", "dependency_closure", "source_reference_closure", "relationship_endpoint_closure", "priority_order", "omission_semantics"],
+      "properties": {
+        "whole_record_only": {"const": true},
+        "dependency_closure": {"const": true},
+        "source_reference_closure": {"const": true},
+        "relationship_endpoint_closure": {"const": true},
+        "priority_order": {
+          "const": ["epistemic_and_identity", "projects_publications_and_topics", "relationships_and_chronology", "unreferenced_sources"]
+        },
+        "omission_semantics": {"const": "unavailable_not_false"}
+      },
+      "additionalProperties": false
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {"$ref": "#/$defs/micro"},
+        {"$ref": "#/$defs/standard"},
+        {"$ref": "#/$defs/full"}
+      ],
+      "items": false
+    },
+    "bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "profileBase": {
+      "type": "object",
+      "required": ["name", "file", "token_budget", "portable_tokens", "bytes", "sha256", "included_items", "omitted_items", "truncated", "kind_counts", "strategic_redundancy"],
+      "properties": {
+        "name": {"type": "string"},
+        "file": {"type": "string", "minLength": 1},
+        "token_budget": {"type": "integer", "minimum": 1},
+        "portable_tokens": {"type": "integer", "minimum": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "included_items": {"type": "integer", "minimum": 1},
+        "omitted_items": {"type": "integer", "minimum": 0},
+        "truncated": {"type": "boolean"},
+        "kind_counts": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"type": "integer", "minimum": 1}
+        },
+        "strategic_redundancy": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "micro": {
+      "allOf": [
+        {"$ref": "#/$defs/profileBase"},
+        {
+          "properties": {
+            "name": {"const": "MICRO"},
+            "file": {"const": "QSOL-SUBSTRATE-MICRO.txt"},
+            "token_budget": {"const": 8192},
+            "strategic_redundancy": {"const": true}
+          }
+        }
+      ]
+    },
+    "standard": {
+      "allOf": [
+        {"$ref": "#/$defs/profileBase"},
+        {
+          "properties": {
+            "name": {"const": "STANDARD"},
+            "file": {"const": "QSOL-SUBSTRATE-STANDARD.txt"},
+            "token_budget": {"const": 24576},
+            "strategic_redundancy": {"const": false}
+          }
+        }
+      ]
+    },
+    "full": {
+      "allOf": [
+        {"$ref": "#/$defs/profileBase"},
+        {
+          "properties": {
+            "name": {"const": "FULL"},
+            "file": {"const": "QSOL-SUBSTRATE-FULL.txt"},
+            "token_budget": {"const": 131072},
+            "truncated": {"const": false},
+            "omitted_items": {"const": 0},
+            "strategic_redundancy": {"const": false}
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
