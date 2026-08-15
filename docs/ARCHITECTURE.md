@@ -1,6 +1,6 @@
 # Architecture
 
-QSOL-SUBSTRATE separates canonical meaning from presentation, private-source publication, retrieval indexes, and model-specific transport/projection state.
+QSOL-SUBSTRATE separates canonical meaning from presentation, private-source publication, retrieval indexes, model-specific transport/projection state, and evaluation artifacts.
 
 ## Layers
 
@@ -16,7 +16,7 @@ The bootstrap separates **mandatory contract loading** from **selective payload 
 
 ### Schema
 
-`schema/` defines structural validation for canonical records, machine contracts, export manifests, validation/fingerprint outputs, adapter/capsule manifests, vector bundles, and model-projection compatibility identities.
+`schema/` defines structural validation for canonical records, machine contracts, export manifests, validation/fingerprint outputs, adapter/capsule manifests, vector bundles, model-projection compatibility identities, Phase 7 model-run envelopes, probe report cards, and comparison reports.
 
 ### Canonical public knowledge payload
 
@@ -67,7 +67,7 @@ tools/validate_substrate.py
 tools/fingerprint_substrate.py
 ```
 
-The canonical substrate fingerprint covers public payload semantics, not derived transports or projection artifacts.
+The canonical substrate fingerprint covers public payload semantics, not derived transports, projections, or evaluation artifacts.
 
 ### Portable adapters
 
@@ -96,7 +96,7 @@ dist/vectors/
 
 `qsol-record-chunk-v1` maps one canonical item to one retrieval chunk. `qsol-hash-embed-v1` provides a dependency-free deterministic reference embedding for network-free CI.
 
-Canonical IDs, source paths, provenance, epistemic labels, and payload objects remain outside embedding coordinates. Vectors are indexes, not truth.
+Canonical IDs, source paths, provenance, epistemic labels, and payload objects remain outside embedding coordinates. Vectors are indexes, not truth. The retrieval CLI validates the bundle before rendering records as model context.
 
 ### Model-specific latent/prefix projection
 
@@ -113,6 +113,31 @@ dist/projections/
 The recipes cover soft-prompt/prefix tuning, virtual tokens, LoRA, KV-cache prefill, reusable prefix state, and hybrid epistemic-prefix + factual-text conditions.
 
 Generic CI validates the recipe and compatibility contract. It does not claim model-specific weights or KV state were created unless an actual model-specific execution produces them.
+
+### Phase 7 evaluation layer
+
+Phase 7 adds deterministic evaluation inputs and scoring contracts without turning the probe into a fact store:
+
+```text
+probe/
+├── substrate-probe.jsonl
+├── yeah-nah-1.jsonl
+└── conditions.json
+
+            |
+            v
+
+dist/probes/
+├── substrate-probe.jsonl
+├── yeah-nah-1.jsonl
+├── conditions.json
+├── scoring-contract.json
+└── manifest.json
+```
+
+The probe bundle is bound to the exact source substrate identity and is deterministically rebuilt during validation. A model run must bind the same probe-bundle SHA-256 and substrate identity before scoring.
+
+The scorer consumes a strict structured response envelope while retaining raw model prose for audit. Report cards and comparison tables are derived evaluation artifacts, not canonical facts.
 
 ## Information flow
 
@@ -150,6 +175,17 @@ private canonical context (optional, local)
               v                      v
         ordinary model       model-specific prefix/
                               LoRA/KV experiment
+              |                      |
+              +----------+-----------+
+                         |
+                         v
+                 Phase 7 model run
+                         |
+                         v
+             deterministic report card
+                         |
+                         v
+             same-snapshot comparison
 ```
 
 The canonical payload remains the only public truth store in this graph.
@@ -179,6 +215,9 @@ Phase 6 vector retrieval:
 user/query text
        |
        v
+validate vector bundle
+       |
+       v
 qsol-hash-embed-v1 query vector
        |
        v
@@ -191,7 +230,7 @@ canonical IDs
 source_ref + relationship endpoint closure
        |
        v
-render canonical payload objects as factual text
+render canonical payload objects + source identity
 ```
 
 Nearest-neighbour score is retrieval rank, not factual confidence.
@@ -247,13 +286,16 @@ hidden_size
 num_hidden_layers
 num_attention_heads
 kv_layout_version
+tensor_dtype
+kv_cache_dtype
+quantization_id
 ```
 
-Any mismatch invalidates the artifact. A tokenizer or architecture change is not a warning; it means regenerate.
+Any mismatch invalidates the artifact. A tokenizer, architecture, precision, quantization, or KV-layout change is not a warning; it means regenerate.
 
 ## Hybrid epistemic projection
 
-Phase 6 tests the architecture, not model behaviour:
+Phase 6 fixes the delivery architecture; Phase 7 measures behaviour:
 
 ```text
 stable epistemic/pragmatic rules
@@ -271,15 +313,58 @@ mutable canonical facts
            +
            |
         user task
+           |
+           v
+      model response
+           |
+           v
+ Phase 7 structured run + scorer
 ```
 
-The YEAH-NAH/1 textual/prefix/hybrid delivery matrix is fixed here so Phase 7 can measure model behaviour under identical rule payloads.
+The YEAH-NAH/1 textual/prefix/hybrid rule payload is held constant so delivery effects can be measured rather than inferred from representation plumbing.
+
+## Probe and comparison flow
+
+```text
+probe source cases
+       |
+       v
+deterministic probe build
+       |
+       v
+probe-bundle SHA + substrate identity
+       |
+       +----------------------------+
+       |                            |
+       v                            v
+ model condition A             model condition B
+       |                            |
+       v                            v
+ strict model-run JSON         strict model-run JSON
+       |                            |
+       +-------------+--------------+
+                     |
+                     v
+          deterministic scorer
+                     |
+                     v
+           schema-valid reports
+                     |
+                     v
+       same-model naked baseline
+                     |
+                     v
+ uplift / hallucination / YEAH-NAH
+          comparison metrics
+```
+
+A scoring oracle follows the same scorer path to test the metric plumbing, but its `execution_kind=scoring_oracle` is mechanically rejected by empirical comparison tooling.
 
 ## Trust precedence
 
 The substrate is a cache of public context, not a replacement for current primary evidence. A current repository commit, release, DOI record, or other primary source can supersede a stale substrate entry.
 
-Derived artifacts sit **below** canonical structured records in factual authority. Neither embedding proximity nor latent-state activation can overrule canonical evidence.
+Derived artifacts sit **below** canonical structured records in factual authority. Neither embedding proximity, latent-state activation, nor a high probe score can overrule canonical evidence.
 
 Private context does not outrank public provenance merely because it is canonical inside QSOL-CONTEXT. A private candidate fact requires explicit publication authority and public source references before it can enter the public substrate.
 
@@ -292,6 +377,7 @@ Deterministic identities are layered:
 - Phase 4 fingerprints adapter projections;
 - Phase 5 fingerprints tool-less textual projections;
 - Phase 6 fingerprints vector bundles and model-projection experiment bundles;
+- Phase 7 fingerprints deterministic probe bundles and binds model runs/reports to probe + substrate identity;
 - every derived artifact records the exact source commit plus canonical substrate SHA-256.
 
-Model inference itself need not be deterministic for the substrate and its generated artifacts to be version-identifiable.
+Model inference itself need not be deterministic for the substrate, its generated artifacts, and its evaluation inputs to be version-identifiable.
