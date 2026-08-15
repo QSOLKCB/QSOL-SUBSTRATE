@@ -3,7 +3,7 @@
   "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/manifest.schema.json",
   "title": "QSOL-SUBSTRATE machine manifest",
   "type": "object",
-  "required": ["type", "protocol", "schema_version", "status", "snapshot_date", "visibility", "human_entrypoint", "machine_entrypoint", "normative_machine_files", "canonical_payload_files", "export_contract_files", "export_schemas", "machine_contract_schemas", "export_tool", "export_documentation", "validation", "validation_schemas", "adapter_build", "toolless_build", "schema", "adapter_roots", "license", "canonicality"],
+  "required": ["type", "protocol", "schema_version", "status", "snapshot_date", "visibility", "human_entrypoint", "machine_entrypoint", "normative_machine_files", "canonical_payload_files", "export_contract_files", "export_schemas", "machine_contract_schemas", "export_tool", "export_documentation", "validation", "validation_schemas", "adapter_build", "toolless_build", "vector_build", "projection_build", "schema", "adapter_roots", "license", "canonicality"],
   "properties": {
     "type": {"const": "qsol-substrate-manifest"},
     "protocol": {"const": "QSOL-SUBSTRATE"},
@@ -102,12 +102,48 @@
       },
       "additionalProperties": false
     },
+    "vector_build": {
+      "type": "object",
+      "required": ["tool", "validation_tool", "retrieval_tool", "manifest_schema", "documentation", "output_root", "vector_spec_version", "chunking", "embedding_backend", "dimension", "dtype", "source_commit_required"],
+      "properties": {
+        "tool": {"const": "tools/build_vectors.py"},
+        "validation_tool": {"const": "tools/validate_vector_bundle.py"},
+        "retrieval_tool": {"const": "tools/retrieve_vector_context.py"},
+        "manifest_schema": {"const": "schema/vector-manifest.schema.json"},
+        "documentation": {"const": "docs/VECTOR_AND_LATENT.md"},
+        "output_root": {"const": "dist/vectors"},
+        "vector_spec_version": {"const": "1.0.0"},
+        "chunking": {"const": "qsol-record-chunk-v1"},
+        "embedding_backend": {"const": "qsol-hash-embed-v1"},
+        "dimension": {"const": 256},
+        "dtype": {"const": "float16"},
+        "source_commit_required": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "projection_build": {
+      "type": "object",
+      "required": ["tool", "validation_tool", "compatibility_tool", "manifest_schema", "compatibility_schema", "documentation", "output_root", "projection_spec_version", "source_commit_required", "model_specific_binary_artifacts_in_ci"],
+      "properties": {
+        "tool": {"const": "tools/build_projections.py"},
+        "validation_tool": {"const": "tools/validate_projection_bundle.py"},
+        "compatibility_tool": {"const": "tools/check_projection_compatibility.py"},
+        "manifest_schema": {"const": "schema/projection-manifest.schema.json"},
+        "compatibility_schema": {"const": "schema/model-projection-compatibility.schema.json"},
+        "documentation": {"const": "docs/VECTOR_AND_LATENT.md"},
+        "output_root": {"const": "dist/projections"},
+        "projection_spec_version": {"const": "1.0.0"},
+        "source_commit_required": {"const": true},
+        "model_specific_binary_artifacts_in_ci": {"const": false}
+      },
+      "additionalProperties": false
+    },
     "schema": {"const": "schema/substrate.schema.json"},
     "adapter_roots": {"const": ["adapters/generic", "adapters/grok", "adapters/xai", "adapters/grok-build", "adapters/sider", "adapters/ollama", "adapters/openai", "adapters/anthropic"]},
     "license": {"const": "Apache-2.0"},
     "canonicality": {
       "type": "object",
-      "required": ["human_prose_is_explanatory", "structured_machine_contracts_are_normative_for_machine_semantics", "live_primary_sources_can_supersede_stale_payload_state", "registry_omission_means_unavailable_not_false", "phase_1_payload_is_selective_not_exhaustive", "private_export_default_is_zero_publication_grants", "private_export_is_staging_not_self_authorising_publication", "validation_fails_closed_on_unresolved_integrity", "substrate_fingerprint_scope", "adapters_are_transport_only", "adapter_fact_redefinition_forbidden", "toolless_capsules_are_derived_projections", "toolless_fact_redefinition_forbidden", "toolless_omission_means_unavailable_not_false"],
+      "required": ["human_prose_is_explanatory", "structured_machine_contracts_are_normative_for_machine_semantics", "live_primary_sources_can_supersede_stale_payload_state", "registry_omission_means_unavailable_not_false", "phase_1_payload_is_selective_not_exhaustive", "private_export_default_is_zero_publication_grants", "private_export_is_staging_not_self_authorising_publication", "validation_fails_closed_on_unresolved_integrity", "substrate_fingerprint_scope", "adapters_are_transport_only", "adapter_fact_redefinition_forbidden", "toolless_capsules_are_derived_projections", "toolless_fact_redefinition_forbidden", "toolless_omission_means_unavailable_not_false", "vector_indexes_are_derived_projections", "embedding_coordinates_are_not_canonical_truth", "retrieval_must_preserve_provenance_closure", "model_specific_projections_are_derived_experiments", "model_specific_projection_compatibility_is_exact", "model_specific_projection_fact_authority_forbidden"],
       "properties": {
         "human_prose_is_explanatory": {"const": true},
         "structured_machine_contracts_are_normative_for_machine_semantics": {"const": true},
@@ -122,7 +158,13 @@
         "adapter_fact_redefinition_forbidden": {"const": true},
         "toolless_capsules_are_derived_projections": {"const": true},
         "toolless_fact_redefinition_forbidden": {"const": true},
-        "toolless_omission_means_unavailable_not_false": {"const": true}
+        "toolless_omission_means_unavailable_not_false": {"const": true},
+        "vector_indexes_are_derived_projections": {"const": true},
+        "embedding_coordinates_are_not_canonical_truth": {"const": true},
+        "retrieval_must_preserve_provenance_closure": {"const": true},
+        "model_specific_projections_are_derived_experiments": {"const": true},
+        "model_specific_projection_compatibility_is_exact": {"const": true},
+        "model_specific_projection_fact_authority_forbidden": {"const": true}
       },
       "additionalProperties": false
     }
