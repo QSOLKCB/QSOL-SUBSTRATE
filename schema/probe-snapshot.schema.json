@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/probe-snapshot.schema.json",
+  "title": "QSOL-SUBSTRATE immutable probe snapshot",
+  "type": "object",
+  "required": ["type", "schema_version", "probe_spec_version", "immutable", "source_commit", "substrate_sha256", "probe_count", "bundle_sha256", "files"],
+  "properties": {
+    "type": {"const": "qsol-substrate-probe-snapshot"},
+    "schema_version": {"const": "1.0.0"},
+    "probe_spec_version": {"const": "1.0.0"},
+    "immutable": {"const": true},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "probe_count": {"const": 48},
+    "bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "files": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"enum": ["conditions.json", "scoring-contract.json", "substrate-probe.jsonl", "yeah-nah-1.jsonl"]},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
