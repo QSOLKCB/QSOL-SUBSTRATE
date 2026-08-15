@@ -38,6 +38,7 @@ YEAH_NAH_EXPERIMENTAL_RULES = (
 )
 
 COMPATIBILITY_FIELDS = (
+    "projection_kind",
     "model_id",
     "model_revision",
     "architecture",
