@@ -21,12 +21,17 @@ QSOL-SUBSTRATE is a public, vendor-neutral context substrate for AI systems. Cha
 13. Machine JSON must remain valid UTF-8 JSON with stable field names.
 14. New normative fields require schema and documentation updates.
 15. When evidence is insufficient or conflicting, preserve uncertainty explicitly.
+16. Phase 7 probe cases, expected answers, model runs, report cards, and comparison artifacts are evaluation material, not canonical public facts.
+17. Never present the Phase 7 scoring oracle as an empirical model result; `execution_kind=scoring_oracle` is scorer self-test evidence only.
+18. Empirical Phase 7 comparisons must bind the same probe-bundle and substrate identity and use the same model revision for naked-baseline uplift.
+19. Do not label a textual prompt simulation as a latent/KV/LoRA execution; model-specific projection claims require the Phase 6 compatibility identity and actual runtime evidence.
 
 ## Documentation split
 
 - Human prose: `README.md`, `docs/`, `CONTRIBUTING.md`, `ROADMAP.md`, `SECURITY.md`, `CHANGELOG.md`.
 - Machine contracts: `ai/`, `schema/`.
 - Transport/adaptation guidance: `adapters/`.
+- Deterministic evaluation source material: `probe/`.
 
 ## Change discipline
 
@@ -39,6 +44,8 @@ For changes affecting machine semantics, update all relevant layers in the same 
 - tests/validation once tooling exists.
 
 Do not silently change the meaning of an existing epistemic state or trust level.
+
+For Phase 7 changes, also preserve the boundary between **probe protocol validation** and **empirical model evidence**. A passing scorer, a perfect oracle, or a successful context build does not imply model uplift.
 
 ## Security posture
 
