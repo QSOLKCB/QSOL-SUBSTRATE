@@ -1,0 +1,54 @@
+{
+  "type": "qsol-substrate-release-policy",
+  "schema_version": "1.0.0",
+  "release_spec_version": "1.0.0",
+  "versioning": {
+    "scheme": "semver-2.0.0",
+    "tag_prefix": "v",
+    "major": "incompatible canonical schema, machine-contract, or release-contract change",
+    "minor": "backward-compatible canonical, projection, probe, or release capability addition",
+    "patch": "backward-compatible correction or hardening that does not weaken epistemic or provenance semantics",
+    "prerelease": "candidate or CI identity only; not a stable public release"
+  },
+  "channels": {
+    "stable": {
+      "publishable": true,
+      "prerelease_required": false
+    },
+    "candidate": {
+      "publishable": false,
+      "prerelease_required": true
+    },
+    "ci": {
+      "publishable": false,
+      "prerelease_required": true,
+      "prerelease_prefix": "ci."
+    }
+  },
+  "identity": {
+    "release_version_is_snapshot_identity": false,
+    "snapshot_identity_fields": [
+      "snapshot_date",
+      "source_commit",
+      "substrate_sha256"
+    ],
+    "canonical_fingerprint_is_release_fingerprint": false,
+    "derived_artifacts_are_canonical_truth": false,
+    "missing_derived_artifact_is_false": false
+  },
+  "immutability": {
+    "probe_snapshot_is_immutable_within_release": true,
+    "source_commit_must_equal_checked_out_head": true,
+    "tracked_source_tree_must_be_clean": true,
+    "release_manifest_is_canonical_json": true,
+    "release_checksums_exclude_the_checksum_file_itself": true
+  },
+  "archive": {
+    "doi_optional": true,
+    "default_provider": "Zenodo",
+    "doi_assignment_is_post_publication_metadata": true,
+    "doi_assignment_changes_canonical_substrate": false,
+    "recommended_resource_type": "Software",
+    "license": "Apache-2.0"
+  }
+}
