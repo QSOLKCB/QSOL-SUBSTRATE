@@ -1,0 +1,45 @@
+{
+  "type": "qsol-substrate-export-policy",
+  "schema_version": "1.0.0",
+  "export_policy": "explicit_allow_only",
+  "source_contract": {
+    "manifest_path": "manifest.json",
+    "protocol_pointer": "/protocol",
+    "protocol_equals": "QSOL-CONTEXT"
+  },
+  "allowlist_authority": "public_export/include.json",
+  "deny_policy": "public_export/exclude.json",
+  "output_manifest": "export-manifest.json",
+  "immutable_payload_files": [
+    "sources/index.json"
+  ],
+  "field_visibility": {
+    "default": "deny",
+    "exportable_only_when_rule_visibility": "public",
+    "unknown_visibility": "fail",
+    "record_visibility_is_derived_from_explicit_publication_grant": true
+  },
+  "provenance": {
+    "mode": "public_registry_only",
+    "require_nonempty_public_source_refs": true,
+    "source_registry": "sources/index.json",
+    "private_source_refs_may_be_copied": false
+  },
+  "canonicalization": {
+    "json": "qsol-canonical-json-v1",
+    "jsonl": "qsol-canonical-jsonl-v1",
+    "encoding": "utf-8",
+    "json_object_keys": "lexicographic",
+    "json_separators": [
+      ",",
+      ":"
+    ],
+    "ensure_ascii": false,
+    "allow_nan": false,
+    "jsonl_order": "preserve_declared_record_order",
+    "trailing_newline": true
+  },
+  "failure_semantics": "fail_closed",
+  "omission_semantics": "unavailable_not_false",
+  "publication_review_required": true
+}
