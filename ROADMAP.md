@@ -18,9 +18,7 @@
 - [x] Add project/research relationship graph.
 - [x] Add chronology for materially relevant public events.
 
-Phase 1 establishes the canonical public knowledge layer. The registry is
-selective rather than exhaustive: absence from the substrate means unavailable,
-not false.
+Phase 1 establishes the canonical public knowledge layer. The registry is selective rather than exhaustive: absence from the substrate means unavailable, not false.
 
 ## Phase 2 — Export pipeline
 
@@ -33,9 +31,7 @@ not false.
 - [x] Preserve public/private omission semantics during export.
 - [x] Guarantee that generated public records contain no private source references.
 
-The export pipeline treats publication as an explicit act. Private context
-never becomes public merely because a field was not explicitly marked private.
-The shipped allowlist contains zero private-to-public publication grants.
+The export pipeline treats publication as an explicit act. Private context never becomes public merely because a field was not explicitly marked private. The shipped allowlist contains zero private-to-public publication grants.
 
 ## Phase 3 — Validation and CI
 
@@ -51,10 +47,7 @@ The shipped allowlist contains zero private-to-public publication grants.
 - [x] SHA-256 substrate fingerprint.
 - [x] GitHub Actions validation workflow.
 
-Validation fails closed when canonical identity, provenance, visibility,
-relationships, chronology, publication/release identity, or the public boundary
-cannot be resolved safely. The integrity validator is deliberately network-free:
-live-source freshness and frozen-snapshot consistency remain separate concerns.
+Validation fails closed when canonical identity, provenance, visibility, relationships, chronology, publication/release identity, or the public boundary cannot be resolved safely. The integrity validator is deliberately network-free: live-source freshness and frozen-snapshot consistency remain separate concerns.
 
 ## Phase 4 — Portable model adapters
 
@@ -69,17 +62,11 @@ live-source freshness and frozen-snapshot consistency remain separate concerns.
 - [x] Model-independent adapter manifest.
 - [x] Record exact substrate version, commit, and adapter identity for reproducible runs.
 
-Adapters are disposable transport layers. They may change formatting and
-delivery, but must never redefine canonical substrate facts. Phase 4 generates
-all adapter knowledge from one byte-identical canonical projection and records
-snapshot identity, source commit, substrate SHA-256, projection SHA-256, adapter
-identity, per-file hashes, and an aggregate adapter-bundle fingerprint.
+Adapters are disposable transport layers. They may change formatting and delivery, but must never redefine canonical substrate facts. Phase 4 generates all adapter knowledge from one byte-identical canonical projection and records snapshot identity, source commit, substrate SHA-256, projection SHA-256, adapter identity, per-file hashes, and an aggregate adapter-bundle fingerprint.
 
 ## Phase 5 — Toolless Substrate Capsule
 
-Create a deterministic, self-contained substrate representation for AI systems
-that have no browsing, retrieval, file-system, repository, or external tool
-access.
+Create a deterministic, self-contained substrate representation for AI systems that have no browsing, retrieval, file-system, repository, or external tool access.
 
 ### Profiles
 
@@ -117,14 +104,14 @@ THEN:
 
 ### Toolless serialization
 
-* [x] Define a compact LLM-oriented substrate serialization.
-* [x] Preserve canonical IDs and aliases.
-* [x] Inline important relationships where this improves local comprehension.
-* [x] Preserve publication and DOI identity.
-* [x] Preserve provenance class and epistemic state.
-* [x] Preserve chronology without requiring external lookup.
-* [x] Avoid deeply nested structures where they waste context.
-* [x] Generate all tool-less artifacts from the canonical substrate rather than maintaining duplicate facts manually.
+- [x] Define a compact LLM-oriented substrate serialization.
+- [x] Preserve canonical IDs and aliases.
+- [x] Inline important relationships where this improves local comprehension.
+- [x] Preserve publication and DOI identity.
+- [x] Preserve provenance class and epistemic state.
+- [x] Preserve chronology without requiring external lookup.
+- [x] Avoid deeply nested structures where they waste context.
+- [x] Generate all tool-less artifacts from the canonical substrate rather than maintaining duplicate facts manually.
 
 Generated output:
 
@@ -136,73 +123,72 @@ dist/toolless/
 └── manifest.json
 ```
 
-Phase 5 uses deterministic model-independent `qsol-portable-token-v1` build
-budgets: `MICRO=8192`, `STANDARD=24576`, and `FULL=131072`. These values control
-compilation only and are not claims about any vendor/model tokenizer.
+Phase 5 uses deterministic model-independent `qsol-portable-token-v1` build budgets: `MICRO=8192`, `STANDARD=24576`, and `FULL=131072`. These values control compilation only and are not claims about any vendor/model tokenizer.
 
-Records are admitted only at whole canonical-item boundaries. Admission brings
-public `source_refs`, relationship endpoints, and other resolvable canonical-ID
-dependencies with the record, so compact profiles cannot gain space by leaving
-dangling provenance. Omitted material remains unavailable, not false.
+Records are admitted only at whole canonical-item boundaries. Admission brings public `source_refs`, relationship endpoints, and other resolvable canonical-ID dependencies with the record, so compact profiles cannot gain space by leaving dangling provenance. Omitted material remains unavailable, not false.
 
-The `FULL` profile must contain the complete canonical payload projection or the
-build fails closed. `MICRO` deliberately repeats the highest-risk epistemic
-rules for small-model robustness. Generated artifacts record the exact source
-commit, snapshot identity, canonical substrate SHA-256, deterministic portable
-token count, inclusion/omission counts, per-profile hashes, and aggregate
-capsule-bundle fingerprint.
+The `FULL` profile must contain the complete canonical payload projection or the build fails closed. `MICRO` deliberately repeats the highest-risk epistemic rules for small-model robustness. Generated artifacts record the exact source commit, snapshot identity, canonical substrate SHA-256, deterministic portable token count, inclusion/omission counts, per-profile hashes, and aggregate capsule-bundle fingerprint.
 
-The tool-less representation behaves as a frozen public context image: one
-artifact in, no external tools required, no freshness claims beyond the
-snapshot, and no invented lore to fill omissions.
+The tool-less representation behaves as a frozen public context image: one artifact in, no external tools required, no freshness claims beyond the snapshot, and no invented lore to fill omissions.
 
 ## Phase 6 — Vector and Latent Substrate Projection
 
-Explore whether the same canonical substrate can be projected into more compact
-machine representations without modifying the underlying canonical knowledge.
+Explore whether the same canonical substrate can be projected into more compact machine representations without modifying the underlying canonical knowledge.
 
-The canonical substrate remains vendor- and model-independent. Vector indexes,
-prefix states, caches, and learned adapters are disposable model-specific
-projections.
+The canonical substrate remains vendor- and model-independent. Vector indexes, prefix states, caches, and learned adapters are disposable model-specific projections.
 
 ### Vector substrate
 
-* [ ] Define deterministic record chunking.
-* [ ] Generate embeddings for canonical substrate records.
-* [ ] Preserve canonical record IDs alongside every vector.
-* [ ] Preserve provenance and epistemic metadata outside the embedding itself.
-* [ ] Add deterministic nearest-neighbour retrieval experiments.
-* [ ] Compare vector-selected context against fixed textual profiles.
-* [ ] Evaluate whether semantic retrieval can reduce prompt size without losing provenance.
+- [x] Define deterministic record chunking.
+- [x] Generate deterministic reference embeddings for canonical substrate records.
+- [x] Preserve canonical record IDs alongside every vector.
+- [x] Preserve provenance and epistemic metadata outside the embedding itself.
+- [x] Add deterministic nearest-neighbour retrieval experiments.
+- [x] Compare vector-selected context against fixed textual profile budgets.
+- [x] Evaluate whether retrieval can reduce prompt size without dropping provenance closure.
+- [x] Add fail-closed deterministic rebuild validation for the complete vector bundle.
 
-Proposed output:
+Generated output:
 
 ```text
 dist/vectors/
 ├── records.jsonl
 ├── embeddings.f16
 ├── index.json
+├── retrieval-report.json
 └── manifest.json
 ```
 
-Embedding vectors are retrieval indexes, not canonical truth.
+Phase 6 uses `qsol-record-chunk-v1` for one-canonical-item-per-chunk record projection and `qsol-hash-embed-v1` as a dependency-free 256-dimensional float16 reference embedding backend. The reference backend exists to make network-free CI and retrieval contracts reproducible; it is not asserted to be equivalent to a learned semantic embedding model.
 
-Raw embedding coordinates must never be treated as meaningful context by an LLM
-without an explicit retrieval or projection mechanism.
+Embedding vectors are retrieval indexes, not canonical truth. Raw embedding coordinates must never be treated as meaningful factual context by an LLM without an explicit retrieval/projection mechanism.
+
+Primary vector matches are closed over public provenance references and relationship endpoints before delivery. The reference retrieval report measures context size and expected-ID retrieval hits only; downstream model quality remains a Phase 7 measurement.
 
 ### Latent / prefix substrate
 
-Investigate model-specific substrate initialization mechanisms including:
+Phase 6 implements reproducible **experiment contracts** for model-specific substrate initialization. A checked item below means the recipe, source identity, compatibility requirements, invalidation behavior, and deterministic experiment payload are defined. It does **not** claim that generic repository CI trained model-specific weights or captured a universal KV cache.
 
-* [ ] Soft prompt / prefix tuning.
-* [ ] Prompt-tuned virtual tokens.
-* [ ] Model-specific adapter or LoRA experiments.
-* [ ] Prefilled attention/KV-cache substrate images.
-* [ ] Reusable model-specific prefix states.
-* [ ] Epistemic-prefix plus factual-text hybrid mode.
-* [ ] Deterministic regeneration from a declared substrate release.
-* [ ] Model/version compatibility manifests.
-* [ ] Explicit invalidation when model architecture or tokenizer changes.
+- [x] Soft prompt / prefix-tuning experiment recipe.
+- [x] Prompt-tuned virtual-token experiment recipe.
+- [x] Model-specific epistemic LoRA experiment recipe.
+- [x] Prefilled attention/KV-cache experiment recipe.
+- [x] Reusable model-specific prefix-state experiment recipe.
+- [x] Epistemic-prefix plus factual-text hybrid mode.
+- [x] Deterministic regeneration from declared snapshot/version + commit + substrate SHA-256.
+- [x] Model/version compatibility manifest schema and compatibility checker.
+- [x] Explicit invalidation when model revision, architecture, tokenizer, dimensions, attention layout, or KV layout changes.
+- [x] Deterministic validation of the model-projection experiment bundle.
+
+Generated output:
+
+```text
+dist/projections/
+├── epistemic-prefix.txt
+├── projection-recipes.json
+├── delivery-matrix.json
+└── manifest.json
+```
 
 Conceptual architecture:
 
@@ -224,28 +210,25 @@ canonical public records
         +------ model ----+
 ```
 
-A model-specific latent projection must never replace the canonical public
-substrate or become an independent source of truth.
+A model-specific latent projection must never replace the canonical public substrate or become an independent source of truth.
 
 ### Hybrid epistemic projection
 
-Investigate whether model-specific latent state is more useful for carrying
-stable interpretation rules than mutable factual information.
-
-Candidate split:
+Phase 6 fixes a deterministic candidate split:
 
 ```text
-LATENT EPISTEMIC SUBSTRATE
+LATENT / PREFIX EPISTEMIC SUBSTRATE
     UNKNOWN != FALSE
+    INFERENCE != FACT
     SATIRE != BIOGRAPHY
     REPLAY != EMPIRICAL VALIDATION
-    FORMALIZATION != PHYSICAL TRUTH
+    FORMALIZATION != PHYSICAL_TRUTH
     PRESERVE PROVENANCE
     RESOLVE CANONICAL IDS
 
             +
 
-TEXTUAL FACTUAL SUBSTRATE
+TEXTUAL / RETRIEVED FACTUAL SUBSTRATE
     identity
     projects
     publications
@@ -257,55 +240,46 @@ TEXTUAL FACTUAL SUBSTRATE
 USER TASK
 ```
 
-* [ ] Test whether stable cultural-pragmatic interpretation rules such as
-  `YEAH-NAH/1` are better preserved in an epistemic prefix, textual context, or
-  hybrid delivery mode.
+- [x] Define deterministic textual, epistemic-prefix, and hybrid delivery conditions for `YEAH-NAH/1`.
+- [x] Keep identical pragmatic rule payloads across those Phase 7 comparison conditions.
+- [x] Mark actual model-behaviour preservation/uplift measurement as Phase 7 work rather than inferring it from representation plumbing.
 
-This architecture keeps frequently changing public facts inspectable and textual
-while testing whether stable epistemic behaviour can be efficiently projected
-into temporary inference state.
+This architecture keeps frequently changing public facts inspectable and textual while testing whether stable epistemic behaviour can be efficiently projected into temporary inference state.
 
 ## Phase 7 — Substrate Probe
 
-Build a deterministic evaluation suite for measuring whether substrate delivery
-actually improves model behaviour.
+Build a deterministic evaluation suite for measuring whether substrate delivery actually improves model behaviour.
 
-* [ ] Deterministic question set.
-* [ ] Exact-known-fact tests.
-* [ ] `unknown`-answer tests.
-* [ ] Unsupported-assertion tests.
-* [ ] Provenance preservation tests.
-* [ ] Entity/alias disambiguation tests.
-* [ ] Contradiction handling tests.
-* [ ] Snapshot/freshness tests.
-* [ ] Satire/fiction boundary tests.
-* [ ] Formalization-versus-empirical-claim tests.
-* [ ] Project relationship tests.
-* [ ] Publication/DOI identity tests.
-* [ ] Reproducible model report-card format.
+- [ ] Deterministic question set.
+- [ ] Exact-known-fact tests.
+- [ ] `unknown`-answer tests.
+- [ ] Unsupported-assertion tests.
+- [ ] Provenance preservation tests.
+- [ ] Entity/alias disambiguation tests.
+- [ ] Contradiction handling tests.
+- [ ] Snapshot/freshness tests.
+- [ ] Satire/fiction boundary tests.
+- [ ] Formalization-versus-empirical-claim tests.
+- [ ] Project relationship tests.
+- [ ] Publication/DOI identity tests.
+- [ ] Reproducible model report-card format.
 
 ### YEAH-NAH/1 — Australian Pragmatic Humour Probe
 
-Build a deterministic cultural-pragmatics stress test for sarcasm, deadpan,
-understatement, banter, mock hostility, affectionate insult, and polarity
-reversal in Australian English. The purpose is not to assume that Australian
-speech is sarcastic; it is to test whether a model can avoid naive literalism
-without over-classifying ambiguous language as sarcasm or hostility.
+Build a deterministic cultural-pragmatics stress test for sarcasm, deadpan, understatement, banter, mock hostility, affectionate insult, and polarity reversal in Australian English. The purpose is not to assume that Australian speech is sarcastic; it is to test whether a model can avoid naive literalism without over-classifying ambiguous language as sarcasm or hostility.
 
-* [ ] Context-paired literal-versus-sarcastic utterance set.
-* [ ] Deadpan interpretation tests.
-* [ ] Understatement tests, including high-severity contexts expressed mildly.
-* [ ] Mock-hostility versus actual-hostility tests.
-* [ ] Affectionate-insult and familiar-banter tests.
-* [ ] Positive/negative polarity-reversal tests.
-* [ ] Contextual `yeah nah` / `nah yeah` interpretation tests.
-* [ ] Relationship-familiarity and conversational-context controls.
-* [ ] Sarcasm-confidence and uncertainty-calibration tests.
-* [ ] Speaker-confirmed sarcasm controls that distinguish explicit confirmation
-  from model inference.
-* [ ] Cross-model comparison for small open-weight and hosted models.
-* [ ] Compare naked, textual-substrate, vector-selected, latent-prefix, hybrid,
-  and tool-enabled conditions.
+- [ ] Context-paired literal-versus-sarcastic utterance set.
+- [ ] Deadpan interpretation tests.
+- [ ] Understatement tests, including high-severity contexts expressed mildly.
+- [ ] Mock-hostility versus actual-hostility tests.
+- [ ] Affectionate-insult and familiar-banter tests.
+- [ ] Positive/negative polarity-reversal tests.
+- [ ] Contextual `yeah nah` / `nah yeah` interpretation tests.
+- [ ] Relationship-familiarity and conversational-context controls.
+- [ ] Sarcasm-confidence and uncertainty-calibration tests.
+- [ ] Speaker-confirmed sarcasm controls that distinguish explicit confirmation from model inference.
+- [ ] Cross-model comparison for small open-weight and hosted models.
+- [ ] Compare naked, textual-substrate, vector-selected, latent-prefix, hybrid, and tool-enabled conditions.
 
 Normative interpretation guards for the probe:
 
@@ -320,17 +294,15 @@ CONTEXT > TOKEN_POLARITY
 
 Measure at least:
 
-* [ ] Sarcasm precision and recall.
-* [ ] Literal-meaning error rate.
-* [ ] Banter misclassification rate.
-* [ ] Hostility false-positive rate.
-* [ ] Understatement severity-preservation rate.
-* [ ] Confidence calibration.
-* [ ] Cultural-context dependence and uplift from substrate delivery.
+- [ ] Sarcasm precision and recall.
+- [ ] Literal-meaning error rate.
+- [ ] Banter misclassification rate.
+- [ ] Hostility false-positive rate.
+- [ ] Understatement severity-preservation rate.
+- [ ] Confidence calibration.
+- [ ] Cultural-context dependence and uplift from substrate delivery.
 
-`YEAH-NAH/1` is a pragmatic interpretation probe, not a canonical-fact source.
-A sarcasm classification remains `inferred` unless the speaker or cited evidence
-explicitly confirms the intended meaning.
+`YEAH-NAH/1` is a pragmatic interpretation probe, not a canonical-fact source. A sarcasm classification remains `inferred` unless the speaker or cited evidence explicitly confirms the intended meaning.
 
 ### Comparison matrix
 
@@ -356,38 +328,37 @@ TOOL-ENABLED RETRIEVAL
 
 Measure:
 
-* [ ] Factual accuracy.
-* [ ] Unsupported assertion rate.
-* [ ] `UNKNOWN` precision.
-* [ ] `UNKNOWN` recall.
-* [ ] Alias resolution accuracy.
-* [ ] Provenance fidelity.
-* [ ] Contradiction handling.
-* [ ] Claim-boundary preservation.
-* [ ] Context/token efficiency.
-* [ ] Substrate uplift over naked-model baseline.
-* [ ] Hallucination reduction relative to baseline.
+- [ ] Factual accuracy.
+- [ ] Unsupported assertion rate.
+- [ ] `UNKNOWN` precision.
+- [ ] `UNKNOWN` recall.
+- [ ] Alias resolution accuracy.
+- [ ] Provenance fidelity.
+- [ ] Contradiction handling.
+- [ ] Claim-boundary preservation.
+- [ ] Context/token efficiency.
+- [ ] Substrate uplift over naked-model baseline.
+- [ ] Hallucination reduction relative to baseline.
 
 A central research question is:
 
 > How much substrate is enough?
 
-A compact, well-structured substrate may outperform a much larger undifferentiated
-context dump.
+A compact, well-structured substrate may outperform a much larger undifferentiated context dump.
 
 ## Phase 8 — Release discipline
 
-* [ ] Semantic versioning policy.
-* [ ] Release manifests.
-* [ ] Canonical substrate snapshot identity.
-* [ ] Immutable probe snapshots.
-* [ ] Release fingerprints.
-* [ ] Toolless capsule fingerprints.
-* [ ] Vector-index fingerprints.
-* [ ] Model-specific projection manifests.
-* [ ] Compatibility metadata for latent/KV artifacts.
-* [ ] Reproducible build commands.
-* [ ] Optional archival DOI workflow.
+- [ ] Semantic versioning policy.
+- [ ] Release manifests.
+- [ ] Canonical substrate snapshot identity.
+- [ ] Immutable probe snapshots.
+- [ ] Release fingerprints.
+- [ ] Toolless capsule fingerprints.
+- [ ] Vector-index fingerprints.
+- [ ] Model-specific projection manifests.
+- [ ] Compatibility metadata for latent/KV artifacts.
+- [ ] Reproducible build commands.
+- [ ] Optional archival DOI workflow.
 
 Canonical substrate releases and derived projections must remain distinguishable.
 
@@ -410,11 +381,8 @@ artifact_sha256=<derived-artifact-fingerprint>
 
 The roadmap is intentionally incremental.
 
-A substrate should become more portable, more compact, and more useful without
-becoming less inspectable or less trustworthy.
+A substrate should become more portable, more compact, and more useful without becoming less inspectable or less trustworthy.
 
 The canonical public substrate remains the source of truth.
 
-Everything else — prose bundles, vector indexes, adapters, soft prompts,
-KV caches, and model-specific latent projections — is a reproducible projection
-of that source.
+Everything else — prose bundles, vector indexes, adapters, soft prompts, KV caches, and model-specific latent projections — is a reproducible projection of that source.
