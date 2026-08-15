@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/manifest.schema.json",
+  "title": "QSOL-SUBSTRATE machine manifest",
+  "type": "object",
+  "required": ["type", "protocol", "schema_version", "status", "snapshot_date", "visibility", "human_entrypoint", "machine_entrypoint", "normative_machine_files", "canonical_payload_files", "export_contract_files", "export_schemas", "machine_contract_schemas", "export_tool", "export_documentation", "validation", "validation_schemas", "schema", "adapter_roots", "license", "canonicality"],
+  "properties": {
+    "type": {"const": "qsol-substrate-manifest"},
+    "protocol": {"const": "QSOL-SUBSTRATE"},
+    "schema_version": {"const": "1.0.0"},
+    "status": {"type": "string", "minLength": 1},
+    "snapshot_date": {"type": "string", "format": "date"},
+    "visibility": {"const": "public"},
+    "human_entrypoint": {"const": "README.md"},
+    "machine_entrypoint": {"const": "ai/bootstrap.json"},
+    "normative_machine_files": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "canonical_payload_files": {"const": ["sources/index.json", "identity/public.json", "context/public.json", "terminology/index.json", "projects/index.json", "publications/index.json", "relationships/graph.json", "chronology/current.jsonl"]},
+    "export_contract_files": {"const": ["public_export/policy.json", "public_export/include.json", "public_export/exclude.json"]},
+    "export_schemas": {
+      "type": "object",
+      "required": ["policy", "allowlist", "deny_policy", "public_manifest", "private_audit_manifest"],
+      "properties": {
+        "policy": {"const": "schema/export-policy.schema.json"},
+        "allowlist": {"const": "schema/export-allowlist.schema.json"},
+        "deny_policy": {"const": "schema/export-deny-policy.schema.json"},
+        "public_manifest": {"const": "schema/export-manifest.schema.json"},
+        "private_audit_manifest": {"const": "schema/private-export-audit.schema.json"}
+      },
+      "additionalProperties": false
+    },
+    "machine_contract_schemas": {
+      "type": "object",
+      "required": ["manifest", "public_boundary"],
+      "properties": {
+        "manifest": {"const": "schema/manifest.schema.json"},
+        "public_boundary": {"const": "schema/public-boundary.schema.json"}
+      },
+      "additionalProperties": false
+    },
+    "export_tool": {"const": "tools/export_public_substrate.py"},
+    "export_documentation": {"const": "docs/EXPORT_PIPELINE.md"},
+    "validation": {
+      "type": "object",
+      "required": ["tool", "fingerprint_tool", "requirements", "workflow", "documentation", "live_network_required", "scope"],
+      "properties": {
+        "tool": {"const": "tools/validate_substrate.py"},
+        "fingerprint_tool": {"const": "tools/fingerprint_substrate.py"},
+        "requirements": {"const": "requirements-validation.txt"},
+        "workflow": {"const": ".github/workflows/validate-substrate.yml"},
+        "documentation": {"const": "docs/VALIDATION.md"},
+        "live_network_required": {"const": false},
+        "scope": {"const": "canonical_public_payload_and_cross_file_integrity"}
+      },
+      "additionalProperties": false
+    },
+    "validation_schemas": {
+      "type": "object",
+      "required": ["report", "fingerprint"],
+      "properties": {
+        "report": {"const": "schema/validation-report.schema.json"},
+        "fingerprint": {"const": "schema/substrate-fingerprint.schema.json"}
+      },
+      "additionalProperties": false
+    },
+    "schema": {"const": "schema/substrate.schema.json"},
+    "adapter_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "license": {"const": "Apache-2.0"},
+    "canonicality": {
+      "type": "object",
+      "required": ["human_prose_is_explanatory", "structured_machine_contracts_are_normative_for_machine_semantics", "live_primary_sources_can_supersede_stale_payload_state", "registry_omission_means_unavailable_not_false", "phase_1_payload_is_selective_not_exhaustive", "private_export_default_is_zero_publication_grants", "private_export_is_staging_not_self_authorising_publication", "validation_fails_closed_on_unresolved_integrity", "substrate_fingerprint_scope"],
+      "properties": {
+        "human_prose_is_explanatory": {"const": true},
+        "structured_machine_contracts_are_normative_for_machine_semantics": {"const": true},
+        "live_primary_sources_can_supersede_stale_payload_state": {"const": true},
+        "registry_omission_means_unavailable_not_false": {"const": true},
+        "phase_1_payload_is_selective_not_exhaustive": {"const": true},
+        "private_export_default_is_zero_publication_grants": {"const": true},
+        "private_export_is_staging_not_self_authorising_publication": {"const": true},
+        "validation_fails_closed_on_unresolved_integrity": {"const": true},
+        "substrate_fingerprint_scope": {"const": "canonical_public_payload"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
