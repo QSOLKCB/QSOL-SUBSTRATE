@@ -37,6 +37,14 @@ class PortableAdapterTests(unittest.TestCase):
         self.assertEqual(len(manifest["adapters"]), 8)
         self.assertEqual(validate_adapter_bundle(ROOT, self.output), [])
 
+    def test_successful_build_preserves_repository_source_tree(self):
+        manifest_path = ROOT / "ai/manifest.json"
+        before = manifest_path.read_bytes()
+        self._build()
+        self.assertTrue(manifest_path.is_file())
+        self.assertEqual(manifest_path.read_bytes(), before)
+        self.assertTrue((ROOT / "tools/adapter_core.py").is_file())
+
     def test_build_is_deterministic_for_same_commit(self):
         first = self._build()
         first_manifest = (self.output / "manifest.json").read_bytes()
