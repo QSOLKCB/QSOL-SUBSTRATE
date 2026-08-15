@@ -1,5 +1,7 @@
 # QSOL-SUBSTRATE
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21959180.svg)](https://doi.org/10.5281/zenodo.21959180)
+
 **A public, vendor-neutral context substrate for AI systems.**
 
 QSOL-SUBSTRATE is the public-facing context layer for the QSOL ecosystem. It exists so an AI model, agent, retrieval system, or human researcher can acquire enough verified context to understand public QSOL terminology, projects, publications, provenance, and relationships **without access to private working context or QSOL-NEXUS**.
