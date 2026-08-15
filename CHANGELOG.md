@@ -40,6 +40,17 @@ The project intends to use semantic versioning once formal releases begin.
 - Strict bootstrap JSON Schemas for `ai/manifest.json` and `ai/public-boundary.json`.
 - Validation/fingerprint JSON Schemas and GitHub Actions enforcement.
 - Adversarial Phase 3 integrity regression tests.
+- Phase 4 deterministic portable-adapter compiler at `tools/build_adapters.py`.
+- Phase 4 adapter-bundle validator at `tools/validate_adapter_bundle.py`.
+- Generic single-file, Grok chat, xAI Collections, Grok Build, Sider, Ollama, OpenAI-compatible, and Anthropic-compatible generated transports.
+- Model-independent adapter manifest with exact snapshot version, source commit, substrate SHA-256, projection SHA-256, adapter identities, per-file hashes, and aggregate adapter-bundle SHA-256.
+- Strict JSON Schema for generated portable-adapter manifests.
+- Grok Build `AGENTS.md` plus repo-local `qsol-substrate` skill export.
+- xAI retrieval document plus collection/upload metadata export.
+- Ollama system-context and Modelfile-template export.
+- OpenAI Responses-style and Anthropic Messages-style request templates with runtime model/task placeholders.
+- Phase 4 adapter regression tests and GitHub Actions build/validation artifact upload.
+- Human documentation for adapter provenance, generation, transport boundaries, and validation.
 
 ### Design decisions
 
@@ -65,3 +76,8 @@ The project intends to use semantic versioning once formal releases begin.
 - Validation findings must not echo detected secret-bearing object keys into logs or machine-readable reports.
 - Secret/private-reference detector classes are fail-closed configuration and may not be disabled by empty arrays.
 - The substrate fingerprint covers canonical public payload semantics, not documentation, tests, or tooling.
+- Phase 4 adapters are generated projections, never canonical fact stores.
+- Every Phase 4 knowledge-bearing adapter embeds one byte-identical canonical projection body and records its `projection_sha256`.
+- Until formal release SemVer exists, adapter provenance uses `snapshot-YYYY-MM-DD` plus exact source commit and canonical substrate SHA-256.
+- Runtime model IDs, API keys, collection IDs, and local model choices are transport configuration and are not canonical substrate facts.
+- Adapter output may change formatting and delivery but may not enrich, reinterpret, promote, or otherwise redefine canonical substrate facts.
