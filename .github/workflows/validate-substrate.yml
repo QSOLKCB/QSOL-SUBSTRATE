@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -40,15 +42,7 @@ jobs:
 
       - name: Resolve derived-artifact source commit
         id: artifact-source
-        env:
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          EVENT_SHA: ${{ github.sha }}
-        run: |
-          if [ -n "$PR_HEAD_SHA" ]; then
-            echo "sha=$PR_HEAD_SHA" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=$EVENT_SHA" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Build portable adapters
         run: python tools/build_adapters.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/adapters
