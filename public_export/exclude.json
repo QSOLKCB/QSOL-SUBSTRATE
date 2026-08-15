@@ -78,7 +78,7 @@
     },
     {
       "id": "localhost-url",
-      "regex": "https?://(?:localhost|127\\.0\\.1)(?::\\d+)?(?:/|\\b)"
+      "regex": "https?://(?:localhost|127\\.0\\.0\\.1)(?::\\d+)?(?:/|\\b)"
     }
   ]
 }
