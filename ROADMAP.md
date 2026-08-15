@@ -11,12 +11,12 @@
 
 ## Phase 1 — Canonical public substrate
 
-- [ ] Add public identity/context records.
-- [ ] Add canonical QSOL terminology and aliases.
-- [ ] Add active public project registry.
-- [ ] Add publication and DOI registry.
-- [ ] Add project/research relationship graph.
-- [ ] Add chronology for materially relevant public events.
+- [x] Add public identity/context records.
+- [x] Add canonical QSOL terminology and aliases.
+- [x] Add active public project registry.
+- [x] Add publication and DOI registry.
+- [x] Add project/research relationship graph.
+- [x] Add chronology for materially relevant public events.
 
 ## Phase 2 — Export pipeline
 
