@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/archive-metadata.schema.json",
+  "title": "QSOL-SUBSTRATE archival metadata",
+  "type": "object",
+  "required": ["type", "schema_version", "provider", "status", "doi", "resource_type", "title", "version", "license", "source_commit", "substrate_sha256", "notes"],
+  "properties": {
+    "type": {"const": "qsol-substrate-archive-metadata"},
+    "schema_version": {"const": "1.0.0"},
+    "provider": {"const": "Zenodo"},
+    "status": {"enum": ["unassigned", "reserved", "published"]},
+    "doi": {"type": ["string", "null"], "pattern": "^10\\.\\d{4,9}/\\S+$"},
+    "resource_type": {"const": "Software"},
+    "title": {"const": "QSOL-SUBSTRATE"},
+    "version": {"type": "string", "minLength": 1},
+    "license": {"const": "Apache-2.0"},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "notes": {
+      "type": "array",
+      "minItems": 2,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "published"}}},
+      "then": {"required": ["doi"], "properties": {"doi": {"type": "string"}}}
+    }
+  ],
+  "additionalProperties": false
+}
