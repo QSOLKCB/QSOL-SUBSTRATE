@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/export-policy.schema.json",
+  "title": "QSOL-SUBSTRATE explicit-allow export policy",
+  "type": "object",
+  "required": [
+    "type",
+    "schema_version",
+    "export_policy",
+    "source_contract",
+    "allowlist_authority",
+    "deny_policy",
+    "output_manifest",
+    "immutable_payload_files",
+    "field_visibility",
+    "provenance",
+    "canonicalization",
+    "failure_semantics",
+    "omission_semantics",
+    "publication_review_required"
+  ],
+  "properties": {
+    "type": {"const": "qsol-substrate-export-policy"},
+    "schema_version": {"const": "1.0.0"},
+    "export_policy": {"const": "explicit_allow_only"},
+    "source_contract": {
+      "type": "object",
+      "required": ["manifest_path", "protocol_pointer", "protocol_equals"],
+      "properties": {
+        "manifest_path": {"type": "string", "minLength": 1},
+        "protocol_pointer": {"type": "string"},
+        "protocol_equals": {"const": "QSOL-CONTEXT"}
+      },
+      "additionalProperties": false
+    },
+    "allowlist_authority": {"const": "public_export/include.json"},
+    "deny_policy": {"const": "public_export/exclude.json"},
+    "output_manifest": {"type": "string", "minLength": 1},
+    "immutable_payload_files": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "field_visibility": {
+      "type": "object",
+      "required": ["default", "exportable_only_when_rule_visibility", "unknown_visibility", "record_visibility_is_derived_from_explicit_publication_grant"],
+      "properties": {
+        "default": {"const": "deny"},
+        "exportable_only_when_rule_visibility": {"const": "public"},
+        "unknown_visibility": {"const": "fail"},
+        "record_visibility_is_derived_from_explicit_publication_grant": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["mode", "require_nonempty_public_source_refs", "source_registry", "private_source_refs_may_be_copied"],
+      "properties": {
+        "mode": {"const": "public_registry_only"},
+        "require_nonempty_public_source_refs": {"const": true},
+        "source_registry": {"const": "sources/index.json"},
+        "private_source_refs_may_be_copied": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "canonicalization": {
+      "type": "object",
+      "required": ["json", "jsonl", "encoding", "json_object_keys", "json_separators", "ensure_ascii", "allow_nan", "jsonl_order", "trailing_newline"],
+      "properties": {
+        "json": {"const": "qsol-canonical-json-v1"},
+        "jsonl": {"const": "qsol-canonical-jsonl-v1"},
+        "encoding": {"const": "utf-8"},
+        "json_object_keys": {"const": "lexicographic"},
+        "json_separators": {"const": [",", ":"]},
+        "ensure_ascii": {"const": false},
+        "allow_nan": {"const": false},
+        "jsonl_order": {"const": "preserve_declared_record_order"},
+        "trailing_newline": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "failure_semantics": {"const": "fail_closed"},
+    "omission_semantics": {"const": "unavailable_not_false"},
+    "publication_review_required": {"const": true}
+  },
+  "additionalProperties": false
+}
