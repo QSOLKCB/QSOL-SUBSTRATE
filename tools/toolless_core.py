@@ -87,6 +87,10 @@ def _load_json(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise CapsuleError(f"required file not found: {path}") from exc
+    except UnicodeDecodeError as exc:
+        raise CapsuleError(f"invalid UTF-8 in {path}") from exc
+    except OSError as exc:
+        raise CapsuleError(f"cannot read {path}: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise CapsuleError(f"invalid JSON in {path}: {exc}") from exc
 
@@ -96,6 +100,10 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError as exc:
         raise CapsuleError(f"required file not found: {path}") from exc
+    except UnicodeDecodeError as exc:
+        raise CapsuleError(f"invalid UTF-8 in {path}") from exc
+    except OSError as exc:
+        raise CapsuleError(f"cannot read {path}: {exc}") from exc
     rows: list[dict[str, Any]] = []
     for line_no, line in enumerate(text.splitlines(), 1):
         if not line.strip():
@@ -111,13 +119,11 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def portable_token_count(text: str) -> int:
-    """Model-independent deterministic token accounting.
+    """Return deterministic qsol-portable-token-v1 accounting.
 
-    qsol-portable-token-v1 normalizes text with NFKC, splits it into Unicode word
-    runs and single non-whitespace punctuation/symbols, then charges each word run
-    ceil(UTF-8 bytes / 4) portable tokens and each punctuation/symbol one token.
-    This is a reproducible budgeting contract, not a claim about any model's
-    tokenizer.
+    This is a reproducible build-budget contract, not a claim about any model's
+    tokenizer. NFKC-normalized Unicode word runs cost ceil(UTF-8 bytes / 4), and
+    each non-whitespace punctuation/symbol costs one portable token.
     """
     normalized = unicodedata.normalize("NFKC", text)
     total = 0
@@ -143,8 +149,6 @@ def _priority(kind: str, source_path: str, item_id: str) -> int:
         return 2
     if kind == "wrapper":
         return 2
-    if kind == "source":
-        return 3
     return 3
 
 
@@ -187,19 +191,17 @@ def _canonical_items(root: Path, manifest: dict[str, Any]) -> list[CapsuleItem]:
         document = _load_json(path)
         if not isinstance(document, dict):
             raise CapsuleError(f"canonical JSON payload must be an object: {rel}")
-
         wrapper = _wrapper_payload(document)
         if wrapper:
             add(f"wrapper:{rel}", "wrapper", rel, wrapper)
 
-        collection_map = (
+        for key, fallback in (
             ("sources", "source"),
             ("records", "record"),
             ("claims", "claim"),
             ("nodes", "research_topic"),
             ("edges", "relationship"),
-        )
-        for key, fallback in collection_map:
+        ):
             values = document.get(key, [])
             if values is None:
                 continue
@@ -212,7 +214,6 @@ def _canonical_items(root: Path, manifest: dict[str, Any]) -> list[CapsuleItem]:
                 if not isinstance(item_id, str) or not item_id:
                     raise CapsuleError(f"canonical record {rel}/{key}/{index} has no id")
                 add(item_id, _record_kind(record, fallback), rel, record)
-
     return items
 
 
@@ -229,18 +230,17 @@ def _walk_strings(value: Any) -> Iterable[str]:
 
 def _dependencies(item: CapsuleItem, lookup: dict[str, CapsuleItem]) -> set[str]:
     deps: set[str] = set()
-    payload = item.payload
-    source_refs = payload.get("source_refs")
+    source_refs = item.payload.get("source_refs")
     if isinstance(source_refs, list):
         for ref in source_refs:
             if isinstance(ref, str) and ref in lookup:
                 deps.add(ref)
     if item.kind == "relationship":
         for key in ("source", "target"):
-            value = payload.get(key)
+            value = item.payload.get(key)
             if isinstance(value, str) and value in lookup:
                 deps.add(value)
-    for text in _walk_strings(payload):
+    for text in _walk_strings(item.payload):
         if CANONICAL_ID_RE.match(text) and text in lookup and text != item.item_id:
             deps.add(text)
     return deps
@@ -284,19 +284,13 @@ def _line_for_item(item: CapsuleItem) -> str:
     return f"ITEM\t{item.kind}\t{item.source_path}\t{payload}"
 
 
-def _render_capsule(
-    profile: dict[str, Any],
-    identity: dict[str, Any],
-    selected_ids: set[str],
-    all_items: list[CapsuleItem],
-) -> str:
+def _render_capsule(profile: dict[str, Any], identity: dict[str, Any], selected_ids: set[str], all_items: list[CapsuleItem]) -> str:
     lookup = {item.item_id: item for item in all_items}
     selected = sorted((lookup[item_id] for item_id in selected_ids), key=_item_sort_key)
     omitted = len(all_items) - len(selected)
-    profile_name = profile["name"]
     lines = [
         "QSOL-SUBSTRATE/TOOLLESS/1",
-        f"PROFILE={profile_name}",
+        f"PROFILE={profile['name']}",
         "NO_TOOLS=true",
         "TOOLS_AVAILABLE=false",
         f"CAPSULE_SPEC_VERSION={CAPSULE_SPEC_VERSION}",
@@ -344,7 +338,6 @@ def _render_capsule(
         lines.append(_line_for_item(item))
         for guard in _boundary_guards(item):
             lines.append(f"BOUNDARY\t{item.item_id}\t{guard}")
-
     if profile.get("redundant_guards"):
         lines.extend([
             "",
@@ -386,7 +379,6 @@ def _select_profile(profile: dict[str, Any], identity: dict[str, Any], items: li
     lookup = {item.item_id: item for item in items}
     dependencies = {item.item_id: _dependencies(item, lookup) for item in items}
     ordered = sorted(items, key=_item_sort_key)
-
     if profile["name"] == "FULL":
         selected = set(lookup)
         text = _render_capsule(profile, identity, selected, items)
@@ -394,7 +386,6 @@ def _select_profile(profile: dict[str, Any], identity: dict[str, Any], items: li
         if count > profile["budget"]:
             raise CapsuleError(f"FULL capsule requires {count} portable tokens, above budget {profile['budget']}")
         return selected, text
-
     selected: set[str] = set()
     for candidate in ordered:
         if candidate.item_id in selected:
@@ -404,60 +395,70 @@ def _select_profile(profile: dict[str, Any], identity: dict[str, Any], items: li
         text = _render_capsule(profile, identity, trial, items)
         if portable_token_count(text) <= profile["budget"]:
             selected = trial
-
     text = _render_capsule(profile, identity, selected, items)
     if portable_token_count(text) > profile["budget"]:
         raise CapsuleError(f"{profile['name']} capsule exceeded deterministic token budget")
     return selected, text
 
 
+def _profile_entry(profile: dict[str, Any], selected: set[str], text: str, items: list[CapsuleItem]) -> dict[str, Any]:
+    data = text.encode("utf-8")
+    lookup = {item.item_id: item for item in items}
+    kind_counts: dict[str, int] = {}
+    for item_id in selected:
+        kind = lookup[item_id].kind
+        kind_counts[kind] = kind_counts.get(kind, 0) + 1
+    return {
+        "name": profile["name"],
+        "file": profile["filename"],
+        "token_budget": profile["budget"],
+        "portable_tokens": portable_token_count(text),
+        "bytes": len(data),
+        "sha256": _sha256(data),
+        "included_items": len(selected),
+        "omitted_items": len(items) - len(selected),
+        "truncated": len(selected) != len(items),
+        "kind_counts": dict(sorted(kind_counts.items())),
+        "strategic_redundancy": bool(profile.get("redundant_guards")),
+    }
+
+
+def _bundle_hash(profile_entries: list[dict[str, Any]]) -> str:
+    rows = [(entry["file"], entry["sha256"], entry["bytes"]) for entry in profile_entries]
+    material = "".join(f"{path}\0{sha}\0{size}\n" for path, sha, size in sorted(rows)).encode("utf-8")
+    return _sha256(material)
+
+
 def _ensure_safe_output(root: Path, output: Path) -> tuple[Path, Path]:
     root = root.resolve()
-    output = output.resolve()
-    if output == root:
+    output = output.absolute()
+    if output.is_symlink():
+        raise CapsuleError("refusing symlinked capsule output path")
+    resolved = output.resolve(strict=False)
+    if resolved == root:
         raise CapsuleError("capsule output may not replace repository root")
-    if output in root.parents:
+    if resolved in root.parents:
         raise CapsuleError("capsule output may not be an ancestor of repository root")
-    return root, output
+    if resolved.is_relative_to(root):
+        allowed = (root / "dist" / "toolless").resolve(strict=False)
+        if resolved != allowed:
+            raise CapsuleError("in-repository capsule output is restricted to dist/toolless")
+    return root, resolved
 
 
 def build_toolless_bundle(root: Path, output: Path, source_commit: str) -> dict[str, Any]:
     root, output = _ensure_safe_output(root, output)
     identity, source_manifest = _identity(root, source_commit)
     items = _canonical_items(root, source_manifest)
-
     output.parent.mkdir(parents=True, exist_ok=True)
     temp_dir: Path | None = Path(tempfile.mkdtemp(prefix=f".{output.name}.tmp-", dir=output.parent))
     try:
         profile_entries: list[dict[str, Any]] = []
-        file_rows: list[tuple[str, str, int]] = []
         for profile in PROFILE_SPECS:
             selected, text = _select_profile(profile, identity, items)
-            data = text.encode("utf-8")
-            rel = profile["filename"]
-            (temp_dir / rel).write_bytes(data)
-            kind_counts: dict[str, int] = {}
-            lookup = {item.item_id: item for item in items}
-            for item_id in selected:
-                kind = lookup[item_id].kind
-                kind_counts[kind] = kind_counts.get(kind, 0) + 1
-            entry = {
-                "name": profile["name"],
-                "file": rel,
-                "token_budget": profile["budget"],
-                "portable_tokens": portable_token_count(text),
-                "bytes": len(data),
-                "sha256": _sha256(data),
-                "included_items": len(selected),
-                "omitted_items": len(items) - len(selected),
-                "truncated": len(selected) != len(items),
-                "kind_counts": dict(sorted(kind_counts.items())),
-                "strategic_redundancy": bool(profile.get("redundant_guards")),
-            }
+            entry = _profile_entry(profile, selected, text, items)
+            (temp_dir / entry["file"]).write_bytes(text.encode("utf-8"))
             profile_entries.append(entry)
-            file_rows.append((rel, entry["sha256"], entry["bytes"]))
-
-        bundle_material = "".join(f"{path}\0{sha}\0{size}\n" for path, sha, size in sorted(file_rows)).encode("utf-8")
         manifest = {
             "type": "qsol-substrate-toolless-manifest",
             "schema_version": "1.0.0",
@@ -479,13 +480,12 @@ def build_toolless_bundle(root: Path, output: Path, source_commit: str) -> dict[
                 "omission_semantics": "unavailable_not_false",
             },
             "profiles": profile_entries,
-            "bundle_sha256": _sha256(bundle_material),
+            "bundle_sha256": _bundle_hash(profile_entries),
         }
         (temp_dir / "manifest.json").write_bytes(canonical_json_bytes(manifest))
-
         if output.exists():
-            if output.is_symlink():
-                raise CapsuleError("refusing to replace symlinked capsule output")
+            if output.is_symlink() or not output.is_dir():
+                raise CapsuleError("refusing to replace non-directory or symlinked capsule output")
             shutil.rmtree(output)
         temp_dir.replace(output)
         temp_dir = None
@@ -527,16 +527,24 @@ def _parse_capsule_items(text: str) -> tuple[dict[str, tuple[str, str, dict[str,
     return items, boundaries
 
 
+def _finding(code: str, path: str, message: str) -> CapsuleFinding:
+    return CapsuleFinding(code, path, message)
+
+
 def validate_toolless_bundle(root: Path, bundle: Path, *, schema_path: str = CAPSULE_MANIFEST_SCHEMA) -> list[CapsuleFinding]:
     root = root.resolve()
-    bundle = bundle.resolve()
+    bundle = bundle.absolute()
     findings: list[CapsuleFinding] = []
+
+    manifest_path = bundle / "manifest.json"
+    if manifest_path.is_symlink():
+        return [_finding("toolless.symlink", "manifest.json", "manifest must be a regular non-symlink file inside the bundle")]
     try:
-        manifest = _load_json(bundle / "manifest.json")
+        manifest = _load_json(manifest_path)
     except CapsuleError as exc:
-        return [CapsuleFinding("toolless.manifest", "manifest.json", str(exc))]
+        return [_finding("toolless.manifest", "manifest.json", str(exc))]
     if not isinstance(manifest, dict):
-        return [CapsuleFinding("toolless.manifest", "manifest.json", "manifest must be an object")]
+        return [_finding("toolless.manifest", "manifest.json", "manifest must be an object")]
 
     try:
         schema = _load_json(root / schema_path)
@@ -544,103 +552,111 @@ def validate_toolless_bundle(root: Path, bundle: Path, *, schema_path: str = CAP
         validator = Draft202012Validator(schema, format_checker=FormatChecker())
         for error in validator.iter_errors(manifest):
             pointer = "/".join(str(part) for part in error.absolute_path)
-            findings.append(CapsuleFinding("toolless.schema", f"manifest.json/{pointer}" if pointer else "manifest.json", "toolless manifest schema violation"))
+            findings.append(_finding("toolless.schema", f"manifest.json/{pointer}" if pointer else "manifest.json", "toolless manifest schema violation"))
     except Exception as exc:
-        return [CapsuleFinding("toolless.schema_definition", schema_path, str(exc))]
+        return [_finding("toolless.schema_definition", schema_path, str(exc))]
 
     substrate = manifest.get("substrate")
     if not isinstance(substrate, dict):
-        findings.append(CapsuleFinding("toolless.substrate", "manifest.json/substrate", "substrate identity must be an object"))
+        findings.append(_finding("toolless.substrate", "manifest.json/substrate", "substrate identity must be an object"))
         return findings
     source_commit = substrate.get("source_commit")
     if not isinstance(source_commit, str) or not COMMIT_RE.fullmatch(source_commit):
-        findings.append(CapsuleFinding("toolless.commit", "manifest.json/substrate/source_commit", "source commit must be a 40-character lowercase hexadecimal SHA"))
+        findings.append(_finding("toolless.commit", "manifest.json/substrate/source_commit", "source commit must be a 40-character lowercase hexadecimal SHA"))
+        return findings
 
     try:
-        expected_fp = build_fingerprint(root)["substrate_sha256"]
-        source_manifest = _load_json(root / "ai/manifest.json")
+        expected_identity, source_manifest = _identity(root, source_commit)
         canonical_items = _canonical_items(root, source_manifest)
     except Exception as exc:
-        findings.append(CapsuleFinding("toolless.canonical", "canonical_payload", str(exc)))
+        findings.append(_finding("toolless.canonical", "canonical_payload", str(exc)))
         return findings
-    if substrate.get("substrate_sha256") != expected_fp:
-        findings.append(CapsuleFinding("toolless.substrate_hash", "manifest.json/substrate/substrate_sha256", "capsule bundle does not match current canonical substrate fingerprint"))
 
-    canonical_lookup = {item.item_id: item for item in canonical_items}
+    for key in ("protocol", "version", "version_kind", "schema_version", "snapshot_date", "substrate_sha256"):
+        if substrate.get(key) != expected_identity.get(key):
+            findings.append(_finding("toolless.substrate_identity", f"manifest.json/substrate/{key}", f"capsule substrate {key} does not match canonical manifest identity"))
+
     profile_entries = manifest.get("profiles")
     if not isinstance(profile_entries, list):
-        findings.append(CapsuleFinding("toolless.profiles", "manifest.json/profiles", "profiles must be an array"))
+        findings.append(_finding("toolless.profiles", "manifest.json/profiles", "profiles must be an array"))
         return findings
     if [entry.get("name") for entry in profile_entries if isinstance(entry, dict)] != list(PROFILE_NAMES):
-        findings.append(CapsuleFinding("toolless.profile_set", "manifest.json/profiles", "profile set/order must be MICRO, STANDARD, FULL"))
+        findings.append(_finding("toolless.profile_set", "manifest.json/profiles", "profile set/order must be MICRO, STANDARD, FULL"))
 
-    file_rows: list[tuple[str, str, int]] = []
-    for index, entry in enumerate(profile_entries):
-        if not isinstance(entry, dict):
+    expected_files = {"manifest.json", *(profile["filename"] for profile in PROFILE_SPECS)}
+    actual_files: set[str] = set()
+    if bundle.is_symlink():
+        findings.append(_finding("toolless.symlink", str(bundle), "bundle root may not be a symlink"))
+    try:
+        for path in bundle.rglob("*"):
+            rel = path.relative_to(bundle).as_posix()
+            if path.is_symlink():
+                findings.append(_finding("toolless.symlink", rel, "bundle entries must not be symlinks"))
+                continue
+            if path.is_file():
+                actual_files.add(rel)
+    except OSError as exc:
+        findings.append(_finding("toolless.filesystem", str(bundle), f"cannot enumerate bundle: {exc}"))
+        return findings
+    extras = sorted(actual_files - expected_files)
+    missing = sorted(expected_files - actual_files)
+    if extras:
+        findings.append(_finding("toolless.unexpected_files", str(bundle), "undeclared bundle files are forbidden: " + ", ".join(extras)))
+    if missing:
+        findings.append(_finding("toolless.missing_files", str(bundle), "required bundle files are missing: " + ", ".join(missing)))
+
+    expected_entries: list[dict[str, Any]] = []
+    for index, profile in enumerate(PROFILE_SPECS):
+        try:
+            selected, expected_text = _select_profile(profile, expected_identity, canonical_items)
+            expected_entry = _profile_entry(profile, selected, expected_text, canonical_items)
+        except CapsuleError as exc:
+            findings.append(_finding("toolless.selection", profile["name"], str(exc)))
             continue
-        name = entry.get("name")
-        rel = entry.get("file")
-        if not isinstance(rel, str):
-            findings.append(CapsuleFinding("toolless.file", f"manifest.json/profiles/{index}/file", "profile file must be a string"))
+        expected_entries.append(expected_entry)
+
+        entry = profile_entries[index] if index < len(profile_entries) and isinstance(profile_entries[index], dict) else {}
+        rel = profile["filename"]
+        path = bundle / rel
+        if path.is_symlink():
             continue
         try:
-            rel = _safe_relative(rel)
-            data = (bundle / rel).read_bytes()
+            if not path.is_file():
+                raise CapsuleError("profile is not a regular file")
+            resolved = path.resolve(strict=True)
+            bundle_resolved = bundle.resolve(strict=True)
+            if not resolved.is_relative_to(bundle_resolved):
+                raise CapsuleError("profile resolves outside bundle root")
+            data = path.read_bytes()
             text = data.decode("utf-8")
-        except (CapsuleError, FileNotFoundError, UnicodeDecodeError) as exc:
-            findings.append(CapsuleFinding("toolless.file", rel, str(exc)))
+        except (CapsuleError, FileNotFoundError, UnicodeDecodeError, OSError) as exc:
+            findings.append(_finding("toolless.file", rel, str(exc)))
             continue
-        actual_sha = _sha256(data)
-        if actual_sha != entry.get("sha256"):
-            findings.append(CapsuleFinding("toolless.file_hash", rel, "capsule SHA-256 does not match manifest"))
-        if len(data) != entry.get("bytes"):
-            findings.append(CapsuleFinding("toolless.file_bytes", rel, "capsule byte length does not match manifest"))
-        actual_tokens = portable_token_count(text)
-        if actual_tokens != entry.get("portable_tokens"):
-            findings.append(CapsuleFinding("toolless.token_count", rel, "portable token count does not match manifest"))
-        budget = entry.get("token_budget")
-        if not isinstance(budget, int) or actual_tokens > budget:
-            findings.append(CapsuleFinding("toolless.token_budget", rel, "capsule exceeds declared portable token budget"))
 
-        required_stamps = [
-            f"PROFILE={name}",
-            "NO_TOOLS=true",
-            f"SNAPSHOT_DATE={substrate.get('snapshot_date')}",
-            f"SOURCE_COMMIT={source_commit}",
-            f"SUBSTRATE_SHA256={substrate.get('substrate_sha256')}",
-            "TOKENIZER=qsol-portable-token-v1",
-            "OMISSION_MEANS=UNAVAILABLE_NOT_FALSE",
-        ]
-        for stamp in required_stamps:
-            if stamp not in text:
-                findings.append(CapsuleFinding("toolless.stamp", rel, f"required capsule stamp missing: {stamp}"))
-        for guard in CORE_GUARDS:
-            if guard not in text:
-                findings.append(CapsuleFinding("toolless.guard", rel, f"required epistemic guard missing: {guard}"))
-        if "If a question requires post-snapshot current state" not in text:
-            findings.append(CapsuleFinding("toolless.freshness", rel, "snapshot-currentness refusal rule is missing"))
+        expected_data = expected_text.encode("utf-8")
+        if data != expected_data:
+            findings.append(_finding("toolless.render_mismatch", rel, "capsule bytes do not match deterministic canonical renderer"))
+
+        for field in (
+            "name", "file", "token_budget", "portable_tokens", "bytes", "sha256",
+            "included_items", "omitted_items", "truncated", "kind_counts", "strategic_redundancy",
+        ):
+            if entry.get(field) != expected_entry[field]:
+                findings.append(_finding("toolless.profile_metadata", f"manifest.json/profiles/{index}/{field}", f"profile {field} does not match deterministic build result"))
 
         try:
             parsed, boundaries = _parse_capsule_items(text)
         except CapsuleError as exc:
-            findings.append(CapsuleFinding("toolless.serialization", rel, str(exc)))
+            findings.append(_finding("toolless.serialization", rel, str(exc)))
             continue
 
-        if len(parsed) != entry.get("included_items"):
-            findings.append(CapsuleFinding("toolless.item_count", rel, "included item count does not match manifest"))
-        if len(canonical_items) - len(parsed) != entry.get("omitted_items"):
-            findings.append(CapsuleFinding("toolless.omitted_count", rel, "omitted item count does not match canonical item set"))
-        expected_truncated = len(parsed) != len(canonical_items)
-        if entry.get("truncated") is not expected_truncated:
-            findings.append(CapsuleFinding("toolless.truncation", rel, "truncation flag does not match included canonical item set"))
-
+        canonical_lookup = {item.item_id: item for item in canonical_items}
         for item_id, (kind, source_path, payload) in parsed.items():
             canonical = canonical_lookup.get(item_id)
             if canonical is None:
-                findings.append(CapsuleFinding("toolless.noncanonical_item", rel, f"capsule contains unknown canonical item: {item_id}"))
-                continue
-            if canonical.kind != kind or canonical.source_path != source_path or canonical.payload != payload:
-                findings.append(CapsuleFinding("toolless.fact_transform", rel, f"capsule item differs from canonical substrate: {item_id}"))
+                findings.append(_finding("toolless.noncanonical_item", rel, f"capsule contains unknown canonical item: {item_id}"))
+            elif canonical.kind != kind or canonical.source_path != source_path or canonical.payload != payload:
+                findings.append(_finding("toolless.fact_transform", rel, f"capsule item differs from canonical substrate: {item_id}"))
 
         source_ids = {item_id for item_id, (kind, _, _) in parsed.items() if kind == "source"}
         for item_id, (kind, _, payload) in parsed.items():
@@ -648,12 +664,12 @@ def validate_toolless_bundle(root: Path, bundle: Path, *, schema_path: str = CAP
             if isinstance(refs, list):
                 for ref in refs:
                     if isinstance(ref, str) and ref not in source_ids:
-                        findings.append(CapsuleFinding("toolless.provenance_closure", rel, f"source_ref is not included in capsule: {item_id} -> {ref}"))
+                        findings.append(_finding("toolless.provenance_closure", rel, f"source_ref is not included in capsule: {item_id} -> {ref}"))
             if kind == "relationship":
                 for endpoint_key in ("source", "target"):
                     endpoint = payload.get(endpoint_key)
                     if isinstance(endpoint, str) and endpoint not in parsed:
-                        findings.append(CapsuleFinding("toolless.relationship_closure", rel, f"relationship endpoint is not included: {item_id} -> {endpoint}"))
+                        findings.append(_finding("toolless.relationship_closure", rel, f"relationship endpoint is not included: {item_id} -> {endpoint}"))
 
         expected_boundaries: set[tuple[str, str]] = set()
         for item_id, (kind, _, _) in parsed.items():
@@ -662,20 +678,17 @@ def validate_toolless_bundle(root: Path, bundle: Path, *, schema_path: str = CAP
                 for guard in _boundary_guards(canonical):
                     expected_boundaries.add((item_id, guard))
         if set(boundaries) != expected_boundaries:
-            findings.append(CapsuleFinding("toolless.boundaries", rel, "project claim-boundary guards do not match canonical project tags"))
+            findings.append(_finding("toolless.boundaries", rel, "project claim-boundary guards do not match canonical project tags"))
 
-        if name == "MICRO":
-            if not entry.get("strategic_redundancy"):
-                findings.append(CapsuleFinding("toolless.redundancy", rel, "MICRO must declare strategic semantic redundancy"))
+        if profile["name"] == "MICRO":
             for guard in CORE_GUARDS:
                 if text.count(guard) < 2:
-                    findings.append(CapsuleFinding("toolless.redundancy", rel, f"MICRO must repeat guard: {guard}"))
-        if name == "FULL" and set(parsed) != set(canonical_lookup):
-            findings.append(CapsuleFinding("toolless.full_completeness", rel, "FULL capsule must include every canonical payload item"))
+                    findings.append(_finding("toolless.redundancy", rel, f"MICRO must repeat guard: {guard}"))
+        if profile["name"] == "FULL" and set(parsed) != set(canonical_lookup):
+            findings.append(_finding("toolless.full_completeness", rel, "FULL capsule must include every canonical payload item"))
 
-        file_rows.append((rel, actual_sha, len(data)))
-
-    bundle_material = "".join(f"{path}\0{sha}\0{size}\n" for path, sha, size in sorted(file_rows)).encode("utf-8")
-    if _sha256(bundle_material) != manifest.get("bundle_sha256"):
-        findings.append(CapsuleFinding("toolless.bundle_hash", "manifest.json/bundle_sha256", "toolless bundle SHA-256 does not match profile files"))
+    if len(expected_entries) == len(PROFILE_SPECS):
+        expected_bundle_hash = _bundle_hash(expected_entries)
+        if manifest.get("bundle_sha256") != expected_bundle_hash:
+            findings.append(_finding("toolless.bundle_hash", "manifest.json/bundle_sha256", "toolless bundle SHA-256 does not match deterministic profile set"))
     return findings
