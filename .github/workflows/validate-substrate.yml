@@ -56,6 +56,18 @@ jobs:
       - name: Validate tool-less capsules
         run: python tools/validate_toolless_capsule.py --bundle dist/toolless
 
+      - name: Build vector substrate
+        run: python tools/build_vectors.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/vectors
+
+      - name: Validate vector substrate
+        run: python tools/validate_vector_bundle.py --bundle dist/vectors
+
+      - name: Build model projection experiment bundle
+        run: python tools/build_projections.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/projections
+
+      - name: Validate model projection experiment bundle
+        run: python tools/validate_projection_bundle.py --bundle dist/projections
+
       - name: Publish integrity summary
         if: success()
         run: |
@@ -66,6 +78,9 @@ jobs:
           fingerprint = json.loads(Path("substrate-fingerprint.json").read_text())
           adapters = json.loads(Path("dist/adapters/manifest.json").read_text())
           toolless = json.loads(Path("dist/toolless/manifest.json").read_text())
+          vectors = json.loads(Path("dist/vectors/manifest.json").read_text())
+          retrieval = json.loads(Path("dist/vectors/retrieval-report.json").read_text())
+          projections = json.loads(Path("dist/projections/manifest.json").read_text())
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
               out.write("## QSOL-SUBSTRATE integrity\n\n")
               out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
@@ -80,6 +95,12 @@ jobs:
                       f"- {profile['name']}: `{profile['portable_tokens']}/{profile['token_budget']}` portable tokens, "
                       f"`{profile['included_items']}` included / `{profile['omitted_items']}` omitted items\n"
                   )
+              out.write(f"- Vector records: `{vectors['record_count']}` at `{vectors['embedding']['dimension']}` dimensions\n")
+              out.write(f"- Vector bundle SHA-256: `{vectors['bundle_sha256']}`\n")
+              out.write(f"- Reference retrieval hit rate: `{retrieval['hit_rate']}`\n")
+              out.write(f"- Reference retrieval average closed context: `{retrieval['average_closed_context_portable_tokens']}` portable tokens\n")
+              out.write(f"- Projection recipes: `{len(projections['recipes'])}`\n")
+              out.write(f"- Projection bundle SHA-256: `{projections['bundle_sha256']}`\n")
           PY
 
       - name: Upload validation and derived artifacts
@@ -92,5 +113,7 @@ jobs:
             substrate-fingerprint.json
             dist/adapters/
             dist/toolless/
+            dist/vectors/
+            dist/projections/
           if-no-files-found: ignore
           retention-days: 30
