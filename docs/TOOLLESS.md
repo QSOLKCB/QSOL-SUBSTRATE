@@ -133,6 +133,10 @@ python tools/build_toolless.py \
 
 The exact 40-character source commit is required because the canonical substrate fingerprint intentionally covers canonical public payload semantics, while the derived artifact identity must also record which repository revision generated it.
 
+Inside the repository, output is restricted to exactly `dist/toolless`. The builder refuses repository source/tooling/contract paths such as `tools/`, `ai/`, or `projects/`, and it refuses symlinked output paths. Generated-artifact cleanup must never be able to remove canonical repository content.
+
+CI explicitly checks out the revision used to build artifacts and stamps the exact `git rev-parse HEAD` value into adapter and capsule identity.
+
 ## Validation
 
 ```bash
@@ -144,20 +148,25 @@ Validation checks:
 - strict manifest schema;
 - exact MICRO/STANDARD/FULL profile set;
 - exact source commit format;
-- current canonical substrate fingerprint;
-- per-profile SHA-256 and byte length;
+- protocol, schema, snapshot date/version, and canonical substrate fingerprint against `ai/manifest.json`;
+- deterministic recomputation of MICRO/STANDARD/FULL record selection;
+- deterministic recomputation of per-profile item counts, omission/truncation state, and `kind_counts`;
+- complete byte-for-byte equality with the deterministic canonical renderer;
 - deterministic portable token count and budget;
-- required no-tools/snapshot/epistemic stamps;
 - exact canonical equality of every included `ITEM` object;
-- no unknown or transformed canonical records;
 - source-reference closure;
 - relationship endpoint closure;
 - exact project boundary guards;
 - MICRO semantic redundancy;
 - FULL canonical completeness;
-- aggregate bundle fingerprint.
+- regular non-symlink profile files that remain inside the bundle root;
+- rejection of undeclared/extra bundle files;
+- aggregate bundle fingerprint;
+- fail-closed handling of malformed JSON, invalid UTF-8, and filesystem read errors.
 
-Changing a fact and then recomputing the outer file hash is therefore insufficient: the changed `ITEM` still fails canonical equality.
+The byte-for-byte renderer comparison is deliberately stronger than recognizing `ITEM` and `BOUNDARY` lines. Arbitrary prompt instructions, altered headers, removed-but-still-canonical records, or other extra text are invalid even if an attacker recomputes outer hashes and manifest counts.
+
+Changing a fact and then recomputing the outer file hash is therefore insufficient: the complete artifact must still equal the deterministic rendering of current canonical state.
 
 ## Reproducible identity
 
@@ -165,13 +174,15 @@ Changing a fact and then recomputing the outer file hash is therefore insufficie
 
 ```text
 substrate version = snapshot-YYYY-MM-DD
-source commit      = exact 40-character git SHA
+source commit      = exact checked-out 40-character git SHA
 substrate SHA-256  = canonical public payload fingerprint
 capsule spec       = 1.0.0
 portable tokenizer = qsol-portable-token-v1
 profile budget/count/hash
 aggregate bundle SHA-256
 ```
+
+The snapshot date/version in a capsule is not self-authorizing metadata. Validation derives the expected identity from the repository's canonical machine manifest and rejects a capsule that merely claims to be newer.
 
 Formal QSOL-SUBSTRATE release SemVer remains Phase 8 work. Until then, `snapshot-YYYY-MM-DD` plus exact commit and substrate fingerprint identifies the source state without conflating schema version with release version.
 
