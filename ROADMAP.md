@@ -108,7 +108,7 @@ THEN:
     state snapshot date;
     do not claim currentness beyond snapshot;
     return UNKNOWN for unresolved post-snapshot state.
-````
+```
 
 ### Toolless serialization
 

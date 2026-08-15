@@ -7,7 +7,7 @@ QSOL-SUBSTRATE is the public-facing context layer for the QSOL ecosystem. It exi
 This repository is deliberately split into two documentation surfaces:
 
 - **Human documentation** is written as ordinary prose in this README and `docs/`.
-- **AI documentation** is expressed as compact machine-readable contracts in `ai/` and `schema/`.
+- **AI documentation** is expressed as compact machine-readable contracts in `ai/`, canonical payload records, and `schema/`.
 
 The design goal is not to make a model pretend it remembers more. The goal is to give models a consistent external knowledge substrate and explicit epistemic rules so they can distinguish what is known, retrieved, inferred, conflicting, or unavailable.
 
@@ -20,9 +20,10 @@ Read:
 1. [`docs/ABOUT.md`](docs/ABOUT.md)
 2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 3. [`docs/USAGE.md`](docs/USAGE.md)
-4. [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md)
-5. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
-6. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
+4. [`docs/PUBLIC_SUBSTRATE.md`](docs/PUBLIC_SUBSTRATE.md)
+5. [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md)
+6. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+7. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
 
 ### AI systems
 
@@ -41,6 +42,23 @@ Then follow the load order declared there. Do not treat this README as the canon
 QSOL-SUBSTRATE is intentionally incomplete. It is a public projection, not a complete personal memory store, not an authority over private state, and not a substitute for current repository or publication evidence.
 
 AI consumers must not infer private facts from omissions, fill missing relationships with plausible guesses, or silently convert hypotheses into established facts.
+
+## Canonical public payload
+
+Phase 1 adds a selective canonical public snapshot:
+
+```text
+sources/index.json
+identity/public.json
+context/public.json
+terminology/index.json
+projects/index.json
+publications/index.json
+relationships/graph.json
+chronology/current.jsonl
+```
+
+The snapshot is intentionally selective rather than exhaustive. `docs/PUBLIC_SUBSTRATE.md` defines its inclusion, omission, relationship, publication, and freshness semantics.
 
 ## What this repository is for
 
@@ -73,18 +91,25 @@ Inference must remain labelled as inference.
 ```text
 QSOL-SUBSTRATE/
 ├── README.md
+├── README4AI.md
 ├── AGENTS.md
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── ROADMAP.md
 ├── SECURITY.md
 ├── docs/                  # prose for humans
-├── ai/                    # machine-readable AI contracts
+├── ai/                    # normative AI contracts
+├── sources/               # provenance/source registry
+├── identity/              # public identity
+├── context/               # public recurring context
+├── terminology/           # canonical terms and aliases
+├── projects/              # selective public project registry
+├── publications/          # DOI/publication registry
+├── relationships/         # project/research graph
+├── chronology/            # public event stream
 ├── schema/                # validation schemas
 └── adapters/              # target-specific onboarding guidance
 ```
-
-The public knowledge payload can grow separately from these contracts. The contracts define **how** an AI should consume the payload; the payload defines **what public information is available**.
 
 ## Epistemic states
 
@@ -103,13 +128,13 @@ These states are defined normatively in `ai/epistemic-contract.json`.
 
 QSOL-SUBSTRATE must be safe to clone, index, mirror, quote, and hand to arbitrary AI systems. Private QSOL context belongs elsewhere.
 
-A future export pipeline may generate portions of this repository from private canonical context, but publication should be **explicit-allow only** and fail closed when visibility or provenance is ambiguous.
+A future export pipeline may generate portions of this repository from private canonical context, but publication is **explicit-allow only** and must fail closed when visibility or provenance is ambiguous.
 
 See [`docs/PRIVACY_AND_EXPORT.md`](docs/PRIVACY_AND_EXPORT.md) and `ai/public-boundary.json`.
 
 ## Versioning and reproducibility
 
-Substrate releases should be versioned. Model evaluations should record at least:
+Model evaluations should record at least:
 
 ```text
 model
@@ -123,9 +148,15 @@ execution_date
 
 This makes it possible to distinguish model changes from context changes.
 
+## Maintainer
+
+QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOLKCB organization. This statement is intentionally part of the public first-party documentation so relationship records that identify the maintainer can cite repository evidence rather than relying on inference.
+
 ## Status
 
-This repository is being bootstrapped as the public substrate contract and documentation layer. Public knowledge records, model adapters, deterministic probes, export tooling, validation, fingerprints, and CI are planned incrementally in [`ROADMAP.md`](ROADMAP.md).
+**Phase 1 — Canonical public substrate is implemented.** The repository now contains public identity/context, canonical terminology and aliases, a selective active-public project registry, a verified DOI/publication registry, a project/research relationship graph, and a materially relevant public chronology.
+
+Export automation, schema/referential validation, deterministic fingerprints, CI, generated model adapters, and Substrate Probe comparisons remain on the roadmap.
 
 ---
 

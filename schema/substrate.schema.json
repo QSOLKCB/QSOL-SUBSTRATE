@@ -8,7 +8,7 @@
     "id": {"type": "string", "minLength": 1},
     "record_type": {
       "type": "string",
-      "enum": ["identity", "organization", "project", "repository", "publication", "research_topic", "term", "event", "relationship", "claim", "adapter", "probe"]
+      "enum": ["identity", "organization", "project", "repository", "publication", "research_topic", "term", "event", "relationship", "source", "claim", "adapter", "probe"]
     },
     "visibility": {"const": "public"},
     "epistemic_state": {
@@ -23,6 +23,23 @@
     "doi": {"type": "string"},
     "repository": {"type": "string"},
     "commit": {"type": "string"},
+    "class": {"type": "string"},
+    "url": {"type": "string", "format": "uri"},
+    "snapshot": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["git_commit", "release_tag_commit", "api_identity"]},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "url": {"type": "string", "format": "uri"},
+        "tag": {"type": "string"},
+        "release_id": {"type": "integer"},
+        "github_id": {"type": "integer"},
+        "login": {"type": "string"},
+        "captured_at": {"type": "string", "format": "date"}
+      },
+      "additionalProperties": false
+    },
     "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
     "metadata": {"type": "object"}
   },

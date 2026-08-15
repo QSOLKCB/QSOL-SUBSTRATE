@@ -1,0 +1,11 @@
+{
+  "type":"qsol-substrate-public-identity",
+  "schema_version":"1.0.0",
+  "snapshot_date":"2026-08-15",
+  "visibility":"public",
+  "records":[
+    {"id":"person:trent-slade","record_type":"identity","visibility":"public","epistemic_state":"known","name":"Trent Slade","aliases":["EmergentMonk"],"summary":"Public creator/research identity associated with QSOL-IMC and QSOLKCB projects.","source_refs":["src:github-profile-emergentmonk","src:spectral-readme"],"metadata":{"github_user":"EmergentMonk","affiliation_label":"QSOL-IMC","orcid":"0009-0002-4515-9237"}},
+    {"id":"org:qsolkcb","record_type":"organization","visibility":"public","epistemic_state":"known","name":"QSOLKCB","aliases":[],"summary":"GitHub organization hosting the public repositories indexed by this substrate.","source_refs":["src:qsol-readme","src:qsol-substrate-readme"],"metadata":{"github_organization":"QSOLKCB"}},
+    {"id":"org:qsol-imc","record_type":"organization","visibility":"public","epistemic_state":"known","name":"QSOL-IMC","aliases":[],"summary":"Public affiliation/creator label used by Trent Slade in QSOL research repositories.","source_refs":["src:spectral-readme","src:e8-music-readme","src:sonification-readme"],"metadata":{"legal_or_corporate_status":"not_asserted_by_substrate"}}
+  ]
+}
