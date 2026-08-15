@@ -242,6 +242,8 @@ def retrieve(rows: list[dict[str, Any]], embeddings: bytes, query: str, top_k: i
     if len(embeddings) != len(rows) * DIMENSION * 2:
         raise VectorError("embedding byte length does not match record count/dimension")
     query_vector = hash_embedding(query)
+    if not any(query_vector):
+        raise VectorError("query produced no embedding features")
     ranked: list[tuple[float, str, dict[str, Any]]] = []
     stride = DIMENSION * 2
     for row in rows:
@@ -255,9 +257,20 @@ def retrieve(rows: list[dict[str, Any]], embeddings: bytes, query: str, top_k: i
     return [dict(row, score=round(score, 8)) for score, _, row in ranked[:top_k]]
 
 
-def render_retrieved_context(rows: list[dict[str, Any]], selected_ids: list[str]) -> str:
+def render_retrieved_context(rows: list[dict[str, Any]], selected_ids: list[str], identity: dict[str, Any]) -> str:
+    required_identity = ("version", "snapshot_date", "source_commit", "substrate_sha256")
+    missing = [field for field in required_identity if not isinstance(identity.get(field), str) or not identity.get(field)]
+    if missing:
+        raise VectorError("retrieved context requires complete substrate identity")
     lookup = {row["canonical_id"]: row for row in rows}
-    lines = ["QSOL-SUBSTRATE/VECTOR-CONTEXT/1", "OMISSION_MEANS=UNAVAILABLE_NOT_FALSE"]
+    lines = [
+        "QSOL-SUBSTRATE/VECTOR-CONTEXT/1",
+        f"SUBSTRATE_VERSION={identity['version']}",
+        f"SNAPSHOT_DATE={identity['snapshot_date']}",
+        f"SOURCE_COMMIT={identity['source_commit']}",
+        f"SUBSTRATE_SHA256={identity['substrate_sha256']}",
+        "OMISSION_MEANS=UNAVAILABLE_NOT_FALSE",
+    ]
     for item_id in selected_ids:
         row = lookup[item_id]
         payload = canonical_json_bytes(row["payload"]).decode("utf-8").rstrip("\n")
@@ -266,7 +279,7 @@ def render_retrieved_context(rows: list[dict[str, Any]], selected_ids: list[str]
     return "\n".join(lines)
 
 
-def _retrieval_report(rows: list[dict[str, Any]], embeddings: bytes) -> dict[str, Any]:
+def _retrieval_report(rows: list[dict[str, Any]], embeddings: bytes, identity: dict[str, Any]) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     hits = 0
     token_totals: list[int] = []
@@ -274,7 +287,7 @@ def _retrieval_report(rows: list[dict[str, Any]], embeddings: bytes) -> dict[str
         primary = retrieve(rows, embeddings, query["query"], top_k=5)
         primary_ids = [row["canonical_id"] for row in primary]
         closed_ids = _context_closure(primary_ids, rows)
-        context = render_retrieved_context(rows, closed_ids)
+        context = render_retrieved_context(rows, closed_ids, identity)
         tokens = portable_token_count(context)
         token_totals.append(tokens)
         expected = set(query["expected"])
@@ -350,7 +363,7 @@ def build_vector_bundle(root: Path, output: Path, source_commit: str) -> dict[st
         ],
     }
     index_data = canonical_json_bytes(index)
-    report = _retrieval_report(rows, embeddings_data)
+    report = _retrieval_report(rows, embeddings_data, identity)
     report_data = canonical_json_bytes(report)
 
     files = {
