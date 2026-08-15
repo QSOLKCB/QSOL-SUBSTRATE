@@ -25,8 +25,9 @@ Read:
 6. [`docs/EXPORT_PIPELINE.md`](docs/EXPORT_PIPELINE.md)
 7. [`docs/VALIDATION.md`](docs/VALIDATION.md)
 8. [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
-9. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
-10. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
+9. [`docs/TOOLLESS.md`](docs/TOOLLESS.md)
+10. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+11. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
 
 ### AI systems
 
@@ -121,6 +122,45 @@ Adapters may change formatting and delivery. **They may not redefine canonical s
 
 See [`docs/ADAPTERS.md`](docs/ADAPTERS.md).
 
+## Tool-less Substrate Capsules
+
+Phase 5 generates deterministic, self-contained public context images for models that have no browser, retrieval layer, filesystem, repository access, or external tools:
+
+```bash
+python tools/build_toolless.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/toolless
+
+python tools/validate_toolless_capsule.py --bundle dist/toolless
+```
+
+Generated profiles are:
+
+```text
+MICRO     8,192 qsol-portable-token-v1 budget
+STANDARD 24,576 qsol-portable-token-v1 budget
+FULL    131,072 qsol-portable-token-v1 budget
+```
+
+`qsol-portable-token-v1` is a deterministic model-independent **build budgeting contract**, not a claim about any vendor/model tokenizer.
+
+The compiler admits only whole canonical items and closes public provenance, relationship endpoints, and other resolvable canonical-ID dependencies. Smaller profiles therefore cannot save context by creating dangling facts. `FULL` must contain the complete canonical payload projection or the build fails closed.
+
+Each capsule declares that tools are unavailable, embeds the snapshot date/version/source commit/substrate SHA-256, and enforces the cold-boot guards:
+
+```text
+UNKNOWN != FALSE
+INFERENCE != FACT
+SATIRE != BIOGRAPHY
+FORMALIZATION != PHYSICAL_TRUTH
+```
+
+`MICRO` deliberately repeats these guards near the end of the artifact for small-model robustness. High-risk project records also receive validated inline epistemic boundary guards derived from explicit canonical tags.
+
+Capsules may compress by omission. **They may not transform canonical facts, invent missing facts, or claim freshness beyond the embedded snapshot.** Validation re-parses every included item and compares it directly against the current canonical repository object.
+
+See [`docs/TOOLLESS.md`](docs/TOOLLESS.md).
+
 ## What this repository is for
 
 QSOL-SUBSTRATE is designed to support:
@@ -132,6 +172,7 @@ QSOL-SUBSTRATE is designed to support:
 - provenance-aware answers about public QSOL research and software;
 - hallucination reduction where errors arise from missing or ambiguous QSOL-specific context;
 - model adapters that transform one canonical substrate into vendor-specific prompt or retrieval formats without redefining facts;
+- deterministic self-contained capsules for tool-less inference environments;
 - deterministic, reviewable private-to-public context publication without making private context a consumer dependency.
 
 It is **not** intended to override a model's safety system, replace primary sources, expose private context, or guarantee factual correctness outside the information it actually contains.
@@ -164,8 +205,8 @@ QSOL-SUBSTRATE/
 ├── docs/                  # prose for humans
 ├── ai/                    # normative AI contracts
 ├── public_export/         # Phase 2 publication policy/allow/deny contracts
-├── tools/                 # deterministic export, validation, fingerprint, adapter tooling
-├── tests/                 # safety/integrity/adapter regressions
+├── tools/                 # export, integrity, adapter, and capsule tooling
+├── tests/                 # safety/integrity/adapter/capsule regressions
 ├── sources/               # provenance/source registry
 ├── identity/              # public identity
 ├── context/               # public recurring context
@@ -178,7 +219,7 @@ QSOL-SUBSTRATE/
 └── adapters/              # target-specific adapter guidance
 ```
 
-Generated adapter artifacts live under `dist/adapters/` during builds and CI; they are derived projections rather than additional canonical records.
+Generated adapter artifacts live under `dist/adapters/` and tool-less capsules under `dist/toolless/` during builds and CI. Both are derived projections rather than additional canonical records.
 
 ## Epistemic states
 
@@ -211,13 +252,14 @@ model_version_or_identifier
 substrate_version
 substrate_commit
 substrate_sha256
-adapter_identity
-adapter_bundle_sha256
+derived_artifact_kind
+adapter_identity_or_capsule_profile
+derived_artifact_sha256
 probe_set
 execution_date
 ```
 
-Until formal release SemVer is introduced, Phase 4 adapter bundles use `snapshot-YYYY-MM-DD` as the explicit substrate snapshot version and always pair it with the full source commit and canonical SHA-256.
+Until formal release SemVer is introduced, Phase 4 adapters and Phase 5 capsules use `snapshot-YYYY-MM-DD` as the explicit substrate snapshot version and always pair it with the full source commit and canonical substrate SHA-256.
 
 ## Maintainer
 
@@ -225,9 +267,9 @@ QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOL
 
 ## Status
 
-**Phases 0–4 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, and eight generated portable model adapters with reproducible adapter identity.
+**Phases 0–5 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, eight generated portable model adapters, and deterministic MICRO/STANDARD/FULL tool-less context capsules with reproducible identity and fail-closed validation.
 
-Toolless Substrate Capsules, vector/latent projections, Substrate Probe comparisons, and formal release discipline remain on the roadmap.
+Vector/latent projections, Substrate Probe comparisons, and formal release discipline remain on the roadmap.
 
 ---
 
