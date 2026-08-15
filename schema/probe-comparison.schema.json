@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/probe-comparison.schema.json",
+  "title": "QSOL-SUBSTRATE probe comparison",
+  "type": "object",
+  "required": ["type", "schema_version", "probe_spec_version", "probe_bundle_sha256", "substrate", "models", "conditions", "rows", "research_question", "interpretation"],
+  "properties": {
+    "type": {"const": "qsol-probe-comparison"},
+    "schema_version": {"const": "1.0.0"},
+    "probe_spec_version": {"const": "1.0.0"},
+    "probe_bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"}, "version": {"type": "string"}, "version_kind": {"const": "snapshot"}, "schema_version": {"const": "1.0.0"},
+        "snapshot_date": {"type": "string", "format": "date"}, "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }, "additionalProperties": false
+    },
+    "models": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "conditions": {"const": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+    "rows": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["model_id", "condition", "overall_accuracy", "hallucination_rate", "yeah_nah_1_accuracy", "context_token_efficiency", "substrate_uplift_over_naked", "hallucination_reduction_relative_to_naked", "cultural_context_uplift_over_naked"],
+        "properties": {
+          "model_id": {"type": "string", "minLength": 1},
+          "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+          "overall_accuracy": {"type": ["number", "null"]},
+          "hallucination_rate": {"type": ["number", "null"]},
+          "yeah_nah_1_accuracy": {"type": ["number", "null"]},
+          "context_token_efficiency": {"type": ["number", "null"]},
+          "substrate_uplift_over_naked": {"type": ["number", "null"]},
+          "hallucination_reduction_relative_to_naked": {"type": ["number", "null"]},
+          "cultural_context_uplift_over_naked": {"type": ["number", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "research_question": {"const": "How much substrate is enough?"},
+    "interpretation": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}
