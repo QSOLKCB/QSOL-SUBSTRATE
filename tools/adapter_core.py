@@ -251,7 +251,7 @@ def build_adapter_bundle(root: Path, output: Path, source_commit: str) -> dict[s
 
     temp_parent = output.parent
     temp_parent.mkdir(parents=True, exist_ok=True)
-    temp_dir = Path(tempfile.mkdtemp(prefix=f".{output.name}.tmp-", dir=temp_parent))
+    temp_dir: Path | None = Path(tempfile.mkdtemp(prefix=f".{output.name}.tmp-", dir=temp_parent))
     try:
         file_entries: list[dict[str, Any]] = []
         by_adapter: dict[str, list[dict[str, Any]]] = {item["id"]: [] for item in ADAPTER_DEFINITIONS}
@@ -297,10 +297,10 @@ def build_adapter_bundle(root: Path, output: Path, source_commit: str) -> dict[s
                 raise AdapterError("refusing to replace symlinked adapter output")
             shutil.rmtree(output)
         temp_dir.replace(output)
-        temp_dir = Path()
+        temp_dir = None
         return manifest
     finally:
-        if temp_dir and temp_dir.exists():
+        if temp_dir is not None and temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
