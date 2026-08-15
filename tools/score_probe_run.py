@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from probe_core import ProbeError, report_markdown, score_probe_run
+from probe_core import ProbeError, report_markdown, score_probe_run, validate_probe_bundle
 from substrate_integrity import canonical_json_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +19,9 @@ def main() -> int:
     parser.add_argument("--require-perfect-oracle", action="store_true")
     args = parser.parse_args()
     try:
+        findings = validate_probe_bundle(ROOT, args.bundle)
+        if findings:
+            raise ProbeError("probe bundle failed deterministic validation before scoring")
         run = json.loads(args.run.read_text(encoding="utf-8"))
         report = score_probe_run(ROOT, args.bundle, run)
         args.output.write_bytes(canonical_json_bytes(report))
