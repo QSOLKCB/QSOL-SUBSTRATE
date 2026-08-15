@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/substrate-fingerprint.schema.json",
+  "title": "QSOL-SUBSTRATE canonical payload fingerprint",
+  "type": "object",
+  "required": ["type", "schema_version", "scope", "snapshot_date", "canonicalization", "files", "substrate_sha256"],
+  "properties": {
+    "type": {"const": "qsol-substrate-fingerprint"},
+    "schema_version": {"const": "1.0.0"},
+    "scope": {"const": "canonical_public_payload"},
+    "snapshot_date": {"type": "string", "format": "date"},
+    "canonicalization": {
+      "type": "object",
+      "required": ["json", "jsonl"],
+      "properties": {
+        "json": {"const": "qsol-canonical-json-v1"},
+        "jsonl": {"const": "qsol-canonical-jsonl-v1"}
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}
