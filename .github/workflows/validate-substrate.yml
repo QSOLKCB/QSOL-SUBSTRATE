@@ -1,0 +1,65 @@
+name: Substrate Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate / python-3.12
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-validation.txt
+
+      - name: Install validation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+
+      - name: Run regression tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate canonical substrate
+        run: python tools/validate_substrate.py --json-report validation-report.json
+
+      - name: Build substrate fingerprint
+        run: python tools/fingerprint_substrate.py --output substrate-fingerprint.json
+
+      - name: Publish fingerprint summary
+        if: success()
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          data = json.loads(Path("substrate-fingerprint.json").read_text())
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
+              out.write("## QSOL-SUBSTRATE integrity\n\n")
+              out.write(f"- Snapshot: `{data['snapshot_date']}`\n")
+              out.write(f"- SHA-256: `{data['substrate_sha256']}`\n")
+              out.write(f"- Canonical payload files: `{len(data['files'])}`\n")
+          PY
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: substrate-integrity-${{ github.sha }}
+          path: |
+            validation-report.json
+            substrate-fingerprint.json
+          if-no-files-found: ignore
+          retention-days: 30
