@@ -1,0 +1,21 @@
+{
+  "type": "qsol-substrate-epistemic-contract",
+  "schema_version": "1.0.0",
+  "states": {
+    "known": "explicitly established by canonical substrate content or stronger primary evidence",
+    "retrieved": "obtained from an identified external source during the current task",
+    "inferred": "reasoned from evidence but not explicitly asserted by that evidence",
+    "unknown": "not established by available evidence",
+    "conflict": "relevant evidence is materially inconsistent and not yet reconciled",
+    "fiction": "deliberately fictional, satirical, simulated, role-play, game-lore, or otherwise non-literal material"
+  },
+  "rules": [
+    "never_promote_inferred_to_known_without_support",
+    "never_convert_unknown_to_false_without_support",
+    "never_hide_material_conflict",
+    "preserve_source_specific_uncertainty",
+    "do_not_treat_authentic_document_as_proof_of_every_claim_inside_it",
+    "fiction_must_not_be_reinterpreted_as_biographical_or_empirical_fact"
+  ],
+  "fallback_state": "unknown"
+}

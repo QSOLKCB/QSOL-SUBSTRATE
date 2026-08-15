@@ -1,0 +1,30 @@
+{
+  "type": "qsol-substrate-manifest",
+  "protocol": "QSOL-SUBSTRATE",
+  "schema_version": "1.0.0",
+  "status": "bootstrap",
+  "visibility": "public",
+  "human_entrypoint": "README.md",
+  "machine_entrypoint": "ai/bootstrap.json",
+  "normative_machine_files": [
+    "ai/bootstrap.json",
+    "ai/public-boundary.json",
+    "ai/epistemic-contract.json",
+    "ai/retrieval-policy.json",
+    "ai/ontology.json",
+    "ai/consumer-contract.json"
+  ],
+  "schema": "schema/substrate.schema.json",
+  "adapter_roots": [
+    "adapters/generic",
+    "adapters/grok",
+    "adapters/sider",
+    "adapters/ollama"
+  ],
+  "license": "Apache-2.0",
+  "canonicality": {
+    "human_prose_is_explanatory": true,
+    "structured_machine_contracts_are_normative_for_machine_semantics": true,
+    "live_primary_sources_can_supersede_stale_payload_state": true
+  }
+}

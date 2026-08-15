@@ -1,0 +1,22 @@
+{
+  "type": "qsol-substrate-public-boundary",
+  "schema_version": "1.0.0",
+  "repository_visibility": "public",
+  "publication_model": "explicit_allow_only",
+  "absence_semantics": "unavailable_not_false",
+  "private_source_access_required": false,
+  "consumer_rules": [
+    "do_not_infer_private_facts_from_omissions",
+    "do_not_request_or_reconstruct_private_context_as_a_precondition_for_use",
+    "do_not_assume_public_projection_is_complete",
+    "do_not_expose_credentials_private_urls_or_nonpublic_source_material"
+  ],
+  "export_fail_closed_on": [
+    "unknown_visibility",
+    "ambiguous_visibility",
+    "secret_detection",
+    "unknown_field_policy",
+    "unsupported_record_type",
+    "private_reference_leak"
+  ]
+}

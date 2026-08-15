@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/substrate.schema.json",
+  "title": "QSOL-SUBSTRATE canonical public record",
+  "type": "object",
+  "required": ["id", "record_type", "visibility", "epistemic_state"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "record_type": {
+      "type": "string",
+      "enum": ["identity", "organization", "project", "repository", "publication", "research_topic", "term", "event", "relationship", "claim", "adapter", "probe"]
+    },
+    "visibility": {"const": "public"},
+    "epistemic_state": {
+      "type": "string",
+      "enum": ["known", "retrieved", "inferred", "unknown", "conflict", "fiction"]
+    },
+    "name": {"type": "string"},
+    "aliases": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "summary": {"type": "string"},
+    "source_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "version": {"type": "string"},
+    "doi": {"type": "string"},
+    "repository": {"type": "string"},
+    "commit": {"type": "string"},
+    "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "metadata": {"type": "object"}
+  },
+  "additionalProperties": true
+}

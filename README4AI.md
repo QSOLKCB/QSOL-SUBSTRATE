@@ -1,0 +1,1 @@
+{"type":"qsol-substrate-ai-entrypoint","protocol":"QSOL-SUBSTRATE","schema_version":"1.0.0","visibility":"public","canonical_machine_entrypoint":"ai/bootstrap.json","human_entrypoint":"README.md","instruction":"load ai/bootstrap.json and follow its declared load_order; do not infer private facts from public omissions; absence means unavailable, not false"}

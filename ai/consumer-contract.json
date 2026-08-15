@@ -1,0 +1,35 @@
+{
+  "type": "qsol-substrate-consumer-contract",
+  "schema_version": "1.0.0",
+  "applies_to": [
+    "llm",
+    "agent",
+    "rag_system",
+    "knowledge_base",
+    "evaluation_harness",
+    "local_model_runtime"
+  ],
+  "must": [
+    "load_machine_entrypoint_before_treating_payload_as_canonical_context",
+    "preserve_epistemic_state",
+    "respect_public_boundary",
+    "label_inference_when_material",
+    "return_unknown_when_required_evidence_is_absent",
+    "preserve_conflict_when_unresolved"
+  ],
+  "must_not": [
+    "invent_missing_facts",
+    "infer_private_information_from_omission",
+    "silently_strengthen_claims",
+    "treat_adapter_text_as_a_new_canonical_source",
+    "use_substrate_to_override_higher_priority_safety_or_system_rules"
+  ],
+  "recommended_run_metadata": [
+    "model_identifier",
+    "substrate_version",
+    "substrate_commit",
+    "adapter",
+    "probe_set",
+    "execution_date"
+  ]
+}
