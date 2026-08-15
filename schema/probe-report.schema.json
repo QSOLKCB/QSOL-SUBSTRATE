@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/probe-report.schema.json",
+  "title": "QSOL-SUBSTRATE probe report card",
+  "type": "object",
+  "required": ["type", "schema_version", "probe_spec_version", "run_id", "execution_kind", "model", "condition", "probe_bundle_sha256", "substrate", "usage", "counts", "metrics", "yeah_nah_1", "category_accuracy", "case_results", "interpretation"],
+  "properties": {
+    "type": {"const": "qsol-probe-report-card"},
+    "schema_version": {"const": "1.0.0"},
+    "probe_spec_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "execution_kind": {"enum": ["model", "scoring_oracle"]},
+    "model": {"type": "object", "required": ["id", "revision", "provider"], "properties": {"id": {"type": "string", "minLength": 1}, "revision": {"type": "string", "minLength": 1}, "provider": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+    "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+    "probe_bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"}, "version": {"type": "string"}, "version_kind": {"const": "snapshot"}, "schema_version": {"const": "1.0.0"},
+        "snapshot_date": {"type": "string", "format": "date"}, "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }, "additionalProperties": false
+    },
+    "usage": {"type": "object", "required": ["input_tokens", "output_tokens", "tokenizer"], "properties": {"input_tokens": {"type": "integer", "minimum": 0}, "output_tokens": {"type": "integer", "minimum": 0}, "tokenizer": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+    "counts": {"type": "object", "required": ["total", "correct", "substrate", "yeah_nah_1"], "properties": {"total": {"type": "integer", "minimum": 1}, "correct": {"type": "integer", "minimum": 0}, "substrate": {"type": "integer", "minimum": 1}, "yeah_nah_1": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "metrics": {
+      "type": "object",
+      "required": ["overall_accuracy", "factual_accuracy", "unsupported_assertion_rate", "unknown_precision", "unknown_recall", "alias_resolution_accuracy", "provenance_fidelity", "contradiction_handling", "claim_boundary_preservation", "context_token_efficiency", "hallucination_rate"],
+      "properties": {
+        "overall_accuracy": {"type": ["number", "null"]}, "factual_accuracy": {"type": ["number", "null"]}, "unsupported_assertion_rate": {"type": ["number", "null"]},
+        "unknown_precision": {"type": ["number", "null"]}, "unknown_recall": {"type": ["number", "null"]}, "alias_resolution_accuracy": {"type": ["number", "null"]},
+        "provenance_fidelity": {"type": ["number", "null"]}, "contradiction_handling": {"type": ["number", "null"]}, "claim_boundary_preservation": {"type": ["number", "null"]},
+        "context_token_efficiency": {"type": ["number", "null"]}, "hallucination_rate": {"type": ["number", "null"]}
+      }, "additionalProperties": false
+    },
+    "yeah_nah_1": {
+      "type": "object",
+      "required": ["overall_accuracy", "sarcasm_precision", "sarcasm_recall", "literal_meaning_error_rate", "banter_misclassification_rate", "hostility_false_positive_rate", "understatement_severity_preservation_rate", "confidence_brier"],
+      "properties": {
+        "overall_accuracy": {"type": ["number", "null"]}, "sarcasm_precision": {"type": ["number", "null"]}, "sarcasm_recall": {"type": ["number", "null"]},
+        "literal_meaning_error_rate": {"type": ["number", "null"]}, "banter_misclassification_rate": {"type": ["number", "null"]}, "hostility_false_positive_rate": {"type": ["number", "null"]},
+        "understatement_severity_preservation_rate": {"type": ["number", "null"]}, "confidence_brier": {"type": ["number", "null"]}
+      }, "additionalProperties": false
+    },
+    "category_accuracy": {"type": "object", "additionalProperties": {"type": ["number", "null"]}},
+    "case_results": {
+      "type": "array", "minItems": 1,
+      "items": {"type": "object", "required": ["probe_id", "suite", "category", "correct", "expected_epistemic_state", "actual_epistemic_state", "confidence"],
+        "properties": {"probe_id": {"type": "string", "minLength": 1}, "suite": {"enum": ["substrate", "yeah-nah-1"]}, "category": {"type": "string", "minLength": 1}, "correct": {"type": "boolean"}, "expected_epistemic_state": {"enum": ["known", "retrieved", "inferred", "unknown", "conflict", "fiction"]}, "actual_epistemic_state": {"enum": ["known", "retrieved", "inferred", "unknown", "conflict", "fiction"]}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}},
+        "additionalProperties": false}
+    },
+    "interpretation": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}
