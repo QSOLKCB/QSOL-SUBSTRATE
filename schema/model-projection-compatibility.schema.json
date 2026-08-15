@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/model-projection-compatibility.schema.json",
+  "title": "QSOL model-specific projection compatibility identity",
+  "type": "object",
+  "required": ["type", "schema_version", "projection_kind", "model_id", "model_revision", "architecture", "tokenizer_id", "tokenizer_sha256", "context_length", "hidden_size", "num_hidden_layers", "num_attention_heads", "kv_layout_version", "tensor_dtype", "kv_cache_dtype", "quantization_id"],
+  "properties": {
+    "type": {"const": "qsol-model-projection-compatibility"},
+    "schema_version": {"const": "1.0.0"},
+    "projection_kind": {"enum": ["soft_prompt", "virtual_tokens", "lora", "kv_cache", "prefix_state", "hybrid"]},
+    "model_id": {"type": "string", "minLength": 1},
+    "model_revision": {"type": "string", "minLength": 1},
+    "architecture": {"type": "string", "minLength": 1},
+    "tokenizer_id": {"type": "string", "minLength": 1},
+    "tokenizer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "context_length": {"type": "integer", "minimum": 1},
+    "hidden_size": {"type": "integer", "minimum": 1},
+    "num_hidden_layers": {"type": "integer", "minimum": 1},
+    "num_attention_heads": {"type": "integer", "minimum": 1},
+    "kv_layout_version": {"type": "string", "minLength": 1},
+    "tensor_dtype": {"type": "string", "minLength": 1},
+    "kv_cache_dtype": {"type": "string", "minLength": 1},
+    "quantization_id": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

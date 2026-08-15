@@ -65,6 +65,19 @@ The project intends to use semantic versioning once formal releases begin.
 - Human documentation for tool-less profile semantics, token budgeting, serialization, provenance closure, claim boundaries, and reproducible identity.
 - Phase 5 hardening that re-renders every expected capsule byte from canonical state, recomputes compact-profile selection and composition metadata, rejects symlinked/extra artifact files, and binds frozen identity to the canonical manifest.
 - `YEAH-NAH/1` Australian pragmatic-humour probe added to the future Substrate Probe roadmap, with sarcasm, deadpan, understatement, banter, hostility, and uncertainty-calibration targets.
+- Phase 6 deterministic record-level vector chunking via `qsol-record-chunk-v1`.
+- Phase 6 dependency-free `qsol-hash-embed-v1` 256-dimensional float16 reference embedding backend for reproducible network-free CI.
+- Generated vector bundle containing `records.jsonl`, `embeddings.f16`, `index.json`, `retrieval-report.json`, and `manifest.json`.
+- Canonical IDs, source paths, public provenance, epistemic state, visibility, and canonical payload objects retained outside vector coordinates.
+- Deterministic normalized-dot nearest-neighbour retrieval with public source-reference and relationship-endpoint closure.
+- Reference vector retrieval-size experiment comparing provenance-closed selected context with fixed MICRO/STANDARD/FULL budgets.
+- Fail-closed vector validator that recompiles the complete expected bundle and rejects altered vectors, metadata, symlinks, undeclared files, and unsafe output paths.
+- Phase 6 deterministic epistemic-prefix artifact carrying stable interpretation rules rather than mutable canonical facts.
+- Reproducible model-specific experiment recipes for soft prompts/prefix tuning, virtual tokens, LoRA, KV-cache prefill, reusable prefix state, and hybrid epistemic-prefix plus factual-text delivery.
+- Model-projection compatibility schema and checker covering model revision, architecture, tokenizer identity/hash, dimensions, attention layout, and KV-layout version.
+- Deterministic YEAH-NAH/1 textual/prefix/hybrid delivery matrix for later Phase 7 model-behaviour comparison.
+- Phase 6 vector/projection regression tests and GitHub Actions build/validation artifact upload.
+- Human documentation for vector retrieval semantics, latent/prefix experiment contracts, compatibility invalidation, and Phase 7 measurement boundaries.
 
 ### Design decisions
 
@@ -107,3 +120,11 @@ The project intends to use semantic versioning once formal releases begin.
 - Capsule manifests are recomputed metadata, not trusted claims: profile selection, kind counts, identity, hashes, byte counts, token counts, and bundle membership must all resolve from canonical state.
 - CI-derived artifact identity is stamped from the exact checked-out commit rather than from a different PR ref.
 - Pragmatic humour classification is interpretive evidence: `SARCASM = INFERRED UNLESS SPEAKER_CONFIRMED`, and `UNCERTAIN != SARCASTIC`.
+- Phase 6 vector coordinates are retrieval machinery, not facts, provenance, epistemic labels, or confidence scores.
+- The reference hash embedding exists for deterministic contract testing; learned embedding backends must pin their exact model/revision/preprocessing identity rather than inheriting authority from the reference backend.
+- Vector-selected context must close public provenance and relationship dependencies before delivery; prompt reduction may not be obtained by dropping the evidence chain.
+- Retrieval-size measurements do not imply downstream answer quality; model-behaviour uplift belongs to Phase 7.
+- Stable epistemic/pragmatic rules are preferred candidates for latent/prefix projection; mutable public facts remain textual or retrieval-selected where they stay inspectable and citable.
+- Soft-prompt, virtual-token, LoRA, KV-cache, and reusable-prefix checkmarks denote implemented experiment contracts, not fabricated claims that generic CI trained or captured model-specific artifacts.
+- Model-specific projections fail compatibility when any declared model revision, architecture, tokenizer, dimension, attention, or KV-layout identity changes.
+- No vector index, soft prompt, LoRA adapter, prefix state, or KV cache may become an independent canonical source of truth.

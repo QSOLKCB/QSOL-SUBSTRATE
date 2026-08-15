@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/vector-manifest.schema.json",
+  "title": "QSOL-SUBSTRATE vector projection manifest",
+  "type": "object",
+  "required": ["type", "schema_version", "vector_spec_version", "substrate", "chunking", "embedding", "retrieval", "record_count", "files", "bundle_sha256"],
+  "properties": {
+    "type": {"const": "qsol-vector-substrate-manifest"},
+    "schema_version": {"const": "1.0.0"},
+    "vector_spec_version": {"const": "1.0.0"},
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "version": {"type": "string", "pattern": "^snapshot-[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "version_kind": {"const": "snapshot"},
+        "schema_version": {"const": "1.0.0"},
+        "snapshot_date": {"type": "string", "format": "date"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "chunking": {
+      "type": "object",
+      "required": ["id", "unit", "one_item_per_chunk", "factual_transformation"],
+      "properties": {
+        "id": {"const": "qsol-record-chunk-v1"},
+        "unit": {"const": "canonical_item"},
+        "one_item_per_chunk": {"const": true},
+        "factual_transformation": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "embedding": {
+      "type": "object",
+      "required": ["id", "kind", "dimension", "dtype", "endian", "normalization", "learned_model", "canonical_truth_authority"],
+      "properties": {
+        "id": {"const": "qsol-hash-embed-v1"},
+        "kind": {"const": "deterministic_feature_hash_reference"},
+        "dimension": {"const": 256},
+        "dtype": {"const": "float16"},
+        "endian": {"const": "little"},
+        "normalization": {"const": "NFKC_casefold_L2"},
+        "learned_model": {"const": false},
+        "canonical_truth_authority": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "retrieval": {
+      "type": "object",
+      "required": ["metric", "tie_break", "provenance_closure", "relationship_endpoint_closure"],
+      "properties": {
+        "metric": {"const": "cosine_via_normalized_dot_product"},
+        "tie_break": {"const": "canonical_id_ascending"},
+        "provenance_closure": {"const": true},
+        "relationship_endpoint_closure": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "record_count": {"type": "integer", "minimum": 1},
+    "files": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"enum": ["embeddings.f16", "index.json", "records.jsonl", "retrieval-report.json"]},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

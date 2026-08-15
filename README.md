@@ -26,8 +26,9 @@ Read:
 7. [`docs/VALIDATION.md`](docs/VALIDATION.md)
 8. [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 9. [`docs/TOOLLESS.md`](docs/TOOLLESS.md)
-10. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
-11. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
+10. [`docs/VECTOR_AND_LATENT.md`](docs/VECTOR_AND_LATENT.md)
+11. [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+12. [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md)
 
 ### AI systems
 
@@ -157,9 +158,58 @@ FORMALIZATION != PHYSICAL_TRUTH
 
 `MICRO` deliberately repeats these guards near the end of the artifact for small-model robustness. High-risk project records also receive validated inline epistemic boundary guards derived from explicit canonical tags.
 
-Capsules may compress by omission. **They may not transform canonical facts, invent missing facts, or claim freshness beyond the embedded snapshot.** Validation re-parses every included item and compares it directly against the current canonical repository object.
+Capsules may compress by omission. **They may not transform canonical facts, invent missing facts, or claim freshness beyond the embedded snapshot.** Validation recompiles the expected capsule and requires exact deterministic equality.
 
 See [`docs/TOOLLESS.md`](docs/TOOLLESS.md).
+
+## Vector and latent substrate projections
+
+Phase 6 adds two further derived projection families without changing the canonical public payload.
+
+### Deterministic vector substrate
+
+```bash
+python tools/build_vectors.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/vectors
+
+python tools/validate_vector_bundle.py --bundle dist/vectors
+```
+
+Generated vector output:
+
+```text
+dist/vectors/
+├── records.jsonl
+├── embeddings.f16
+├── index.json
+├── retrieval-report.json
+└── manifest.json
+```
+
+`qsol-record-chunk-v1` uses one canonical item per deterministic retrieval chunk. `qsol-hash-embed-v1` produces a dependency-free 256-dimensional float16 reference embedding so CI can reproduce the complete index without network access or a vendor embedding service.
+
+Canonical IDs, source paths, payload hashes, `source_refs`, epistemic state, visibility, and canonical payload objects remain outside embedding coordinates. Retrieval closes selected results over public provenance and relationship endpoints before context is delivered.
+
+The included reference report compares provenance-closed vector-selected context size with fixed MICRO/STANDARD/FULL budgets. It is a retrieval-size experiment, **not** a downstream answer-quality claim.
+
+### Model-specific latent/prefix experiments
+
+```bash
+python tools/build_projections.py \
+  --source-commit "$(git rev-parse HEAD)" \
+  --output dist/projections
+
+python tools/validate_projection_bundle.py --bundle dist/projections
+```
+
+Phase 6 defines reproducible experiment recipes for soft prompts/prefix tuning, prompt-tuned virtual tokens, LoRA epistemic adapters, prefilled KV caches, reusable prefix states, and hybrid epistemic-prefix + factual-text delivery.
+
+Generic CI intentionally does **not** claim that model-specific weights were trained or that a universal KV cache exists. Real model-specific artifacts must bind to an exact compatibility identity covering model revision, architecture, tokenizer identity/hash, dimensions, attention layout, and KV-layout version. A mismatch invalidates the projection.
+
+The deterministic epistemic-prefix artifact carries stable interpretation rules while mutable factual material remains textual or retrieval-selected. It also freezes the YEAH-NAH/1 textual/prefix/hybrid delivery matrix for Phase 7 model-behavior measurement.
+
+See [`docs/VECTOR_AND_LATENT.md`](docs/VECTOR_AND_LATENT.md).
 
 ## What this repository is for
 
@@ -173,6 +223,8 @@ QSOL-SUBSTRATE is designed to support:
 - hallucination reduction where errors arise from missing or ambiguous QSOL-specific context;
 - model adapters that transform one canonical substrate into vendor-specific prompt or retrieval formats without redefining facts;
 - deterministic self-contained capsules for tool-less inference environments;
+- deterministic vector-selected context with provenance closure;
+- reproducible model-specific prefix/KV/LoRA experiment contracts with explicit invalidation rules;
 - deterministic, reviewable private-to-public context publication without making private context a consumer dependency.
 
 It is **not** intended to override a model's safety system, replace primary sources, expose private context, or guarantee factual correctness outside the information it actually contains.
@@ -205,8 +257,8 @@ QSOL-SUBSTRATE/
 ├── docs/                  # prose for humans
 ├── ai/                    # normative AI contracts
 ├── public_export/         # Phase 2 publication policy/allow/deny contracts
-├── tools/                 # export, integrity, adapter, and capsule tooling
-├── tests/                 # safety/integrity/adapter/capsule regressions
+├── tools/                 # export, integrity, adapter, capsule, vector, and projection tooling
+├── tests/                 # safety/integrity/adapter/capsule/projection regressions
 ├── sources/               # provenance/source registry
 ├── identity/              # public identity
 ├── context/               # public recurring context
@@ -219,7 +271,7 @@ QSOL-SUBSTRATE/
 └── adapters/              # target-specific adapter guidance
 ```
 
-Generated adapter artifacts live under `dist/adapters/` and tool-less capsules under `dist/toolless/` during builds and CI. Both are derived projections rather than additional canonical records.
+Generated derived artifacts live under `dist/adapters/`, `dist/toolless/`, `dist/vectors/`, and `dist/projections/` during builds and CI. None is an additional canonical record store.
 
 ## Epistemic states
 
@@ -253,13 +305,13 @@ substrate_version
 substrate_commit
 substrate_sha256
 derived_artifact_kind
-adapter_identity_or_capsule_profile
+adapter_identity_or_capsule_profile_or_projection_identity
 derived_artifact_sha256
 probe_set
 execution_date
 ```
 
-Until formal release SemVer is introduced, Phase 4 adapters and Phase 5 capsules use `snapshot-YYYY-MM-DD` as the explicit substrate snapshot version and always pair it with the full source commit and canonical substrate SHA-256.
+Until formal release SemVer is introduced, derived artifacts use `snapshot-YYYY-MM-DD` as the explicit substrate snapshot version and always pair it with the full source commit and canonical substrate SHA-256.
 
 ## Maintainer
 
@@ -267,9 +319,9 @@ QSOL-SUBSTRATE is maintained by **Trent Slade / QSOL-IMC** under the public QSOL
 
 ## Status
 
-**Phases 0–5 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, eight generated portable model adapters, and deterministic MICRO/STANDARD/FULL tool-less context capsules with reproducible identity and fail-closed validation.
+**Phases 0–6 are implemented.** The repository now provides the documentation/machine contract, canonical public payload, fail-closed private export pipeline, cross-file validation and CI, deterministic substrate fingerprint, eight generated portable model adapters, deterministic MICRO/STANDARD/FULL tool-less context capsules, a deterministic provenance-aware vector retrieval projection, and reproducible model-specific latent/prefix experiment contracts with exact compatibility invalidation.
 
-Vector/latent projections, Substrate Probe comparisons, and formal release discipline remain on the roadmap.
+Substrate Probe model-behavior comparisons and formal release discipline remain on the roadmap.
 
 ---
 

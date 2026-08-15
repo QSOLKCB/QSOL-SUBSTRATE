@@ -1,6 +1,6 @@
 # Architecture
 
-QSOL-SUBSTRATE separates canonical meaning from presentation, private-source publication, and vendor transport.
+QSOL-SUBSTRATE separates canonical meaning from presentation, private-source publication, retrieval indexes, and model-specific transport/projection state.
 
 ## Layers
 
@@ -12,15 +12,15 @@ QSOL-SUBSTRATE separates canonical meaning from presentation, private-source pub
 
 `ai/` contains compact, structured instructions for AI consumers. These files define mandatory contract load order, epistemic states, public-boundary behaviour, retrieval precedence, and consumer obligations.
 
-The bootstrap deliberately separates **mandatory contract loading** from **selective payload retrieval**. Consumers load the normative machine contract first, then retrieve only the canonical payload records needed for the current task.
+The bootstrap separates **mandatory contract loading** from **selective payload retrieval**. Consumers load the normative machine contract first, then retrieve only the canonical payload records needed for the current task.
 
 ### Schema
 
-`schema/` defines structural validation for canonical substrate records. The shared canonical record schema includes identity, organization, project, repository, publication, research-topic, term, event, relationship, source, claim, adapter, and probe record types.
+`schema/` defines structural validation for canonical records, machine contracts, export manifests, validation/fingerprint outputs, adapter/capsule manifests, vector bundles, and model-projection compatibility identities.
 
 ### Canonical public knowledge payload
 
-Phase 1 implements the public context dataset under these roots:
+The source-of-truth public snapshot lives under:
 
 ```text
 sources/index.json
@@ -33,15 +33,13 @@ relationships/graph.json
 chronology/current.jsonl
 ```
 
-These records provide the currently selected public identity/context, QSOL terminology and aliases, active-project registry, verified publication/DOI registry, project/research relationship graph, provenance source registry, and materially relevant chronology.
-
-The payload is **selective, not exhaustive**. Missing records and missing relationship edges mean unavailable/unknown from this snapshot, not false.
-
-Payload records remain separable from the consumer contract so the knowledge layer can evolve without turning every query into a full-dataset load.
+The payload is **selective, not exhaustive**. Missing records and relationship edges mean unavailable/unknown from this snapshot, not false.
 
 ### Provenance snapshots
 
-`sources/index.json` stores live source locators together with snapshot evidence. First-party repository documents retain an exact commit-pinned URL; release records retain the release tag commit. This preserves the evidence used by the substrate snapshot while still allowing live primary sources to supersede stale state later.
+`sources/index.json` stores public source locators together with snapshot evidence. First-party repository documents retain exact commit-pinned evidence where available; release records retain release/tag identity.
+
+The frozen substrate can therefore explain what evidence supported a snapshot while still allowing later live primary evidence to supersede stale state.
 
 ### Private-to-public export boundary
 
@@ -56,19 +54,65 @@ public_export/
 tools/export_public_substrate.py
 ```
 
-The private source is optional and local. It is not available to public consumers and is never a runtime dependency of QSOL-SUBSTRATE.
+The private source is optional and local. It is not available to public consumers and is never a runtime dependency.
 
-The export boundary is **explicit allow only**. The repository ships with zero private publication grants. Each enabled directive selects one exact source object and names every field permitted to cross the boundary.
+Publication is **explicit allow only**. Each enabled directive selects one exact source object and names every field permitted to cross the boundary. Public provenance must resolve through the existing public source registry.
 
-Unselected source material is not copied. Public provenance must resolve through the existing public `sources/index.json` registry, which the private exporter cannot modify.
+### Integrity validation
 
-The exporter canonicalises the current public payload, applies explicit grants, performs secret/private-reference scanning, and emits a reviewable staging bundle plus a public export manifest and fingerprint. It does not commit or publish the result automatically.
+Phase 3 validates schemas, canonical IDs, provenance, visibility, aliases, DOI identity, relationships, chronology, release identity, public-boundary invariants, secret/private-reference leakage, and deterministic canonical substrate identity.
 
-An optional private audit manifest may retain internal source paths and hashes for local auditing, but the exporter refuses to place that artifact inside the public output directory.
+```text
+tools/validate_substrate.py
+tools/fingerprint_substrate.py
+```
 
-### Adapters
+The canonical substrate fingerprint covers public payload semantics, not derived transports or projection artifacts.
 
-`adapters/` describes how to transport the same canonical substrate into different systems: chat uploads, knowledge bases, project rules, RAG stores, system prompts, or local model wrappers. Adapters are intentionally disposable. The canonical substrate is not.
+### Portable adapters
+
+Phase 4 deterministically formats the canonical substrate for target systems under generated `dist/adapters/` output.
+
+Adapters can change transport and formatting. They cannot redefine facts.
+
+### Tool-less capsules
+
+Phase 5 compiles deterministic MICRO/STANDARD/FULL frozen textual context images under `dist/toolless/`.
+
+Capsules may omit whole canonical items according to deterministic profile budgets, but cannot transform included canonical facts. Provenance and relationship dependencies are closed before delivery.
+
+### Vector projection
+
+Phase 6 builds a deterministic retrieval projection under:
+
+```text
+dist/vectors/
+├── records.jsonl
+├── embeddings.f16
+├── index.json
+├── retrieval-report.json
+└── manifest.json
+```
+
+`qsol-record-chunk-v1` maps one canonical item to one retrieval chunk. `qsol-hash-embed-v1` provides a dependency-free deterministic reference embedding for network-free CI.
+
+Canonical IDs, source paths, provenance, epistemic labels, and payload objects remain outside embedding coordinates. Vectors are indexes, not truth.
+
+### Model-specific latent/prefix projection
+
+Phase 6 also defines reproducible experiment contracts under:
+
+```text
+dist/projections/
+├── epistemic-prefix.txt
+├── projection-recipes.json
+├── delivery-matrix.json
+└── manifest.json
+```
+
+The recipes cover soft-prompt/prefix tuning, virtual tokens, LoRA, KV-cache prefill, reusable prefix state, and hybrid epistemic-prefix + factual-text conditions.
+
+Generic CI validates the recipe and compatibility contract. It does not claim model-specific weights or KV state were created unless an actual model-specific execution produces them.
 
 ## Information flow
 
@@ -85,18 +129,34 @@ private canonical context (optional, local)
               v
       QSOL-SUBSTRATE public records
               |
-       future Phase 3 validation + CI
+              | Phase 3 fail-closed validation
+              v
+       canonical public snapshot
               |
-       canonical public bundle
+       +------+------+----------------+
+       |             |                |
+       v             v                v
+ adapters       tool-less text    vector index
+       |             |                |
+       |             |          provenance closure
+       |             |                |
+       +------+------+----------------+
               |
-     +--------+--------+
-     |        |        |
-   Grok     Sider    Ollama   ...
+              v
+        factual context delivery
+              |
+              +----------------------+
+              |                      |
+              v                      v
+        ordinary model       model-specific prefix/
+                              LoRA/KV experiment
 ```
 
-The private source is not required for consumers and is never assumed to be accessible.
+The canonical payload remains the only public truth store in this graph.
 
 ## Retrieval flow
+
+Canonical retrieval:
 
 ```text
 ai/bootstrap.json
@@ -110,10 +170,31 @@ identify task-relevant records
        v
 selective canonical payload retrieval
        |
-       +--> sources/index.json when provenance resolution is required
+       +--> sources/index.json for provenance
 ```
 
-This preserves the `smallest_sufficient_context` rule as the registries grow.
+Phase 6 vector retrieval:
+
+```text
+user/query text
+       |
+       v
+qsol-hash-embed-v1 query vector
+       |
+       v
+normalized-dot nearest neighbours
+       |
+       v
+canonical IDs
+       |
+       v
+source_ref + relationship endpoint closure
+       |
+       v
+render canonical payload objects as factual text
+```
+
+Nearest-neighbour score is retrieval rank, not factual confidence.
 
 ## Export flow
 
@@ -129,9 +210,9 @@ load existing public payload baseline
        v
 apply enabled explicit grants only
        |
-       +--> every directive visibility == public
-       +--> every exported field visibility == public
-       +--> every public source_ref already registered
+       +--> directive visibility == public
+       +--> exported field visibility == public
+       +--> public source_ref already registered
        +--> no source-path escape
        +--> no private source-registry mutation
        |
@@ -150,21 +231,67 @@ human review
 
 Failure at any boundary produces `EXPORT REFUSED`; there is no fallback publication path.
 
+## Projection compatibility flow
+
+A model-specific latent artifact is valid only for its declared compatibility identity:
+
+```text
+projection_kind
+model_id
+model_revision
+architecture
+tokenizer_id
+tokenizer_sha256
+context_length
+hidden_size
+num_hidden_layers
+num_attention_heads
+kv_layout_version
+```
+
+Any mismatch invalidates the artifact. A tokenizer or architecture change is not a warning; it means regenerate.
+
+## Hybrid epistemic projection
+
+Phase 6 tests the architecture, not model behaviour:
+
+```text
+stable epistemic/pragmatic rules
+           |
+           v
+ model-specific prefix recipe
+           |
+           +
+           |
+mutable canonical facts
+           |
+           v
+ textual capsule or vector-selected context
+           |
+           +
+           |
+        user task
+```
+
+The YEAH-NAH/1 textual/prefix/hybrid delivery matrix is fixed here so Phase 7 can measure model behaviour under identical rule payloads.
+
 ## Trust precedence
 
 The substrate is a cache of public context, not a replacement for current primary evidence. A current repository commit, release, DOI record, or other primary source can supersede a stale substrate entry.
 
-Consumers should preserve both the newer evidence and the fact that the substrate snapshot was stale rather than silently rewriting history.
+Derived artifacts sit **below** canonical structured records in factual authority. Neither embedding proximity nor latent-state activation can overrule canonical evidence.
 
 Private context does not outrank public provenance merely because it is canonical inside QSOL-CONTEXT. A private candidate fact requires explicit publication authority and public source references before it can enter the public substrate.
 
 ## Determinism
 
-Phase 2 defines deterministic public-export canonicalisation:
+Deterministic identities are layered:
 
-- `qsol-canonical-json-v1` uses UTF-8, lexicographically sorted object keys, compact separators, no NaN/Infinity, preserved Unicode, and one trailing newline;
-- `qsol-canonical-jsonl-v1` canonicalises each record the same way while preserving declared record order;
-- the public export manifest records SHA-256 and byte length for every canonical payload file;
-- the bundle SHA-256 is derived from the ordered public path/hash/length table.
+- canonical JSON/JSONL rules define public payload semantics;
+- Phase 3 fingerprints the canonical payload;
+- Phase 4 fingerprints adapter projections;
+- Phase 5 fingerprints tool-less textual projections;
+- Phase 6 fingerprints vector bundles and model-projection experiment bundles;
+- every derived artifact records the exact source commit plus canonical substrate SHA-256.
 
-The public manifest deliberately excludes private source paths and private source hashes. Model inference itself need not be deterministic for the substrate and its generated artifacts to be version-identifiable.
+Model inference itself need not be deterministic for the substrate and its generated artifacts to be version-identifiable.
