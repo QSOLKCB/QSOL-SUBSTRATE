@@ -83,25 +83,25 @@ access.
 
 ### Profiles
 
-- [ ] `MICRO` tool-less profile for small-context and 4B–8B class models.
-- [ ] `STANDARD` tool-less profile for general-purpose local and hosted models.
-- [ ] `FULL` tool-less profile for large-context models.
-- [ ] Deterministic token-budgeted compilation.
-- [ ] Priority-aware truncation that preserves epistemic rules before optional detail.
-- [ ] Strategic semantic redundancy for small models.
-- [ ] Inline critical claim boundaries with high-risk project records.
+- [x] `MICRO` tool-less profile for small-context and 4B–8B class models.
+- [x] `STANDARD` tool-less profile for general-purpose local and hosted models.
+- [x] `FULL` tool-less profile for large-context models.
+- [x] Deterministic token-budgeted compilation.
+- [x] Priority-aware truncation that preserves epistemic rules before optional detail.
+- [x] Strategic semantic redundancy for small models.
+- [x] Inline critical claim boundaries with high-risk project records.
 
 ### Toolless cold boot
 
-- [ ] Add a compact cold-boot header declaring that the model has no tools.
-- [ ] Declare substrate snapshot date prominently.
-- [ ] Declare substrate version and SHA-256 fingerprint.
-- [ ] Require `UNKNOWN != FALSE`.
-- [ ] Require `INFERENCE != FACT`.
-- [ ] Require `SATIRE != BIOGRAPHY`.
-- [ ] Require `FORMALIZATION != PHYSICAL_TRUTH`.
-- [ ] Require models not to claim freshness beyond the substrate snapshot.
-- [ ] Require models to state snapshot limitations when current state cannot be verified.
+- [x] Add a compact cold-boot header declaring that the model has no tools.
+- [x] Declare substrate snapshot date prominently.
+- [x] Declare substrate version and SHA-256 fingerprint.
+- [x] Require `UNKNOWN != FALSE`.
+- [x] Require `INFERENCE != FACT`.
+- [x] Require `SATIRE != BIOGRAPHY`.
+- [x] Require `FORMALIZATION != PHYSICAL_TRUTH`.
+- [x] Require models not to claim freshness beyond the substrate snapshot.
+- [x] Require models to state snapshot limitations when current state cannot be verified.
 
 Example invariant:
 
@@ -117,16 +117,16 @@ THEN:
 
 ### Toolless serialization
 
-* [ ] Define a compact LLM-oriented substrate serialization.
-* [ ] Preserve canonical IDs and aliases.
-* [ ] Inline important relationships where this improves local comprehension.
-* [ ] Preserve publication and DOI identity.
-* [ ] Preserve provenance class and epistemic state.
-* [ ] Preserve chronology without requiring external lookup.
-* [ ] Avoid deeply nested structures where they waste context.
-* [ ] Generate all tool-less artifacts from the canonical substrate rather than maintaining duplicate facts manually.
+* [x] Define a compact LLM-oriented substrate serialization.
+* [x] Preserve canonical IDs and aliases.
+* [x] Inline important relationships where this improves local comprehension.
+* [x] Preserve publication and DOI identity.
+* [x] Preserve provenance class and epistemic state.
+* [x] Preserve chronology without requiring external lookup.
+* [x] Avoid deeply nested structures where they waste context.
+* [x] Generate all tool-less artifacts from the canonical substrate rather than maintaining duplicate facts manually.
 
-Proposed output:
+Generated output:
 
 ```text
 dist/toolless/
@@ -136,8 +136,25 @@ dist/toolless/
 └── manifest.json
 ```
 
-The tool-less representation should behave as a frozen public context image:
-one artifact in, no external tools required.
+Phase 5 uses deterministic model-independent `qsol-portable-token-v1` build
+budgets: `MICRO=8192`, `STANDARD=24576`, and `FULL=131072`. These values control
+compilation only and are not claims about any vendor/model tokenizer.
+
+Records are admitted only at whole canonical-item boundaries. Admission brings
+public `source_refs`, relationship endpoints, and other resolvable canonical-ID
+dependencies with the record, so compact profiles cannot gain space by leaving
+dangling provenance. Omitted material remains unavailable, not false.
+
+The `FULL` profile must contain the complete canonical payload projection or the
+build fails closed. `MICRO` deliberately repeats the highest-risk epistemic
+rules for small-model robustness. Generated artifacts record the exact source
+commit, snapshot identity, canonical substrate SHA-256, deterministic portable
+token count, inclusion/omission counts, per-profile hashes, and aggregate
+capsule-bundle fingerprint.
+
+The tool-less representation behaves as a frozen public context image: one
+artifact in, no external tools required, no freshness claims beyond the
+snapshot, and no invented lore to fill omissions.
 
 ## Phase 6 — Vector and Latent Substrate Projection
 
