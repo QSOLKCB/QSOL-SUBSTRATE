@@ -257,6 +257,10 @@ TEXTUAL FACTUAL SUBSTRATE
 USER TASK
 ```
 
+* [ ] Test whether stable cultural-pragmatic interpretation rules such as
+  `YEAH-NAH/1` are better preserved in an epistemic prefix, textual context, or
+  hybrid delivery mode.
+
 This architecture keeps frequently changing public facts inspectable and textual
 while testing whether stable epistemic behaviour can be efficiently projected
 into temporary inference state.
@@ -279,6 +283,54 @@ actually improves model behaviour.
 * [ ] Project relationship tests.
 * [ ] Publication/DOI identity tests.
 * [ ] Reproducible model report-card format.
+
+### YEAH-NAH/1 — Australian Pragmatic Humour Probe
+
+Build a deterministic cultural-pragmatics stress test for sarcasm, deadpan,
+understatement, banter, mock hostility, affectionate insult, and polarity
+reversal in Australian English. The purpose is not to assume that Australian
+speech is sarcastic; it is to test whether a model can avoid naive literalism
+without over-classifying ambiguous language as sarcasm or hostility.
+
+* [ ] Context-paired literal-versus-sarcastic utterance set.
+* [ ] Deadpan interpretation tests.
+* [ ] Understatement tests, including high-severity contexts expressed mildly.
+* [ ] Mock-hostility versus actual-hostility tests.
+* [ ] Affectionate-insult and familiar-banter tests.
+* [ ] Positive/negative polarity-reversal tests.
+* [ ] Contextual `yeah nah` / `nah yeah` interpretation tests.
+* [ ] Relationship-familiarity and conversational-context controls.
+* [ ] Sarcasm-confidence and uncertainty-calibration tests.
+* [ ] Speaker-confirmed sarcasm controls that distinguish explicit confirmation
+  from model inference.
+* [ ] Cross-model comparison for small open-weight and hosted models.
+* [ ] Compare naked, textual-substrate, vector-selected, latent-prefix, hybrid,
+  and tool-enabled conditions.
+
+Normative interpretation guards for the probe:
+
+```text
+SURFACE_MEANING != NECESSARILY_INTENDED_MEANING
+SARCASM = INFERRED UNLESS SPEAKER_CONFIRMED
+UNCERTAIN != SARCASTIC
+BANTER != HOSTILITY
+UNDERSTATEMENT != LOW_SEVERITY
+CONTEXT > TOKEN_POLARITY
+```
+
+Measure at least:
+
+* [ ] Sarcasm precision and recall.
+* [ ] Literal-meaning error rate.
+* [ ] Banter misclassification rate.
+* [ ] Hostility false-positive rate.
+* [ ] Understatement severity-preservation rate.
+* [ ] Confidence calibration.
+* [ ] Cultural-context dependence and uplift from substrate delivery.
+
+`YEAH-NAH/1` is a pragmatic interpretation probe, not a canonical-fact source.
+A sarcasm classification remains `inferred` unless the speaker or cited evidence
+explicitly confirms the intended meaning.
 
 ### Comparison matrix
 
