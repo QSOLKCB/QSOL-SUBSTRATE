@@ -23,9 +23,11 @@
       "type": "array", "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["model_id", "condition", "overall_accuracy", "hallucination_rate", "yeah_nah_1_accuracy", "context_token_efficiency", "substrate_uplift_over_naked", "hallucination_reduction_relative_to_naked", "cultural_context_uplift_over_naked"],
+        "required": ["model_id", "model_revision", "model_provider", "condition", "overall_accuracy", "hallucination_rate", "yeah_nah_1_accuracy", "context_token_efficiency", "substrate_uplift_over_naked", "hallucination_reduction_relative_to_naked", "cultural_context_uplift_over_naked"],
         "properties": {
           "model_id": {"type": "string", "minLength": 1},
+          "model_revision": {"type": "string", "minLength": 1},
+          "model_provider": {"type": "string", "minLength": 1},
           "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
           "overall_accuracy": {"type": ["number", "null"]},
           "hallucination_rate": {"type": ["number", "null"]},
