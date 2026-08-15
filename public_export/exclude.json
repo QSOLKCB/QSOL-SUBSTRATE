@@ -1,0 +1,84 @@
+{
+  "type": "qsol-substrate-export-deny-policy",
+  "schema_version": "1.0.0",
+  "default": "deny_on_match",
+  "forbidden_source_path_globs": [
+    ".git/*",
+    ".git/**",
+    ".env",
+    ".env.*",
+    "**/.env",
+    "**/.env.*",
+    "secrets/*",
+    "secrets/**",
+    "**/secrets/*",
+    "**/secrets/**",
+    "credentials/*",
+    "credentials/**",
+    "**/credentials/*",
+    "**/credentials/**"
+  ],
+  "forbidden_field_names": [
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "access_token",
+    "refresh_token",
+    "api_key",
+    "apikey",
+    "private_key",
+    "credential",
+    "credentials",
+    "cookie",
+    "authorization"
+  ],
+  "secret_patterns": [
+    {
+      "id": "github-token",
+      "regex": "\\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\\b"
+    },
+    {
+      "id": "openai-style-key",
+      "regex": "\\bsk-[A-Za-z0-9_-]{20,}\\b"
+    },
+    {
+      "id": "aws-access-key",
+      "regex": "\\b(?:AKIA|ASIA)[A-Z0-9]{16}\\b"
+    },
+    {
+      "id": "private-key-pem",
+      "regex": "-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
+    },
+    {
+      "id": "bearer-token",
+      "regex": "(?i)\\bAuthorization\\s*:\\s*Bearer\\s+[A-Za-z0-9._~+/-]{12,}={0,2}\\b"
+    }
+  ],
+  "private_reference_patterns": [
+    {
+      "id": "private-qsol-context-github-url",
+      "regex": "https?://github\\.com/QSOLKCB/QSOL-CONTEXT(?:/|\\b)"
+    },
+    {
+      "id": "private-qsol-context-git-url",
+      "regex": "git@github\\.com:QSOLKCB/QSOL-CONTEXT(?:\\.git)?\\b"
+    },
+    {
+      "id": "file-url",
+      "regex": "\\bfile://[^\\s]+\\b"
+    },
+    {
+      "id": "unix-private-absolute-path",
+      "regex": "(?:^|[\\s\"'=:(])/(?:home|root|Users|workspace|workspaces|tmp|var/tmp|mnt|media)/[^\\s\"',;)}\\]]+"
+    },
+    {
+      "id": "windows-user-path",
+      "regex": "(?i)[A-Z]:\\\\Users\\\\[^\\\\\\s]+"
+    },
+    {
+      "id": "localhost-url",
+      "regex": "https?://(?:localhost|127\\.0\\.0\\.1)(?::\\d+)?(?:/|\\b)"
+    }
+  ]
+}

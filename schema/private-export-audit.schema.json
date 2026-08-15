@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/private-export-audit.schema.json",
+  "title": "QSOL-SUBSTRATE private export audit manifest",
+  "type": "object",
+  "required": ["type", "schema_version", "source_root", "directives", "public_bundle_sha256"],
+  "properties": {
+    "type": {"const": "qsol-substrate-private-export-audit"},
+    "schema_version": {"const": "1.0.0"},
+    "source_root": {"type": "string", "minLength": 1},
+    "directives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source_path", "source_locator", "source_file_sha256", "target_path", "output_record_id", "output_record_sha256", "redactions"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "source_path": {"type": "string", "minLength": 1},
+          "source_locator": {"type": "string"},
+          "source_file_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "target_path": {"type": "string", "minLength": 1},
+          "output_record_id": {"type": "string", "minLength": 1},
+          "output_record_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "redactions": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "public_bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

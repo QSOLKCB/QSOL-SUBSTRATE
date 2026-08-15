@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/export-allowlist.schema.json",
+  "title": "QSOL-SUBSTRATE explicit publication allowlist",
+  "type": "object",
+  "required": ["type", "schema_version", "default", "source_protocol", "entries"],
+  "properties": {
+    "type": {"const": "qsol-substrate-export-allowlist"},
+    "schema_version": {"const": "1.0.0"},
+    "default": {"const": "deny"},
+    "source_protocol": {"const": "QSOL-CONTEXT"},
+    "entries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/directive"}
+    },
+    "note": {"type": "string"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "match": {
+      "type": "object",
+      "required": ["pointer", "equals"],
+      "properties": {
+        "pointer": {"type": "string"},
+        "equals": {}
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "pointer": {"type": "string"},
+        "collection_pointer": {"type": "string"},
+        "match": {"$ref": "#/$defs/match"}
+      },
+      "oneOf": [
+        {"required": ["pointer"], "not": {"anyOf": [{"required": ["collection_pointer"]}, {"required": ["match"]}]}},
+        {"required": ["collection_pointer", "match"], "not": {"required": ["pointer"]}}
+      ],
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["path", "collection_pointer", "allow_create"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "collection_pointer": {"type": "string"},
+        "allow_create": {"type": "boolean"},
+        "sort_by": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "field": {
+      "type": "object",
+      "required": ["to", "visibility"],
+      "properties": {
+        "from": {"type": "string"},
+        "value": {},
+        "redact_from": {"type": "string"},
+        "replacement": {},
+        "to": {"type": "string"},
+        "visibility": {"const": "public"}
+      },
+      "oneOf": [
+        {"required": ["from"], "not": {"anyOf": [{"required": ["value"]}, {"required": ["redact_from"]}, {"required": ["replacement"]}]}},
+        {"required": ["value"], "not": {"anyOf": [{"required": ["from"]}, {"required": ["redact_from"]}, {"required": ["replacement"]}]}},
+        {"required": ["redact_from"], "not": {"anyOf": [{"required": ["from"]}, {"required": ["value"]}]}}
+      ],
+      "additionalProperties": false
+    },
+    "record": {
+      "type": "object",
+      "required": ["id", "record_type", "epistemic_state", "public_source_refs", "fields"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "record_type": {
+          "enum": ["identity", "organization", "project", "repository", "publication", "research_topic", "term", "event", "relationship", "source", "claim", "adapter", "probe"]
+        },
+        "epistemic_state": {"enum": ["known", "retrieved", "inferred", "unknown", "conflict", "fiction"]},
+        "public_source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^src:"},
+          "uniqueItems": true
+        },
+        "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}}
+      },
+      "additionalProperties": false
+    },
+    "directive": {
+      "type": "object",
+      "required": ["id", "enabled", "visibility", "source", "target", "record"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "enabled": {"type": "boolean"},
+        "visibility": {"const": "public"},
+        "source": {"$ref": "#/$defs/source"},
+        "target": {"$ref": "#/$defs/target"},
+        "record": {"$ref": "#/$defs/record"}
+      },
+      "additionalProperties": false
+    }
+  }
+}
