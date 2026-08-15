@@ -1,0 +1,28 @@
+{
+  "type": "qsol-substrate-source-registry",
+  "schema_version": "1.0.0",
+  "snapshot_date": "2026-08-15",
+  "visibility": "public",
+  "sources": [
+    {"id":"src:github-profile-emergentmonk","class":"primary_repository","url":"https://github.com/EmergentMonk","summary":"Public GitHub profile identity for Trent Slade / EmergentMonk."},
+    {"id":"src:qsol-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QSOL/blob/main/README.md","summary":"QSOL philosophy and expansion."},
+    {"id":"src:qec-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QEC/blob/main/README.md","summary":"QEC scope, deterministic proof stack, release and DOI references."},
+    {"id":"src:qsol-nexus-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QSOL-NEXUS/blob/main/README.md","summary":"QSOL NEXUS architecture and current release posture."},
+    {"id":"src:qsol-substrate-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QSOL-SUBSTRATE/blob/main/README.md","summary":"QSOL-SUBSTRATE public-context purpose and boundary."},
+    {"id":"src:qsol-harness-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/QSOL-HARNESS/blob/main/README.md","summary":"Machine-readable QSOL-HARNESS mission and authority contract."},
+    {"id":"src:spectral-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/SPECTRAL/blob/main/README.md","summary":"SPECTRAL scope, creator identity, publication DOIs and claim boundaries."},
+    {"id":"src:sonification-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/SONIFICATION/blob/main/README.md","summary":"ETQ-303 protocol, ETQ lineage and archive DOIs."},
+    {"id":"src:e8-music-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/E8_MUSIC/blob/main/README.md","summary":"E8_MUSIC workbench, canonical sonification contracts and lineage."},
+    {"id":"src:uff-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/UFF/blob/main/README.md","summary":"UFF reproducible astrophysics/falsification lab and v5.2.0 DOI."},
+    {"id":"src:res-rag-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/res-rag/blob/main/README.md","summary":"RES=RAG/CSNP canonical specification and DOI."},
+    {"id":"src:res-rag-viz-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/res-rag-viz/blob/main/README.md","summary":"RES=RAG visual and sonification companion research lab."},
+    {"id":"src:games-v1.2.0-release","class":"release_record","url":"https://github.com/QSOLKCB/GAMES/releases/tag/v1.2.0","summary":"GAMES v1.2.0 deterministic-games release."},
+    {"id":"src:whoami-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/WHOAMI-18437/blob/main/README.md","summary":"WHOAMI-18437 software-art archive and model comparison gauntlet scope."},
+    {"id":"src:whoami-v1.0.1-release","class":"release_record","url":"https://github.com/QSOLKCB/WHOAMI-18437/releases/tag/v1.0.1","summary":"WHOAMI-18437 v1.0.1 release record."},
+    {"id":"src:deepseekc64-readme","class":"first_party_documentation","url":"https://github.com/QSOLKCB/deepseekc64/blob/main/README.md","summary":"DeepSeek C64 Identity Entrapment Test archive and Lean formalization."},
+    {"id":"src:deepseekc64-v1.0.0-release","class":"release_record","url":"https://github.com/QSOLKCB/deepseekc64/releases/tag/v1.0.0","summary":"deepseekc64 v1.0.0 release record."},
+    {"id":"src:uff-v5.2.0-release","class":"release_record","url":"https://github.com/QSOLKCB/UFF/releases/tag/v5.2.0","summary":"UFF v5.2.0 release identity, DOI and publication date."},
+    {"id":"src:e8-music-v1.1.0-release","class":"release_record","url":"https://github.com/QSOLKCB/E8_MUSIC/releases/tag/v1.1.0","summary":"E8_MUSIC v1.1.0 release record."},
+    {"id":"src:res-rag-v1.1.0-release","class":"release_record","url":"https://github.com/QSOLKCB/res-rag/releases/tag/v1.1.0","summary":"RES=RAG/CSNP v1.1.0 release identity, DOI and publication date."}
+  ]
+}
