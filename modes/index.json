@@ -1,0 +1,33 @@
+{
+  "type": "qsol-substrate-domain-mode-registry",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_canonical_fact",
+  "modes": [
+    {"id":"FORMAL","description":"Mathematics, logic, proof, statistics, and theoretical computer science.","submodes":["mathematics","logic","formal_methods","statistics","theoretical_computer_science"],"source_profile":"FORMAL","risk_class":"normal"},
+    {"id":"SCIENCE","description":"Physics, chemistry, astronomy, geoscience, materials science, and empirical natural science.","submodes":["physics","chemistry","astronomy","geoscience","materials_science"],"source_profile":"SCIENCE","risk_class":"normal"},
+    {"id":"LIFE_SCIENCE","description":"Biology, genetics, ecology, evolution, microbiology, and non-clinical bioscience.","submodes":["biology","genetics","ecology","evolution","microbiology"],"source_profile":"LIFE_SCIENCE","risk_class":"elevated"},
+    {"id":"MEDICAL","description":"Clinical medicine, diagnostics, pharmacology, epidemiology, public health, and biomedical research.","submodes":["clinical_medicine","diagnostics","pharmacology","epidemiology","public_health","biomedical_research"],"source_profile":"MEDICAL","risk_class":"high"},
+    {"id":"ENGINEERING","description":"Mechanical, electrical, civil, chemical, aerospace, systems, and safety engineering.","submodes":["mechanical","electrical","civil","chemical","aerospace","systems"],"source_profile":"ENGINEERING","risk_class":"elevated"},
+    {"id":"COMPUTING","description":"Software, hardware, networking, databases, operating systems, and AI/ML.","submodes":["software_engineering","computer_architecture","operating_systems","networking","databases","artificial_intelligence","human_computer_interaction"],"source_profile":"COMPUTING","risk_class":"normal"},
+    {"id":"SECURITY","description":"Cybersecurity, safety engineering, threat modelling, resilience, and vulnerability analysis.","submodes":["cybersecurity","threat_modelling","resilience","vulnerability_research","safety_engineering"],"source_profile":"SECURITY","risk_class":"high"},
+    {"id":"LEGAL","description":"Law, jurisprudence, regulation, contracts, legal procedure, and authoritative legal status.","submodes":["legislation","case_law","regulation","contracts","procedure","jurisprudence"],"source_profile":"LEGAL","risk_class":"high"},
+    {"id":"GOVERNANCE","description":"Government, public administration, policy, institutions, elections, and diplomacy.","submodes":["public_policy","public_administration","institutions","elections","diplomacy"],"source_profile":"GOVERNANCE","risk_class":"elevated"},
+    {"id":"ECONOMICS","description":"Economics, econometrics, monetary systems, markets, and public finance.","submodes":["microeconomics","macroeconomics","econometrics","monetary_systems","markets","public_finance"],"source_profile":"ECONOMICS","risk_class":"elevated"},
+    {"id":"BUSINESS","description":"Management, accounting, operations, entrepreneurship, and organisational practice.","submodes":["management","accounting","operations","entrepreneurship","organisations"],"source_profile":"BUSINESS","risk_class":"normal"},
+    {"id":"SOCIAL_SCIENCE","description":"Sociology, anthropology, psychology, political science, and demography.","submodes":["sociology","anthropology","psychology","political_science","demography"],"source_profile":"SOCIAL_SCIENCE","risk_class":"elevated"},
+    {"id":"HISTORY","description":"Historical method, archaeology, chronology, archival research, and historiography.","submodes":["history","archaeology","chronology","archival_research","historiography"],"source_profile":"HISTORY","risk_class":"normal"},
+    {"id":"PHILOSOPHY","description":"Epistemology, ethics, metaphysics, philosophy of science, and aesthetics.","submodes":["epistemology","ethics","metaphysics","philosophy_of_science","aesthetics"],"source_profile":"PHILOSOPHY","risk_class":"normal"},
+    {"id":"HUMANITIES","description":"Literature, linguistics, classics, religious studies, and cultural studies.","submodes":["literature","linguistics","classics","religious_studies","cultural_studies"],"source_profile":"HUMANITIES","risk_class":"normal"},
+    {"id":"EDUCATION","description":"Pedagogy, curriculum, assessment, learning science, and educational practice.","submodes":["pedagogy","curriculum","assessment","learning_science"],"source_profile":"EDUCATION","risk_class":"normal"},
+    {"id":"ARTS_MEDIA","description":"Music, visual art, film, design, journalism, and media studies.","submodes":["music","visual_art","film","design","journalism","media_studies"],"source_profile":"ARTS_MEDIA","risk_class":"normal"},
+    {"id":"ENVIRONMENT","description":"Climate, conservation, agriculture, forestry, oceans, and sustainability.","submodes":["climate","conservation","agriculture","forestry","oceans","sustainability"],"source_profile":"ENVIRONMENT","risk_class":"elevated"},
+    {"id":"EVERYDAY","description":"Low-formality practical knowledge such as cooking, household tasks, travel, hobbies, gardening, and ordinary consumer questions.","submodes":["household","cooking","travel","hobbies","gardening","practical_consumer"],"source_profile":"EVERYDAY","risk_class":"normal"}
+  ],
+  "rules": [
+    "domain_mode_is_not_persona",
+    "domain_mode_is_not_authority",
+    "domain_mode_is_not_permission",
+    "submodes_inherit_parent_boundaries_unless_an_explicit_stricter_profile_exists",
+    "cross_domain_inference_requires_a_declared_bridge_when_material"
+  ]
+}
