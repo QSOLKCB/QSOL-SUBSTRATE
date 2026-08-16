@@ -1,0 +1,25 @@
+{
+  "type": "qsol-substrate-activity-mode-registry",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_canonical_fact",
+  "activities": [
+    {"id":"RESEARCH","description":"Locate, compare, synthesize, or generate research questions without upgrading evidence status."},
+    {"id":"DIAGNOSTIC","description":"Evaluate observations against candidate explanations; does not itself confer clinical or professional authority."},
+    {"id":"DESIGN","description":"Develop or compare designs, architectures, mechanisms, or implementation choices."},
+    {"id":"DECISION","description":"Support a decision while preserving uncertainty, alternatives, constraints, and domain-specific authority requirements."},
+    {"id":"EDUCATIONAL","description":"Explain or teach material without silently converting educational context into professional advice."},
+    {"id":"FORENSIC","description":"Reconstruct or assess evidence while keeping observation, inference, provenance, and conclusion distinct."},
+    {"id":"HISTORICAL","description":"Interpret past events and sources with chronology and source-status controls."},
+    {"id":"PREDICTIVE","description":"Estimate future states while distinguishing model output, scenario, forecast, and observed outcome."},
+    {"id":"NORMATIVE","description":"Assess what ought to be done while separating normative premises from empirical claims."},
+    {"id":"CREATIVE","description":"Generate fictional, artistic, satirical, hypothetical, or otherwise non-literal material with explicit register labelling."}
+  ],
+  "composition_rule": "KNOWLEDGE_REQUEST = DOMAIN_MODE + ACTIVITY_MODE + EPISTEMIC_PROFILE_24D + DECLARED_BRIDGES",
+  "rules": [
+    "activity_mode_never_overrides_domain_source_policy",
+    "activity_mode_never_upgrades_authority",
+    "creative_activity_must_not_export_fiction_as_fact",
+    "diagnostic_activity_in_medical_mode_does_not_equal_a_clinical_diagnosis",
+    "decision_activity_does_not_remove_uncertainty_or_professional_boundaries"
+  ]
+}

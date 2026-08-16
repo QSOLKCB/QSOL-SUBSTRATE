@@ -1,0 +1,30 @@
+{
+  "type": "qsol-substrate-mode-bridge-registry",
+  "schema_version": "1.0.0",
+  "classification": "translation_policy_not_evidence",
+  "bridges": [
+    {"id":"SCIENCE_TO_MEDICAL","from":"SCIENCE","to":"MEDICAL","non_equivalences":["scientific_association != clinical_effectiveness","statistical_significance != clinical_significance","population_result != individual_patient_prediction","preprint != clinical_guideline"]},
+    {"id":"LIFE_SCIENCE_TO_MEDICAL","from":"LIFE_SCIENCE","to":"MEDICAL","non_equivalences":["biological_plausibility != clinical_efficacy","in_vitro_result != human_effect","animal_result != human_recommendation","mechanism != treatment"]},
+    {"id":"MEDICAL_TO_LEGAL","from":"MEDICAL","to":"LEGAL","non_equivalences":["clinical_standard != legal_standard_of_care","medical_causation != legal_causation","adverse_outcome != negligence","clinical_opinion != judicial_finding"]},
+    {"id":"SCIENCE_TO_GOVERNANCE","from":"SCIENCE","to":"GOVERNANCE","non_equivalences":["scientific_result != policy mandate","scenario != enacted policy","model uncertainty != political value judgement"]},
+    {"id":"ECONOMICS_TO_GOVERNANCE","from":"ECONOMICS","to":"GOVERNANCE","non_equivalences":["economic_efficiency != political_desirability","model_forecast != policy_outcome","aggregate_welfare != individual_welfare","correlation != policy_causation"]},
+    {"id":"SOCIAL_SCIENCE_TO_GOVERNANCE","from":"SOCIAL_SCIENCE","to":"GOVERNANCE","non_equivalences":["survey_result != electoral outcome","observational association != policy causation","population trend != individual intent"]},
+    {"id":"FORMAL_TO_SCIENCE","from":"FORMAL","to":"SCIENCE","non_equivalences":["formal_consistency != empirical_truth","proof_about_model != validation_of_physical_model","mathematical_possibility != physical_realization"]},
+    {"id":"FORMAL_TO_COMPUTING","from":"FORMAL","to":"COMPUTING","non_equivalences":["proved_property != complete_system_correctness","algorithmic_complexity != observed_performance","formal_specification != deployed_implementation"]},
+    {"id":"SCIENCE_TO_ENGINEERING","from":"SCIENCE","to":"ENGINEERING","non_equivalences":["laboratory_result != certified_design","scientific_feasibility != engineering_readiness","simulation != qualification_test"]},
+    {"id":"COMPUTING_TO_SECURITY","from":"COMPUTING","to":"SECURITY","non_equivalences":["functional != secure","encrypted != authenticated","memory_safe != vulnerability_free","passed_tests != formally_verified"]},
+    {"id":"HISTORY_TO_GOVERNANCE","from":"HISTORY","to":"GOVERNANCE","non_equivalences":["historical_precedent != legal_precedent","historical_analogy != prediction","archival_claim != established_fact","past_policy != current_policy"]},
+    {"id":"PHILOSOPHY_TO_LEGAL","from":"PHILOSOPHY","to":"LEGAL","non_equivalences":["ethical_argument != binding_law","jurisprudential_theory != controlling_authority","normative_conclusion != legal_rule"]},
+    {"id":"PHILOSOPHY_TO_SCIENCE","from":"PHILOSOPHY","to":"SCIENCE","non_equivalences":["conceptual_argument != empirical_result","epistemic_possibility != measured_probability","philosophical_model != scientific_validation"]},
+    {"id":"ARTS_MEDIA_TO_HISTORY","from":"ARTS_MEDIA","to":"HISTORY","non_equivalences":["dramatisation != historical_record","satire != biography","adaptation != primary_source","critical_interpretation != event_fact"]},
+    {"id":"ENVIRONMENT_TO_GOVERNANCE","from":"ENVIRONMENT","to":"GOVERNANCE","non_equivalences":["environmental_projection != enacted_policy","risk_assessment != legal_requirement","scientific_scenario != political_decision"]},
+    {"id":"ENVIRONMENT_TO_ECONOMICS","from":"ENVIRONMENT","to":"ECONOMICS","non_equivalences":["physical_impact != monetary_valuation","scenario != market_outcome","environmental_cost != agreed_price"]}
+  ],
+  "rules": [
+    "bridge_is_translation_not_evidence",
+    "bridge_does_not_upgrade_source_authority",
+    "bridge_does_not_remove_uncertainty",
+    "undeclared_material_cross_domain_inference_is_prohibited",
+    "reverse_direction_requires_its_own_declared_semantics_when_direction_matters"
+  ]
+}

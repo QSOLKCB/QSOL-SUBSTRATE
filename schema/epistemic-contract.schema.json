@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-contract.schema.json",
+  "title": "QSOL-SUBSTRATE epistemic contract",
+  "type": "object",
+  "required": ["type", "schema_version", "states", "claim_maturity_states", "scenario_states", "register_states", "rules", "fallback_state"],
+  "properties": {
+    "type": {"const": "qsol-substrate-epistemic-contract"},
+    "schema_version": {"const": "1.0.0"},
+    "states": {
+      "type": "object",
+      "required": ["known", "retrieved", "inferred", "unknown", "conflict", "fiction"],
+      "properties": {
+        "known": {"type": "string", "minLength": 1},
+        "retrieved": {"type": "string", "minLength": 1},
+        "inferred": {"type": "string", "minLength": 1},
+        "unknown": {"type": "string", "minLength": 1},
+        "conflict": {"type": "string", "minLength": 1},
+        "fiction": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "claim_maturity_states": {
+      "type": "object",
+      "required": ["ESTABLISHED", "CONSENSUS", "SUPPORTED", "CONTESTED", "PRELIMINARY", "THEORETICAL", "PROPOSED", "SPECULATIVE", "UNKNOWN"],
+      "properties": {
+        "ESTABLISHED": {"type": "string", "minLength": 1},
+        "CONSENSUS": {"type": "string", "minLength": 1},
+        "SUPPORTED": {"type": "string", "minLength": 1},
+        "CONTESTED": {"type": "string", "minLength": 1},
+        "PRELIMINARY": {"type": "string", "minLength": 1},
+        "THEORETICAL": {"type": "string", "minLength": 1},
+        "PROPOSED": {"type": "string", "minLength": 1},
+        "SPECULATIVE": {"type": "string", "minLength": 1},
+        "UNKNOWN": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "scenario_states": {
+      "type": "object",
+      "required": ["ACTUAL", "HYPOTHETICAL", "COUNTERFACTUAL"],
+      "properties": {
+        "ACTUAL": {"type": "string", "minLength": 1},
+        "HYPOTHETICAL": {"type": "string", "minLength": 1},
+        "COUNTERFACTUAL": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "register_states": {
+      "type": "object",
+      "required": ["LITERAL", "FICTIONAL", "SATIRICAL"],
+      "properties": {
+        "LITERAL": {"type": "string", "minLength": 1},
+        "FICTIONAL": {"type": "string", "minLength": 1},
+        "SATIRICAL": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "rules": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true,
+      "allOf": [
+        {"contains": {"const": "claim_strength_must_not_exceed_evidence_entitlement"}},
+        {"contains": {"const": "register_annotation_must_not_replace_claim_local_evidence_classification"}},
+        {"contains": {"const": "scenario_annotation_must_not_replace_claim_maturity"}}
+      ]
+    },
+    "fallback_state": {"const": "unknown"}
+  },
+  "additionalProperties": false
+}

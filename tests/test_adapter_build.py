@@ -108,6 +108,13 @@ class PortableAdapterTests(unittest.TestCase):
         self.assertRegex(substrate["substrate_sha256"], r"^[0-9a-f]{64}$")
         self.assertRegex(manifest["adapter_bundle_sha256"], r"^[0-9a-f]{64}$")
 
+    def test_portable_projection_embeds_mode_contract(self):
+        self._build()
+        projection = (self.output / "generic/QSOL-SUBSTRATE.txt").read_text(encoding="utf-8")
+        self.assertIn("FILE=ai/mode-contract.json", projection)
+        self.assertIn('"type":"qsol-substrate-mode-contract"', projection)
+        self.assertIn("END_FILE=ai/mode-contract.json", projection)
+
     def test_grok_build_rules_fit_native_rules_file_cap(self):
         self._build()
         self.assertLess(len((self.output / "grok-build/AGENTS.md").read_text(encoding="utf-8")), 10_000)

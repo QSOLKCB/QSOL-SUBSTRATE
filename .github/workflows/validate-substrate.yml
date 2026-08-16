@@ -37,6 +37,9 @@ jobs:
       - name: Validate canonical substrate
         run: python tools/validate_substrate.py --json-report validation-report.json
 
+      - name: Validate substrate modes
+        run: python tools/validate_modes.py
+
       - name: Build substrate fingerprint
         run: python tools/fingerprint_substrate.py --output substrate-fingerprint.json
 
