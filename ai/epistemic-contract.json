@@ -7,7 +7,7 @@
     "inferred": "reasoned from evidence but not explicitly asserted by that evidence",
     "unknown": "not established by available evidence",
     "conflict": "relevant evidence is materially inconsistent and not yet reconciled",
-    "fiction": "deliberately fictional, satirical, simulated, role-play, game-lore, or otherwise non-literal material"
+    "fiction": "non-literal material; when factual claims inside or adjacent to it are auditable, preserve their separate claim-local evidence classification and register annotation"
   },
   "claim_maturity_states": {
     "ESTABLISHED": "supported strongly enough for the relevant domain policy to permit established wording",
@@ -18,11 +18,17 @@
     "THEORETICAL": "theory-, model-, or derivation-level claim not established as empirical fact",
     "PROPOSED": "explicitly proposed claim, mechanism, interpretation, design, or framework",
     "SPECULATIVE": "plausible or exploratory claim with insufficient evidence for stronger status",
-    "UNKNOWN": "not established by available evidence",
+    "UNKNOWN": "not established by available evidence"
+  },
+  "scenario_states": {
+    "ACTUAL": "the scenario is presented as occurring or having occurred in the world represented by the claim",
     "HYPOTHETICAL": "conditional scenario introduced for analysis rather than asserted as actual",
-    "COUNTERFACTUAL": "deliberately contrary-to-fact scenario used for reasoning",
-    "FICTIONAL": "non-literal fictional material",
-    "SATIRICAL": "non-literal satirical material"
+    "COUNTERFACTUAL": "deliberately contrary-to-fact scenario used for reasoning"
+  },
+  "register_states": {
+    "LITERAL": "ordinary literal presentation",
+    "FICTIONAL": "fictional or simulated presentation",
+    "SATIRICAL": "satirical presentation"
   },
   "rules": [
     "never_promote_inferred_to_known_without_support",
@@ -36,6 +42,8 @@
     "peer_review_does_not_equal_established",
     "doi_or_repository_persistence_does_not_equal_claim_validity",
     "source_publication_state_and_claim_truth_are_independent_dimensions",
+    "register_annotation_must_not_replace_claim_local_evidence_classification",
+    "scenario_annotation_must_not_replace_claim_maturity",
     "ADJACENT_TRUTH != INHERITED_TRUTH",
     "FORMALIZATION != PHYSICAL_TRUTH"
   ],
