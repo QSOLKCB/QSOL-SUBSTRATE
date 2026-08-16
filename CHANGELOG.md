@@ -8,6 +8,11 @@ Release versioning follows the normative SemVer 2.0.0 policy in `release/policy.
 
 ### Added
 
+- Phase 10 Substrate Modes policy layer: 19 domain modes, 10 activity modes, field-sensitive terminology namespaces, declared cross-domain bridges, domain-specific source admissibility, and the non-evidentiary `QSOL-MODE-SPACE-24D-v1` validation geometry.
+- Substrate Mode epistemic hardening: claim maturity is now independent from scenario status and literal/fictional/satirical register, preserving claim-local evidence classification inside mixed-register material.
+- Axis-qualified source preferences replace untyped preference labels; Legal binding claims retain primary-legal-authority requirements and Medical clinical guidance keeps preprints/repository material non-normative by default.
+- Strict `schema/epistemic-contract.schema.json`, cross-contract maturity/register/scenario consistency validation, and fail-closed hard-constraint validation for required IDs, threshold axes/ranges, selectors, and policy references.
+- `ai/mode-contract.json` is now included in `ai/manifest.json:normative_machine_files`, so portable adapters carry the lightweight policy whenever the bootstrap requires it.
 - Phase 9 MIXED-REGISTER/1 consumer-integrity suite: 30 claim-local adversarial cases, strict claim-audit schema, deterministic oracle/scorer/bundle validation, immutable model-revision comparison gates, local negative-boundary projection, QSOL-SUBSTRATE v1.0.0 DOI provenance closure, retrieval/freshness hints, conflict-record schema, and dedicated CI.
 
 - Phase 9 normative epistemic guard `ADJACENT_TRUTH != INHERITED_TRUTH`, requiring each substantive claim to earn support from its own evidence rather than inheriting credibility from neighbouring true material.
