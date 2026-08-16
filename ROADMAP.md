@@ -434,6 +434,8 @@ ADJACENT_TRUTH != INHERITED_TRUTH
 - [ ] Reject audit artifacts whose summary totals do not exactly match the underlying claim records.
 - [ ] Reject ambiguous counting schemes unless each dimension is explicitly named, for example `primary_class_counts` versus `register_counts`.
 - [ ] Require the total number of primary classifications to equal the number of auditable claim records.
+- [ ] Freeze the expected claim-ID set in the evaluation-bundle manifest and require one-to-one audit coverage of that exact set.
+- [ ] Reject missing, extra, or duplicate claim IDs even when submitted summary totals are internally consistent.
 
 Example integrity invariant:
 
@@ -442,9 +444,11 @@ summary.SUPPORTED == count(claims where epistemic_status == SUPPORTED)
 summary.CONTRADICTED == count(claims where epistemic_status == CONTRADICTED)
 summary.UNAVAILABLE_UNVERIFIED == count(claims where epistemic_status == UNAVAILABLE_UNVERIFIED)
 sum(primary_class_counts) == auditable_claim_count
+set(claims[].claim_id) == set(manifest.expected_claim_ids)
+count(claims[].claim_id) == count(distinct(claims[].claim_id))
 ```
 
-A valid SHA-256 only proves that an artifact is unchanged. It does not prove that the artifact's derived arithmetic or interpretation is correct.
+A valid SHA-256 only proves that an artifact is unchanged. It does not prove that the artifact's derived arithmetic, completeness, or interpretation is correct.
 
 ### MIXED-REGISTER/1 adversarial corpus
 
@@ -457,7 +461,9 @@ A valid SHA-256 only proves that an artifact is unchanged. It does not prove tha
 - [ ] Include compound paragraphs where only some clauses are supported.
 - [ ] Require claim-local classification rather than paragraph-level truth labelling.
 - [ ] Ship a deterministic oracle and scorer with the corpus.
-- [ ] Bind every run to the exact corpus SHA-256 and substrate identity.
+- [ ] Build one deterministic evaluation bundle containing the corpus, expected claim IDs/answers, oracle, scorer, scoring contract, and manifest.
+- [ ] Bind every run to the complete `MIXED-REGISTER/1` bundle fingerprint and substrate identity; a corpus-text hash alone is insufficient.
+- [ ] Reject scoring or comparison when the evaluation-bundle fingerprint differs, even if the corpus text is byte-identical.
 - [ ] Mark all adversarial fixtures as evaluation-only and mechanically prevent them from becoming canonical `source_refs`.
 
 The goal is not to teach a model which jokes are jokes by keyword. The goal is to test whether it can preserve provenance and epistemic boundaries when true, false, unknown, and satirical material is deliberately interleaved.
@@ -483,7 +489,11 @@ A DOI appearing in human-facing metadata must not silently become a canonical pu
 
 ### Consumer-evaluation provenance boundary
 
-- [ ] Define first-class metadata for external consumer evaluations: evaluator/model, tool mode, run date, source commit, source substrate SHA-256, prompt/test identity, artifact hashes, and classification contract version.
+- [ ] Define first-class metadata for external consumer evaluations: `execution_kind`, evaluator/provider, model ID, immutable model revision, tool mode, run date, source commit, source substrate SHA-256, prompt/test identity, complete evaluation-bundle fingerprint, artifact hashes, and classification contract version.
+- [ ] Require provider, model ID, and immutable model revision as separate fields; mutable provider aliases alone are not reproducible model identity.
+- [ ] Reject cross-condition empirical comparisons when the immutable model revision differs, so provider drift cannot be misreported as substrate uplift or regression.
+- [ ] Require an `execution_kind` discriminator such as `scoring_oracle`, `empirical_consumer`, or another explicitly defined non-empirical mode.
+- [ ] Mechanically exclude `scoring_oracle` and other non-empirical execution kinds from empirical result aggregation and cross-model performance claims.
 - [ ] Mark consumer reviews, model reports, scorecards, PDFs, and generated analyses as `derived_evaluation`, never canonical evidence by default.
 - [ ] Prevent canonical `source_refs` from targeting evaluation-only artifacts unless an explicit future policy permits a narrowly defined use.
 - [ ] Preserve evaluation artifacts for reproducibility without allowing them to launder their own claims back into the substrate.
@@ -503,7 +513,11 @@ These are useful but lower priority than the integrity gates above.
 Phase 9 is complete only when:
 
 - [ ] CI mechanically rejects inconsistent claim-audit summary totals.
-- [ ] `MIXED-REGISTER/1` has a frozen deterministic corpus, oracle, scorer, manifest, and fingerprint.
+- [ ] CI rejects audits with missing, extra, or duplicate claim IDs relative to the frozen evaluation-bundle manifest.
+- [ ] `MIXED-REGISTER/1` has a frozen deterministic corpus, expected claim-ID/answer set, oracle, scorer, scoring contract, manifest, and complete bundle fingerprint.
+- [ ] Every evaluation run binds the exact complete `MIXED-REGISTER/1` bundle fingerprint and source substrate identity.
+- [ ] empirical comparisons require identical immutable model revisions across the compared conditions.
+- [ ] `scoring_oracle` runs are mechanically excluded from empirical aggregates and performance comparisons.
 - [ ] `ADJACENT_TRUTH != INHERITED_TRUTH` survives every relevant deterministic delivery projection.
 - [ ] compact projections retain required local negative-boundary guards.
 - [ ] QSOL-SUBSTRATE's own publication identity is provenance-closed across canonical and human-facing metadata.
