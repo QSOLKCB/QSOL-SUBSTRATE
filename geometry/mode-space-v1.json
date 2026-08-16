@@ -58,12 +58,14 @@
       "id":"HIGH_SAFETY_LOW_EVIDENCE",
       "when":{"safety_criticality_min":0.8,"evidentiary_strength_max":0.3},
       "require":{"uncertainty_min":0.7},
+      "policy_reference":"ai/mode-contract.json#geometry",
       "meaning":"high-consequence low-evidence claims must carry high uncertainty rather than confident presentation"
     },
     {
       "id":"CROSS_DOMAIN_BRIDGE",
       "when":{"cross_domain_dependence_min":0.5},
       "require":{"declared_bridge":true},
+      "policy_reference":"bridges/index.json",
       "meaning":"material cross-domain dependence requires an explicit bridge"
     }
   ],
