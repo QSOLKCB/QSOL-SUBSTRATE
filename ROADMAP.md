@@ -410,10 +410,10 @@ Phase 9 therefore treats **consumer epistemics** and **consumer-report integrity
 ### Epistemic guard extension
 
 - [x] Add `ADJACENT_TRUTH != INHERITED_TRUTH` as a normative epistemic guard.
-- [ ] Require every substantive claim in mixed-register material to stand on its own evidence rather than inheriting credibility from neighbouring supported claims.
-- [ ] Preserve the distinction between `CONTRADICTED` and `UNAVAILABLE / UNVERIFIED`; absence or non-assertion must never be silently converted into falsity.
-- [ ] Preserve satire/fiction/register classification independently from factual epistemic status so humorous framing cannot become biography.
-- [ ] Propagate the new guard through the canonical epistemic contract, tool-less capsules, adapters, probe conditions, and any stable epistemic-prefix payload.
+- [x] Require every substantive claim in mixed-register material to stand on its own evidence rather than inheriting credibility from neighbouring supported claims.
+- [x] Preserve the distinction between `CONTRADICTED` and `UNAVAILABLE / UNVERIFIED`; absence or non-assertion must never be silently converted into falsity.
+- [x] Preserve satire/fiction/register classification independently from factual epistemic status so humorous framing cannot become biography.
+- [x] Propagate the new guard through the canonical epistemic contract, tool-less capsules, adapters, probe conditions, and any stable epistemic-prefix payload.
 
 Normative extension:
 
@@ -427,15 +427,15 @@ ADJACENT_TRUTH != INHERITED_TRUTH
 
 ### Claim-audit interchange contract
 
-- [ ] Define a machine-readable claim-audit schema for external and internal consumer evaluations.
-- [ ] Require stable claim IDs, verbatim-or-hashed claim text, evidence refs, rationale, source substrate identity, and evaluator/run identity.
-- [ ] Separate primary epistemic classification from secondary register/style annotations.
-- [ ] Define deterministic classification-summary generation from claim objects rather than accepting hand-maintained totals.
-- [ ] Reject audit artifacts whose summary totals do not exactly match the underlying claim records.
-- [ ] Reject ambiguous counting schemes unless each dimension is explicitly named, for example `primary_class_counts` versus `register_counts`.
-- [ ] Require the total number of primary classifications to equal the number of auditable claim records.
-- [ ] Freeze the expected claim-ID set in the evaluation-bundle manifest and require one-to-one audit coverage of that exact set.
-- [ ] Reject missing, extra, or duplicate claim IDs even when submitted summary totals are internally consistent.
+- [x] Define a machine-readable claim-audit schema for external and internal consumer evaluations.
+- [x] Require stable claim IDs, verbatim-or-hashed claim text, evidence refs, rationale, source substrate identity, and evaluator/run identity.
+- [x] Separate primary epistemic classification from secondary register/style annotations.
+- [x] Define deterministic classification-summary generation from claim objects rather than accepting hand-maintained totals.
+- [x] Reject audit artifacts whose summary totals do not exactly match the underlying claim records.
+- [x] Reject ambiguous counting schemes unless each dimension is explicitly named, for example `primary_class_counts` versus `register_counts`.
+- [x] Require the total number of primary classifications to equal the number of auditable claim records.
+- [x] Freeze the expected claim-ID set in the evaluation-bundle manifest and require one-to-one audit coverage of that exact set.
+- [x] Reject missing, extra, or duplicate claim IDs even when submitted summary totals are internally consistent.
 
 Example integrity invariant:
 
@@ -452,76 +452,76 @@ A valid SHA-256 only proves that an artifact is unchanged. It does not prove tha
 
 ### MIXED-REGISTER/1 adversarial corpus
 
-- [ ] Add a frozen long-form adversarial corpus specifically for truth-by-proximity and register contamination.
-- [ ] Include supported facts immediately adjacent to invented claims.
-- [ ] Include directly contradicted claims about registry completeness, private/public boundaries, and canonical authority.
-- [ ] Include plausible but unsupported biography, legal status, corporate status, education, employment, financial, and ownership claims.
-- [ ] Include satire and obviously fictional claims as controls.
-- [ ] Include DOI, release, version, alias, chronology, and provenance traps.
-- [ ] Include compound paragraphs where only some clauses are supported.
-- [ ] Require claim-local classification rather than paragraph-level truth labelling.
-- [ ] Ship a deterministic oracle and scorer with the corpus.
-- [ ] Build one deterministic evaluation bundle containing the corpus, expected claim IDs/answers, oracle, scorer, scoring contract, and manifest.
-- [ ] Bind every run to the complete `MIXED-REGISTER/1` bundle fingerprint and substrate identity; a corpus-text hash alone is insufficient.
-- [ ] Reject scoring or comparison when the evaluation-bundle fingerprint differs, even if the corpus text is byte-identical.
-- [ ] Mark all adversarial fixtures as evaluation-only and mechanically prevent them from becoming canonical `source_refs`.
+- [x] Add a frozen long-form adversarial corpus specifically for truth-by-proximity and register contamination.
+- [x] Include supported facts immediately adjacent to invented claims.
+- [x] Include directly contradicted claims about registry completeness, private/public boundaries, and canonical authority.
+- [x] Include plausible but unsupported biography, legal status, corporate status, education, employment, financial, and ownership claims.
+- [x] Include satire and obviously fictional claims as controls.
+- [x] Include DOI, release, version, alias, chronology, and provenance traps.
+- [x] Include compound paragraphs where only some clauses are supported.
+- [x] Require claim-local classification rather than paragraph-level truth labelling.
+- [x] Ship a deterministic oracle and scorer with the corpus.
+- [x] Build one deterministic evaluation bundle containing the corpus, expected claim IDs/answers, oracle, scorer, scoring contract, and manifest.
+- [x] Bind every run to the complete `MIXED-REGISTER/1` bundle fingerprint and substrate identity; a corpus-text hash alone is insufficient.
+- [x] Reject scoring or comparison when the evaluation-bundle fingerprint differs, even if the corpus text is byte-identical.
+- [x] Mark all adversarial fixtures as evaluation-only and mechanically prevent them from becoming canonical `source_refs`.
 
 The goal is not to teach a model which jokes are jokes by keyword. The goal is to test whether it can preserve provenance and epistemic boundaries when true, false, unknown, and satirical material is deliberately interleaved.
 
 ### Local negative-boundary reinforcement
 
-- [ ] Preserve critical `nonclaims` beside the records they constrain when building compact adapters and tool-less capsules.
-- [ ] Keep `selective_not_exhaustive` semantics locally visible beside project/publication registries where practical.
-- [ ] Keep identity/legal-status non-assertions locally visible when identity records are projected without the full surrounding context.
-- [ ] Add validation that compact projections cannot strip a required local negative-boundary guard while retaining the higher-risk positive claim.
-- [ ] Add probe cases for long-context drift where a correct global disclaimer appears far away from a tempting unsupported claim.
+- [x] Preserve critical `nonclaims` beside the records they constrain when building compact adapters and tool-less capsules.
+- [x] Keep `selective_not_exhaustive` semantics locally visible beside project/publication registries where practical.
+- [x] Keep identity/legal-status non-assertions locally visible when identity records are projected without the full surrounding context.
+- [x] Add validation that compact projections cannot strip a required local negative-boundary guard while retaining the higher-risk positive claim.
+- [x] Add probe cases for long-context drift where a correct global disclaimer appears far away from a tempting unsupported claim.
 
 This is controlled semantic redundancy: a small amount of repeated boundary information is preferable to a compact projection that makes a downstream model over-generalise.
 
 ### QSOL-SUBSTRATE publication and DOI closure
 
-- [ ] Add the QSOL-SUBSTRATE archival release/DOI to the canonical publication registry once its first-party release identity and provenance are resolved.
-- [ ] Keep README badge, `CITATION.cff`, `.zenodo.json`, release manifest, canonical publication registry, and source registry consistent.
-- [ ] Add a validator for self-publication metadata drift across those surfaces.
-- [ ] Fail closed on conflicting DOI/version/release identity rather than selecting whichever representation was loaded first.
+- [x] Add the QSOL-SUBSTRATE archival release/DOI to the canonical publication registry once its first-party release identity and provenance are resolved.
+- [x] Keep README badge, `CITATION.cff`, `.zenodo.json`, release manifest, canonical publication registry, and source registry consistent.
+- [x] Add a validator for self-publication metadata drift across those surfaces.
+- [x] Fail closed on conflicting DOI/version/release identity rather than selecting whichever representation was loaded first.
 
 A DOI appearing in human-facing metadata must not silently become a canonical publication fact until the canonical record and provenance closure exist.
 
 ### Consumer-evaluation provenance boundary
 
-- [ ] Define first-class metadata for external consumer evaluations: `execution_kind`, evaluator/provider, model ID, immutable model revision, tool mode, run date, source commit, source substrate SHA-256, prompt/test identity, complete evaluation-bundle fingerprint, artifact hashes, and classification contract version.
-- [ ] Require provider, model ID, and immutable model revision as separate fields; mutable provider aliases alone are not reproducible model identity.
-- [ ] Reject cross-condition empirical comparisons when the immutable model revision differs, so provider drift cannot be misreported as substrate uplift or regression.
-- [ ] Require an `execution_kind` discriminator such as `scoring_oracle`, `empirical_consumer`, or another explicitly defined non-empirical mode.
-- [ ] Mechanically exclude `scoring_oracle` and other non-empirical execution kinds from empirical result aggregation and cross-model performance claims.
-- [ ] Mark consumer reviews, model reports, scorecards, PDFs, and generated analyses as `derived_evaluation`, never canonical evidence by default.
-- [ ] Prevent canonical `source_refs` from targeting evaluation-only artifacts unless an explicit future policy permits a narrowly defined use.
-- [ ] Preserve evaluation artifacts for reproducibility without allowing them to launder their own claims back into the substrate.
-- [ ] Add a validation rule that an evaluator report cannot cite itself as evidence for the factual claims it is auditing.
+- [x] Define first-class metadata for external consumer evaluations: `execution_kind`, evaluator/provider, model ID, immutable model revision, tool mode, run date, source commit, source substrate SHA-256, prompt/test identity, complete evaluation-bundle fingerprint, artifact hashes, and classification contract version.
+- [x] Require provider, model ID, and immutable model revision as separate fields; mutable provider aliases alone are not reproducible model identity.
+- [x] Reject cross-condition empirical comparisons when the immutable model revision differs, so provider drift cannot be misreported as substrate uplift or regression.
+- [x] Require an `execution_kind` discriminator such as `scoring_oracle`, `empirical_consumer`, or another explicitly defined non-empirical mode.
+- [x] Mechanically exclude `scoring_oracle` and other non-empirical execution kinds from empirical result aggregation and cross-model performance claims.
+- [x] Mark consumer reviews, model reports, scorecards, PDFs, and generated analyses as `derived_evaluation`, never canonical evidence by default.
+- [x] Prevent canonical `source_refs` from targeting evaluation-only artifacts unless an explicit future policy permits a narrowly defined use.
+- [x] Preserve evaluation artifacts for reproducibility without allowing them to launder their own claims back into the substrate.
+- [x] Add a validation rule that an evaluator report cannot cite itself as evidence for the factual claims it is auditing.
 
 ### Follow-on consumer ergonomics
 
 These are useful but lower priority than the integrity gates above.
 
-- [ ] Add optional retrieval hints that help tool-enabled consumers locate the smallest sufficient canonical evidence set without changing canonical facts.
-- [ ] Define freshness recipes for facts whose current state is expected to require live primary-source verification.
-- [ ] Add a first-class conflict-record shape for genuine public-source disagreements rather than forcing conflict state into prose.
+- [x] Add optional retrieval hints that help tool-enabled consumers locate the smallest sufficient canonical evidence set without changing canonical facts.
+- [x] Define freshness recipes for facts whose current state is expected to require live primary-source verification.
+- [x] Add a first-class conflict-record shape for genuine public-source disagreements rather than forcing conflict state into prose.
 - [ ] Measure whether local nonclaims and adjacency guards improve mixed-register performance across MICRO, STANDARD, FULL, vector-selected, and tool-enabled conditions.
 
 ### Phase 9 exit criteria
 
 Phase 9 is complete only when:
 
-- [ ] CI mechanically rejects inconsistent claim-audit summary totals.
-- [ ] CI rejects audits with missing, extra, or duplicate claim IDs relative to the frozen evaluation-bundle manifest.
-- [ ] `MIXED-REGISTER/1` has a frozen deterministic corpus, expected claim-ID/answer set, oracle, scorer, scoring contract, manifest, and complete bundle fingerprint.
-- [ ] Every evaluation run binds the exact complete `MIXED-REGISTER/1` bundle fingerprint and source substrate identity.
-- [ ] empirical comparisons require identical immutable model revisions across the compared conditions.
-- [ ] `scoring_oracle` runs are mechanically excluded from empirical aggregates and performance comparisons.
-- [ ] `ADJACENT_TRUTH != INHERITED_TRUTH` survives every relevant deterministic delivery projection.
-- [ ] compact projections retain required local negative-boundary guards.
-- [ ] QSOL-SUBSTRATE's own publication identity is provenance-closed across canonical and human-facing metadata.
-- [ ] evaluation artifacts are reproducibly identifiable as derived/noncanonical and cannot become canonical evidence by accident.
+- [x] CI mechanically rejects inconsistent claim-audit summary totals.
+- [x] CI rejects audits with missing, extra, or duplicate claim IDs relative to the frozen evaluation-bundle manifest.
+- [x] `MIXED-REGISTER/1` has a frozen deterministic corpus, expected claim-ID/answer set, oracle, scorer, scoring contract, manifest, and complete bundle fingerprint.
+- [x] Every evaluation run binds the exact complete `MIXED-REGISTER/1` bundle fingerprint and source substrate identity.
+- [x] empirical comparisons require identical immutable model revisions across the compared conditions.
+- [x] `scoring_oracle` runs are mechanically excluded from empirical aggregates and performance comparisons.
+- [x] `ADJACENT_TRUTH != INHERITED_TRUTH` survives every relevant deterministic delivery projection.
+- [x] compact projections retain required local negative-boundary guards.
+- [x] QSOL-SUBSTRATE's own publication identity is provenance-closed across canonical and human-facing metadata.
+- [x] evaluation artifacts are reproducibly identifiable as derived/noncanonical and cannot become canonical evidence by accident.
 - [ ] a cold consumer can classify mixed supported, contradicted, unavailable, and satirical claims without treating plausibility or neighbouring truth as provenance.
 
 Phase 9 deliberately does **not** expand the substrate into a complete biography. Better uncertainty handling is preferred over filling public omissions with additional personal data.

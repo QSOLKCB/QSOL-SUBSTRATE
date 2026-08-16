@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/claim-audit.schema.json",
+  "title": "QSOL-SUBSTRATE claim audit",
+  "type": "object",
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "required": ["SUPPORTED", "CONTRADICTED", "UNAVAILABLE_UNVERIFIED"],
+      "properties": {
+        "SUPPORTED": {"type": "integer", "minimum": 0},
+        "CONTRADICTED": {"type": "integer", "minimum": 0},
+        "UNAVAILABLE_UNVERIFIED": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "registerCounts": {
+      "type": "object",
+      "required": ["literal", "satire", "fictional_control"],
+      "properties": {
+        "literal": {"type": "integer", "minimum": 0},
+        "satire": {"type": "integer", "minimum": 0},
+        "fictional_control": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "version": {"type": "string", "minLength": 1},
+        "version_kind": {"const": "snapshot"},
+        "schema_version": {"const": "1.0.0"},
+        "snapshot_date": {"type": "string", "format": "date"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["type", "schema_version", "artifact_class", "execution_kind", "run_id", "evaluator", "condition", "tool_mode", "run_date", "prompt_test_identity", "classification_contract_version", "evaluation_bundle_sha256", "substrate", "artifact_hashes", "claims", "summary"],
+  "properties": {
+    "type": {"const": "qsol-claim-audit"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_class": {"const": "derived_evaluation"},
+    "execution_kind": {"enum": ["empirical_consumer", "scoring_oracle", "non_empirical_analysis"]},
+    "run_id": {"type": "string", "minLength": 1},
+    "evaluator": {
+      "type": "object",
+      "required": ["provider", "model_id", "immutable_model_revision"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "immutable_model_revision": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+    "tool_mode": {"enum": ["none", "repository", "web", "mixed", "other"]},
+    "run_date": {"type": "string", "format": "date"},
+    "prompt_test_identity": {"type": "string", "minLength": 1},
+    "classification_contract_version": {"const": "MIXED-REGISTER/1"},
+    "evaluation_bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "substrate": {"$ref": "#/$defs/substrate"},
+    "artifact_hashes": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[A-Za-z0-9_.:-]+$"},
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "claim_sha256", "epistemic_status", "register", "evidence_refs", "rationale"],
+        "properties": {
+          "claim_id": {"type": "string", "pattern": "^mr1-[0-9]{3}$"},
+          "claim_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "epistemic_status": {"enum": ["SUPPORTED", "CONTRADICTED", "UNAVAILABLE_UNVERIFIED"]},
+          "register": {"enum": ["literal", "satire", "fictional_control"]},
+          "evidence_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "rationale": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["auditable_claim_count", "primary_class_counts", "register_counts"],
+      "properties": {
+        "auditable_claim_count": {"type": "integer", "minimum": 1},
+        "primary_class_counts": {"$ref": "#/$defs/counts"},
+        "register_counts": {"$ref": "#/$defs/registerCounts"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

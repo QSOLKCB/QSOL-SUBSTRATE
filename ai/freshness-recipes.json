@@ -1,0 +1,26 @@
+{
+  "type": "qsol-substrate-freshness-recipes",
+  "schema_version": "1.0.0",
+  "authority": "consumer_verification_guidance_not_canonical_fact",
+  "recipes": [
+    {
+      "id": "current_repository_state",
+      "when": "the task asks for current branch, release, issue, pull request, workflow, file, or repository state",
+      "preferred_primary_sources": ["current first-party GitHub repository"],
+      "rule": "live primary evidence may supersede the frozen substrate snapshot; record the observed revision and do not rewrite canonical history silently"
+    },
+    {
+      "id": "publication_release_identity",
+      "when": "the task asks whether a DOI, version, tag, commit, or publication is current or exact",
+      "preferred_primary_sources": ["first-party release/tag", "canonical publication record", "archive record when available"],
+      "rule": "bind DOI, version, tag, repository, and commit to one coherent release identity; unresolved disagreement becomes conflict"
+    },
+    {
+      "id": "legal_corporate_or_financial_status",
+      "when": "the task asks for legal, corporate, listing, ownership, employment, or financial status not explicitly asserted by the substrate",
+      "preferred_primary_sources": ["relevant official registry or first-party evidence"],
+      "rule": "substrate non-assertion is not falsity; without stronger current evidence return unavailable/unverified"
+    }
+  ],
+  "snapshot_limit": "when current primary verification is unavailable, state the substrate snapshot date and preserve UNKNOWN for unresolved newer state"
+}

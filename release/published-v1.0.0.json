@@ -1,0 +1,17 @@
+{
+  "type": "qsol-published-release-manifest",
+  "schema_version": "1.0.0",
+  "version": "1.0.0",
+  "tag": "v1.0.0",
+  "publication_date": "2026-08-15",
+  "repository": "QSOLKCB/QSOL-SUBSTRATE",
+  "commit": "4483582173abf62f61bcc18076b22c1db10b26ca",
+  "github_release_id": 371154565,
+  "doi": "10.5281/zenodo.21959180",
+  "canonical_substrate_sha256": "fb6e7a694ff1279af67d4aaf776e232e31025d9737011f6768fdc79c0f63eb25",
+  "canonical_source_id": "src:qsol-substrate-v1.0.0-release",
+  "canonical_publication_id": "publication:qsol-substrate-v1.0.0",
+  "artifact_class": "immutable_published_release_identity",
+  "canonical_truth_authority": false,
+  "notes": "This manifest records the already-published v1.0.0 archival identity. It does not replace the canonical public payload or the generated Phase 8 release chain-of-custody manifests."
+}

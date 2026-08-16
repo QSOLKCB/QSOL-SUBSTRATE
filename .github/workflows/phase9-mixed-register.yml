@@ -1,0 +1,61 @@
+name: Phase 9 Mixed-Register Validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  phase9:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation dependencies
+        run: python -m pip install -r requirements-validation.txt
+      - name: Resolve exact source commit
+        run: |
+          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+            echo "SOURCE_COMMIT=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "SOURCE_COMMIT=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          fi
+      - name: Run Phase 9 regression tests
+        run: python -m unittest discover -s tests -p 'test_phase9*.py'
+      - name: Validate canonical substrate and self-publication closure
+        run: |
+          python tools/validate_substrate.py
+          python tools/validate_self_publication.py
+      - name: Build and validate MIXED-REGISTER/1
+        run: |
+          python tools/build_mixed_register.py --source-commit "$SOURCE_COMMIT" --output /tmp/qsol-mixed-register-1
+          python tools/validate_mixed_register.py --bundle /tmp/qsol-mixed-register-1
+          python tools/build_mixed_register_oracle.py --bundle /tmp/qsol-mixed-register-1 --output /tmp/qsol-mixed-register-oracle.json
+          python tools/score_mixed_register.py /tmp/qsol-mixed-register-oracle.json --bundle /tmp/qsol-mixed-register-1 --output /tmp/qsol-mixed-register-oracle-report.json
+          python - <<'PY'
+          import json
+          report = json.load(open('/tmp/qsol-mixed-register-oracle-report.json', encoding='utf-8'))
+          assert report['execution_kind'] == 'scoring_oracle'
+          assert report['metrics']['overall_accuracy'] == 1.0
+          assert report['metrics']['unsupported_assertion_rate'] == 0.0
+          PY
+      - name: Rebuild delivery projections with Phase 9 guards
+        run: |
+          python tools/build_adapters.py --output /tmp/qsol-adapters --source-commit "$SOURCE_COMMIT"
+          python tools/validate_adapter_bundle.py --bundle /tmp/qsol-adapters
+          python tools/build_toolless.py --output /tmp/qsol-toolless --source-commit "$SOURCE_COMMIT"
+          python tools/validate_toolless_capsule.py --bundle /tmp/qsol-toolless
+          python tools/build_projections.py --output /tmp/qsol-projections --source-commit "$SOURCE_COMMIT"
+          python tools/validate_projection_bundle.py --bundle /tmp/qsol-projections
+      - name: Phase 9 integrity summary
+        run: |
+          echo 'MIXED-REGISTER/1: deterministic bundle validated'
+          echo 'Claim audit: exact-ID and derived-summary gates tested'
+          echo 'Self-publication: provenance-closed'
+          echo 'Delivery guards: adapters/tool-less/projections rebuilt and validated'
+          echo 'Empirical model uplift: intentionally not claimed by CI'

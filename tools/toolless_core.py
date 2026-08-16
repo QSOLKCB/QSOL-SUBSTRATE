@@ -33,6 +33,7 @@ CORE_GUARDS = (
     "INFERENCE != FACT",
     "SATIRE != BIOGRAPHY",
     "FORMALIZATION != PHYSICAL_TRUTH",
+    "ADJACENT_TRUTH != INHERITED_TRUTH",
 )
 
 COLLECTION_KEYS = {"sources", "records", "claims", "nodes", "edges"}
@@ -240,6 +241,10 @@ def _dependencies(item: CapsuleItem, lookup: dict[str, CapsuleItem]) -> set[str]
             value = item.payload.get(key)
             if isinstance(value, str) and value in lookup:
                 deps.add(value)
+    if item.kind == "project" and "wrapper:projects/index.json" in lookup:
+        deps.add("wrapper:projects/index.json")
+    if item.kind == "publication" and "wrapper:publications/index.json" in lookup:
+        deps.add("wrapper:publications/index.json")
     for text in _walk_strings(item.payload):
         if CANONICAL_ID_RE.match(text) and text in lookup and text != item.item_id:
             deps.add(text)
@@ -265,11 +270,21 @@ def _item_sort_key(item: CapsuleItem) -> tuple[int, int, str, str]:
 
 
 def _boundary_guards(item: CapsuleItem) -> tuple[str, ...]:
+    guards: list[str] = []
+    if item.kind == "wrapper" and item.source_path in {"projects/index.json", "publications/index.json"}:
+        completeness = str(item.payload.get("completeness", "")).casefold()
+        if "not_exhaustive" in completeness or "selective" in completeness:
+            guards.append("REGISTRY_OMISSION != NEGATIVE_FACT")
+        return tuple(guards)
+    if item.kind == "organization":
+        metadata = item.payload.get("metadata")
+        if isinstance(metadata, dict) and metadata.get("legal_or_corporate_status") == "not_asserted_by_substrate":
+            guards.append("UNASSERTED_LEGAL_OR_CORPORATE_STATUS != FALSE")
+        return tuple(guards)
     if item.kind != "project":
         return ()
     tags = item.payload.get("tags")
     normalized = {str(tag).casefold() for tag in tags} if isinstance(tags, list) else set()
-    guards: list[str] = []
     if "satire" in normalized:
         guards.append("SATIRE != BIOGRAPHY")
     if normalized.intersection({"formalization", "formal-assurance", "lean4", "formal-protocol"}):
@@ -328,7 +343,7 @@ def _render_capsule(profile: dict[str, Any], identity: dict[str, Any], selected_
         "[SERIALIZATION]",
         "ITEM lines contain: kind, canonical source path, canonical JSON object.",
         "Canonical JSON objects are copied without factual transformation.",
-        "BOUNDARY lines are epistemic guards derived from explicit project tags; they are not additional project facts.",
+        "BOUNDARY lines are epistemic guards derived from explicit canonical tags, completeness fields, or nonclaims; they are not additional facts.",
         "All source_refs in included ITEM objects resolve to included source ITEM objects.",
         "All included relationship endpoints resolve to included ITEM objects.",
         "",
@@ -672,13 +687,13 @@ def validate_toolless_bundle(root: Path, bundle: Path, *, schema_path: str = CAP
                         findings.append(_finding("toolless.relationship_closure", rel, f"relationship endpoint is not included: {item_id} -> {endpoint}"))
 
         expected_boundaries: set[tuple[str, str]] = set()
-        for item_id, (kind, _, _) in parsed.items():
+        for item_id, (_, _, _) in parsed.items():
             canonical = canonical_lookup.get(item_id)
-            if canonical is not None and kind == "project":
+            if canonical is not None:
                 for guard in _boundary_guards(canonical):
                     expected_boundaries.add((item_id, guard))
         if set(boundaries) != expected_boundaries:
-            findings.append(_finding("toolless.boundaries", rel, "project claim-boundary guards do not match canonical project tags"))
+            findings.append(_finding("toolless.boundaries", rel, "local epistemic boundary guards do not match canonical tags, completeness fields, and nonclaims"))
 
         if profile["name"] == "MICRO":
             for guard in CORE_GUARDS:

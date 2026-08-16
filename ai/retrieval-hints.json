@@ -1,0 +1,19 @@
+{
+  "type": "qsol-substrate-retrieval-hints",
+  "schema_version": "1.0.0",
+  "authority": "noncanonical_navigation_only",
+  "rules": [
+    "retrieve_the_smallest_sufficient_evidence_set",
+    "resolve_source_refs_for_material_factual_claims",
+    "do_not_use_hint_presence_or_absence_as_factual_evidence",
+    "adjacent_supported_claims_do_not_support_the_target_claim"
+  ],
+  "routes": [
+    {"query_class": "identity_or_public_affiliation", "start": ["identity/public.json"], "close_over": ["source_refs"]},
+    {"query_class": "project_scope_or_repository", "start": ["projects/index.json"], "close_over": ["source_refs"], "boundary": "registry_is_selective_not_exhaustive"},
+    {"query_class": "publication_doi_or_release", "start": ["publications/index.json"], "close_over": ["source_refs", "relationships/graph.json"], "freshness_recipe": "publication_release_identity"},
+    {"query_class": "relationship", "start": ["relationships/graph.json"], "close_over": ["source_refs", "source", "target"], "boundary": "missing_edge_is_unknown_not_false"},
+    {"query_class": "chronology", "start": ["chronology/current.jsonl"], "close_over": ["source_refs"], "freshness_recipe": "current_repository_state"},
+    {"query_class": "epistemic_or_public_boundary", "start": ["ai/epistemic-contract.json", "ai/public-boundary.json", "ai/consumer-contract.json"], "close_over": []}
+  ]
+}
