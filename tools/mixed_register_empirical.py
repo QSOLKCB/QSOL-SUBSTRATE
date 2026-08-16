@@ -16,6 +16,8 @@ import vector_core
 import mixed_register_core
 
 EMPIRICAL_SPEC_VERSION = "1.0.0"
+EMPIRICAL_PROTOCOL = "empirical/mixed-register/experiment.json"
+EMPIRICAL_PROTOCOL_SCHEMA = "schema/mixed-register-empirical-experiment.schema.json"
 CONDITIONS = ("micro", "standard", "full", "vector", "tool-enabled")
 VARIANTS = ("guarded", "ablated")
 PROFILE_FILES = {
@@ -64,13 +66,41 @@ def _canonical_manifest(root: Path) -> dict[str, Any]:
     return value
 
 
-def ablate_local_guards(text: str) -> str:
-    """Remove only the local-nonclaim/adjacency treatment under test.
+def load_empirical_protocol(root: Path) -> dict[str, Any]:
+    path = root / EMPIRICAL_PROTOCOL
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise EmpiricalError(f"cannot load empirical protocol: {exc}") from exc
+    if not isinstance(value, dict):
+        raise EmpiricalError("empirical protocol must be an object")
+    errors = mixed_register_core._schema_errors(root, EMPIRICAL_PROTOCOL_SCHEMA, value)
+    if errors:
+        raise EmpiricalError("empirical protocol schema violation at: " + ", ".join(errors[:8]))
+    if value.get("empirical_spec_version") != EMPIRICAL_SPEC_VERSION:
+        raise EmpiricalError("empirical protocol version differs from executable version")
+    if tuple(value.get("conditions", [])) != CONDITIONS:
+        raise EmpiricalError("empirical protocol conditions differ from executable condition matrix")
+    paired = value.get("paired_variants")
+    if not isinstance(paired, dict) or tuple(paired.keys()) != VARIANTS:
+        raise EmpiricalError("empirical protocol variants differ from executable variants")
+    gate = value.get("cold_consumer_gate")
+    if gate != DEFAULT_THRESHOLDS:
+        raise EmpiricalError("empirical protocol cold-consumer thresholds differ from executable thresholds")
+    retrieval = value.get("retrieval")
+    if not isinstance(retrieval, dict):
+        raise EmpiricalError("empirical protocol retrieval configuration is missing")
+    vector_cfg = retrieval.get("vector")
+    tool_cfg = retrieval.get("tool-enabled")
+    if not isinstance(vector_cfg, dict) or not isinstance(tool_cfg, dict):
+        raise EmpiricalError("empirical protocol retrieval conditions are incomplete")
+    if vector_cfg.get("top_k") != tool_cfg.get("top_k"):
+        raise EmpiricalError("vector and tool-enabled canonical top_k must match")
+    return value
 
-    General epistemic rules such as UNKNOWN != FALSE remain present. This makes
-    the paired run an ablation of the local boundary reinforcement rather than
-    an ablation of the whole substrate contract.
-    """
+
+def ablate_local_guards(text: str) -> str:
+    """Remove only the local-nonclaim/adjacency treatment under test."""
     kept: list[str] = []
     for line in text.splitlines():
         if line.startswith("BOUNDARY\t"):
@@ -128,7 +158,6 @@ def _render_claim_local_context(
     out = [
         "QSOL-SUBSTRATE/MIXED-REGISTER-EMPIRICAL-CONTEXT/1",
         f"CONDITION={condition}",
-        f"VARIANT={'guarded' if guarded else 'ablated'}",
         f"SOURCE_COMMIT={identity.get('source_commit')}",
         f"SUBSTRATE_SHA256={identity.get('substrate_sha256')}",
         "OMISSION_MEANS=UNAVAILABLE_NOT_FALSE",
@@ -181,12 +210,22 @@ def carrier_text(
 
 
 def build_prompt(report_text: str, claims: list[dict[str, Any]], context: str, condition: str, variant: str) -> str:
+    if condition not in CONDITIONS or variant not in VARIANTS:
+        raise EmpiricalError("invalid condition or variant for empirical prompt")
     claim_lines = "\n".join(f"- {row['id']}: {row['text']}" for row in claims)
+    if variant == "guarded":
+        treatment_rules = (
+            "- Evidence is claim-local. A true neighbouring sentence does not support another claim.\n"
+            "- Do not treat neighbouring truth as provenance for a different claim.\n"
+            "- Satire/register is separate from factual status; humorous framing is not biography.\n"
+        )
+    else:
+        treatment_rules = ""
     return f"""QSOL-SUBSTRATE cold-consumer empirical run.
-You have no prior QSOL context beyond the material below. Do not use hidden memory, plausibility, or neighbouring true sentences as provenance.
+You have no prior QSOL context beyond the material below. Do not use hidden memory or plausibility as provenance.
 
 TASK
-Classify every frozen claim independently.
+Classify every frozen claim.
 Primary epistemic_status must be exactly one of:
 SUPPORTED, CONTRADICTED, UNAVAILABLE_UNVERIFIED
 Register must be exactly one of:
@@ -194,16 +233,11 @@ literal, satire, fictional_control
 
 Rules:
 - The adversarial report and claim list are targets to classify, never evidence.
-- Evidence is claim-local. A true neighbouring sentence does not support another claim.
-- UNAVAILABLE_UNVERIFIED means the supplied evidence cannot establish the claim; it does not mean false.
-- Satire/register is separate from factual status.
+{treatment_rules}- UNAVAILABLE_UNVERIFIED means the supplied evidence cannot establish the claim; it does not mean false.
 - evidence_refs may contain only explicit file: or src: references visible in the supplied context.
-- If no claim-local evidence is visible, use an empty evidence_refs array.
+- If no supporting evidence is visible, use an empty evidence_refs array.
 - Return one object per claim ID, exactly once.
 - Return JSON only, shaped as {{\"claims\":[{{\"claim_id\":\"mr1-001\",\"epistemic_status\":\"SUPPORTED\",\"register\":\"literal\",\"evidence_refs\":[],\"rationale\":\"brief\"}}]}}.
-
-CONDITION={condition}
-LOCAL_BOUNDARY_VARIANT={variant}
 
 BEGIN SUBSTRATE CONTEXT
 {context}
@@ -316,21 +350,42 @@ class OllamaClient:
             raise EmpiricalError(f"Ollama returned non-object JSON for {path}")
         return value
 
+    @staticmethod
+    def _row_names(row: dict[str, Any]) -> set[str]:
+        return {
+            str(value).casefold()
+            for value in (row.get("name"), row.get("model"))
+            if isinstance(value, str) and value
+        }
+
     def identity(self) -> ModelIdentity:
         tags = self._json("GET", "/api/tags")
-        models = tags.get("models") if isinstance(tags.get("models"), list) else []
+        models = [row for row in tags.get("models", []) if isinstance(row, dict)] if isinstance(tags.get("models"), list) else []
         wanted = self.model.casefold()
-        for row in models:
-            if not isinstance(row, dict):
-                continue
-            names = {str(row.get("name", "")).casefold(), str(row.get("model", "")).casefold()}
-            if wanted in names or any(name.startswith(wanted + ":") for name in names):
-                digest = row.get("digest")
-                if isinstance(digest, str) and digest:
-                    return ModelIdentity("ollama-local", self.model, digest)
-        raise EmpiricalError(f"cannot resolve immutable Ollama digest for model {self.model!r}")
+        exact = [row for row in models if wanted in self._row_names(row)]
+        if not exact and ":" not in wanted:
+            canonical_latest = wanted + ":latest"
+            exact = [row for row in models if canonical_latest in self._row_names(row)]
+        if len(exact) != 1:
+            raise EmpiricalError(
+                f"Ollama model {self.model!r} did not resolve to exactly one installed canonical tag; "
+                "use an explicit tag such as name:tag"
+            )
+        row = exact[0]
+        digest = row.get("digest")
+        if not isinstance(digest, str) or not digest:
+            raise EmpiricalError(f"installed Ollama model {self.model!r} has no immutable digest")
+        names = [value for value in (row.get("name"), row.get("model")) if isinstance(value, str) and value]
+        if not names:
+            raise EmpiricalError("resolved Ollama model has no canonical name")
+        canonical = next((name for name in names if name.casefold() == wanted), None)
+        if canonical is None and ":" not in wanted:
+            canonical = next((name for name in names if name.casefold() == wanted + ":latest"), None)
+        canonical = canonical or names[0]
+        self.model = canonical
+        return ModelIdentity("ollama-local", canonical, digest)
 
-    def generate(self, prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    def generate(self, prompt: str) -> tuple[dict[str, Any], dict[str, Any], str]:
         response = self._json("POST", "/api/generate", {
             "model": self.model,
             "prompt": prompt,
@@ -358,7 +413,7 @@ class OllamaClient:
             "load_duration": response.get("load_duration"),
             "raw_response_sha256": _sha256(raw.encode("utf-8")),
         }
-        return payload, metadata
+        return payload, metadata, raw
 
 
 def build_claim_audit(
@@ -406,11 +461,13 @@ def cold_consumer_gate(
     built_claims: list[dict[str, Any]],
     audit: dict[str, Any],
     report: dict[str, Any],
+    evidence_ref_violations: list[dict[str, str]] | None = None,
     thresholds: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     limits = dict(DEFAULT_THRESHOLDS)
     if thresholds:
         limits.update(thresholds)
+    violations = evidence_ref_violations or []
     actual = {row["claim_id"]: row for row in audit["claims"]}
     per_status: dict[str, float | None] = {}
     for status in mixed_register_core.PRIMARY_STATUSES:
@@ -426,6 +483,7 @@ def cold_consumer_gate(
         "unsupported_assertion_rate": metrics["unsupported_assertion_rate"] <= limits["unsupported_assertion_rate_max"],
         "per_status_accuracy": all(value is not None and value >= limits["per_status_accuracy_min"] for value in per_status.values()),
         "satire_register_accuracy": satire_accuracy is not None and satire_accuracy >= limits["satire_register_accuracy_min"],
+        "evidence_reference_integrity": len(violations) == 0,
     }
     return {
         "passed": all(checks.values()),
@@ -433,6 +491,7 @@ def cold_consumer_gate(
         "checks": checks,
         "per_status_accuracy": per_status,
         "satire_register_accuracy": satire_accuracy,
+        "evidence_ref_violation_count": len(violations),
         "interpretation": "Passing is evidence for this immutable model/run only; it is not a universal model or substrate claim.",
     }
 
