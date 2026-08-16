@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qsol.example/schema/substrate-modes.schema.json",
+  "title": "QSOL-SUBSTRATE domain mode registry",
+  "type": "object",
+  "required": ["type", "schema_version", "classification", "modes", "rules"],
+  "properties": {
+    "type": {"const": "qsol-substrate-domain-mode-registry"},
+    "schema_version": {"const": "1.0.0"},
+    "classification": {"const": "policy_not_canonical_fact"},
+    "modes": {
+      "type": "array",
+      "minItems": 19,
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "submodes", "source_profile", "risk_class"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+          "description": {"type": "string", "minLength": 1},
+          "submodes": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}, "uniqueItems": true},
+          "source_profile": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+          "risk_class": {"enum": ["normal", "elevated", "high"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "rules": {"type": "array", "minItems": 1, "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": false
+}
