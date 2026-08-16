@@ -35,6 +35,9 @@
     "peer_review_does_not_imply_established": true,
     "repository_doi_proves_artifact_identity_not_claim_validity": true,
     "preprints_must_retain_preprint_status": true,
+    "claim_maturity_is_separate_from_register": true,
+    "claim_maturity_is_separate_from_scenario_status": true,
+    "profile_preferences_are_axis_qualified": true,
     "legal_binding_claims_require_primary_legal_authority": true,
     "medical_preprints_are_non_normative_for_clinical_guidance": true
   },
@@ -53,6 +56,7 @@
     "cross_mode_claims_must_declare_their_bridge",
     "undefined_cross_mode_inference_is_prohibited",
     "geometry_is_validation_machinery_not_evidence_of_truth",
-    "epistemic_labels_may_be_weakened_when_evidence_is_insufficient_but_must_not_be_strengthened_without_entitlement"
+    "claim_maturity_may_be_weakened_when_evidence_is_insufficient_but_must_not_be_strengthened_without_entitlement",
+    "register_and_scenario_annotations_must_not_replace_claim_local_evidence_classification"
   ]
 }
