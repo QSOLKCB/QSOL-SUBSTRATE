@@ -60,7 +60,7 @@ The central invariant is:
 CLAIM_STRENGTH <= EVIDENCE_ENTITLEMENT
 ```
 
-Every source can be described independently by provenance class, publication state, epistemic status, authority class, and claim scope.
+Every source can be described independently by provenance class, publication state, claim maturity, scenario status, register, authority class, and claim scope. Source preferences are likewise keyed to the axis they constrain; a label from one axis must never be interpreted as a value on another.
 
 This prevents common category errors:
 
@@ -74,7 +74,13 @@ UNKNOWN != FALSE
 FORMALIZATION != PHYSICAL_TRUTH
 ```
 
-Supported claim maturity labels include `ESTABLISHED`, `CONSENSUS`, `SUPPORTED`, `CONTESTED`, `PRELIMINARY`, `THEORETICAL`, `PROPOSED`, `SPECULATIVE`, `UNKNOWN`, `HYPOTHETICAL`, `COUNTERFACTUAL`, `FICTIONAL`, and `SATIRICAL`.
+Claim maturity labels are `ESTABLISHED`, `CONSENSUS`, `SUPPORTED`, `CONTESTED`, `PRELIMINARY`, `THEORETICAL`, `PROPOSED`, `SPECULATIVE`, and `UNKNOWN`.
+
+Scenario status is a separate axis: `ACTUAL`, `HYPOTHETICAL`, or `COUNTERFACTUAL`.
+
+Register is also separate: `LITERAL`, `FICTIONAL`, or `SATIRICAL`.
+
+This separation is deliberate. A satirical passage can still contain an auditable factual assertion that is independently supported, contradicted, or unavailable. Register must not erase claim-local evidence classification, and evidence classification must not erase register.
 
 A consumer may weaken a claim when evidence is insufficient. It must not silently strengthen a claim without stronger evidence.
 
@@ -84,7 +90,7 @@ A DOI or repository record can establish artifact identity, persistence, version
 
 It does not by itself establish peer review, independent validation, consensus, clinical effectiveness, binding legal authority, or truth of the claims inside the artifact.
 
-Accordingly, repository-hosted material such as Zenodo records is admissible in theoretical, proposed, speculative, and unknown contexts. It may support a stronger epistemic status only when separate stronger evidence independently entitles that status.
+Accordingly, repository-hosted material such as Zenodo records is admissible in theoretical, proposed, speculative, and unknown contexts. It may support a stronger claim maturity only when separate stronger evidence independently entitles that status.
 
 ## Legal mode
 
@@ -150,7 +156,7 @@ COORDINATES != EVIDENCE
 MODE_GEOMETRY != TRUTH
 ```
 
-Sparse hard constraints detect structurally incompatible configurations. For example, a high-confidence binding legal claim with weak authority, or clinical guidance supported only by weak preliminary evidence, should fail mode validation rather than acquire invented evidence.
+Sparse hard constraints detect structurally incompatible configurations. For example, a high-confidence binding legal claim with weak authority, or clinical guidance supported only by weak preliminary evidence, should fail mode validation rather than acquire invented evidence. Each hard constraint has a stable ID, explicit threshold axes, and a policy reference; the validator fails if those definitions drift or disappear.
 
 ## Bridges
 
@@ -181,6 +187,10 @@ historical analogy != prediction
 
 If a task materially spans modes and no bridge is resolved, the correct result is `MODE_UNRESOLVED`, `MODE_AMBIGUOUS`, or `MODE_VIOLATION` rather than silent semantic crossover.
 
+## Portable consumers
+
+`ai/mode-contract.json` is part of `ai/manifest.json:normative_machine_files`. Portable adapters therefore carry the lightweight mode contract whenever their bootstrap tells a consumer to load it. Detailed mode registries, bridge data, and geometry remain selective resources rather than canonical facts.
+
 ## Validation
 
 Run:
@@ -190,7 +200,7 @@ python tools/validate_modes.py
 python -m unittest tests.test_substrate_modes -v
 ```
 
-CI runs the mode validator alongside canonical substrate validation.
+CI runs the mode validator alongside canonical substrate validation. It schema-validates the epistemic contract, checks mode/source-axis agreement, rejects untyped source preferences, validates the exact hard-constraint set and threshold axes, and verifies bridge/domain consistency.
 
 ## Boundary
 
