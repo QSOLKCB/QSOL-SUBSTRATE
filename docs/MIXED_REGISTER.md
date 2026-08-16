@@ -33,10 +33,14 @@ dist/mixed-register-1/
 ├── oracle.json
 ├── scoring-contract.json
 ├── scorer.py
+├── mixed_register_core.py
+├── substrate_integrity.py
+├── substrate_integrity_core.py
+├── toolless_core.py
 └── manifest.json
 ```
 
-The manifest binds the exact source substrate commit/SHA-256, expected claim-ID set, each file hash, and one complete evaluation-bundle fingerprint. A corpus-text hash alone is not sufficient identity.
+The manifest binds the exact source substrate commit/SHA-256, expected claim-ID set, each file hash, and one complete evaluation-bundle fingerprint. The scorer CLI, scoring implementation, and its internal repository dependencies are packaged and fingerprinted so scorer-semantic changes necessarily change bundle identity. A corpus-text hash alone is not sufficient identity.
 
 The source fixtures under `probe/` and all generated Phase 9 artifacts are evaluation material. They are never canonical source evidence.
 
@@ -73,7 +77,7 @@ Oracle and other non-empirical execution kinds are mechanically forbidden from e
 - model ID;
 - immutable model revision.
 
-This prevents provider/model drift from being misreported as substrate uplift or regression.
+This prevents provider/model drift from being misreported as substrate uplift or regression. Empirical `latent-prefix` and `hybrid` audits additionally require a Phase 6 compatibility identity, its fingerprint, the exact executed projection artifact SHA-256, and runtime evidence proving that the declared artifact actually ran; textual simulations cannot use those condition labels.
 
 ## Local negative boundaries
 

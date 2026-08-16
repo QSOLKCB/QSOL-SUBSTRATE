@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -20,13 +21,36 @@ MANIFEST_SCHEMA = "schema/mixed-register-manifest.schema.json"
 AUDIT_SCHEMA = "schema/claim-audit.schema.json"
 SOURCE_REPORT = "probe/mixed-register-1.md"
 SOURCE_CLAIMS = "probe/mixed-register-1.jsonl"
-SCORER_SOURCE = "tools/score_mixed_register.py"
+SCORER_SOURCES = {
+    "scorer.py": "tools/score_mixed_register.py",
+    "mixed_register_core.py": "tools/mixed_register_core.py",
+    "substrate_integrity.py": "tools/substrate_integrity.py",
+    "substrate_integrity_core.py": "tools/substrate_integrity_core.py",
+    "toolless_core.py": "tools/toolless_core.py",
+}
+COMPATIBILITY_SCHEMA = "schema/model-projection-compatibility.schema.json"
+PROJECTION_COMPATIBILITY_FIELDS = (
+    "projection_kind",
+    "model_id",
+    "model_revision",
+    "architecture",
+    "tokenizer_id",
+    "tokenizer_sha256",
+    "context_length",
+    "hidden_size",
+    "num_hidden_layers",
+    "num_attention_heads",
+    "kv_layout_version",
+    "tensor_dtype",
+    "kv_cache_dtype",
+    "quantization_id",
+)
 EXPECTED_FILES = {
     "report.md",
     "claims.jsonl",
     "oracle.json",
     "scoring-contract.json",
-    "scorer.py",
+    *SCORER_SOURCES.keys(),
     "manifest.json",
 }
 PRIMARY_STATUSES = ("SUPPORTED", "CONTRADICTED", "UNAVAILABLE_UNVERIFIED")
@@ -224,17 +248,19 @@ def build_mixed_register_bundle(root: Path, output: Path, source_commit: str) ->
         "canonical_truth_authority": False,
         "claims": oracle_claims,
     }
-    try:
-        scorer_data = (root / SCORER_SOURCE).read_bytes()
-    except OSError as exc:
-        raise MixedRegisterError(f"cannot read scorer source {SCORER_SOURCE}: {exc}") from exc
+    scorer_files: dict[str, bytes] = {}
+    for bundled_name, source_rel in SCORER_SOURCES.items():
+        try:
+            scorer_files[bundled_name] = (root / source_rel).read_bytes()
+        except OSError as exc:
+            raise MixedRegisterError(f"cannot read scorer implementation source {source_rel}: {exc}") from exc
     files = {
         "report.md": report.encode("utf-8"),
         "claims.jsonl": _jsonl_bytes(claims),
         "oracle.json": canonical_json_bytes(oracle),
         "scoring-contract.json": canonical_json_bytes(SCORING_CONTRACT),
-        "scorer.py": scorer_data,
     }
+    files.update(scorer_files)
     file_rows = [
         {"path": path, "sha256": _sha256(data), "bytes": len(data)}
         for path, data in sorted(files.items())
@@ -366,6 +392,121 @@ def _audit_schema_errors(root: Path, audit: dict[str, Any]) -> list[str]:
     return _schema_errors(root, AUDIT_SCHEMA, audit)
 
 
+def _is_evaluation_evidence_ref(root: Path, bundle: Path, ref: str) -> bool:
+    if ref.startswith(("eval:", "derived:", "audit:")):
+        return True
+    if not ref.startswith("file:"):
+        return False
+    rel_text = ref[5:]
+    rel = Path(rel_text)
+    if not rel_text or rel.is_absolute() or ".." in rel.parts:
+        return False
+    normalized = rel.as_posix()
+    if normalized in {SOURCE_REPORT, SOURCE_CLAIMS, "docs/MIXED_REGISTER.md"}:
+        return True
+    if normalized.startswith("dist/mixed-register-1/"):
+        return True
+    if rel.parts and rel.parts[0].casefold() in {"report", "reports", "evaluation", "evaluations", "results"}:
+        return True
+    if "mixed-register" in normalized.casefold() and normalized.endswith((".json", ".jsonl", ".md")):
+        return True
+    candidate = (root / rel).resolve()
+    bundle_root = bundle.resolve()
+    return candidate == bundle_root or bundle_root in candidate.parents
+
+
+def _projection_compatibility_fingerprint(compatibility: dict[str, Any]) -> str:
+    critical = {field: compatibility.get(field) for field in PROJECTION_COMPATIBILITY_FIELDS}
+    return _sha256(canonical_json_bytes(critical))
+
+
+def _projection_execution_findings(root: Path, audit: dict[str, Any]) -> list[MixedRegisterFinding]:
+    if audit.get("execution_kind") != "empirical_consumer" or audit.get("condition") not in {"latent-prefix", "hybrid"}:
+        return []
+    findings: list[MixedRegisterFinding] = []
+    projection = audit.get("projection_execution")
+    if not isinstance(projection, dict):
+        return [MixedRegisterFinding("audit.projection_execution", "projection_execution", "empirical latent-prefix/hybrid runs require projection execution evidence")]
+    compatibility = projection.get("compatibility_identity")
+    if not isinstance(compatibility, dict):
+        return [MixedRegisterFinding("audit.projection_compatibility", "projection_execution/compatibility_identity", "projection compatibility identity is required")]
+    for pointer in _schema_errors(root, COMPATIBILITY_SCHEMA, compatibility):
+        findings.append(MixedRegisterFinding("audit.projection_compatibility", f"projection_execution/compatibility_identity/{pointer}", "projection compatibility identity is invalid"))
+    if findings:
+        return findings
+    expected_fingerprint = _projection_compatibility_fingerprint(compatibility)
+    if projection.get("compatibility_fingerprint_sha256") != expected_fingerprint:
+        findings.append(MixedRegisterFinding("audit.projection_compatibility_fingerprint", "projection_execution/compatibility_fingerprint_sha256", "compatibility fingerprint does not match the compatibility identity"))
+    evaluator = audit.get("evaluator") if isinstance(audit.get("evaluator"), dict) else {}
+    if evaluator.get("model_id") != compatibility.get("model_id"):
+        findings.append(MixedRegisterFinding("audit.projection_model_id", "projection_execution/compatibility_identity/model_id", "projection model ID differs from evaluator model ID"))
+    if evaluator.get("immutable_model_revision") != compatibility.get("model_revision"):
+        findings.append(MixedRegisterFinding("audit.projection_model_revision", "projection_execution/compatibility_identity/model_revision", "projection model revision differs from evaluator immutable model revision"))
+    kind = compatibility.get("projection_kind")
+    if audit.get("condition") == "hybrid" and kind != "hybrid":
+        findings.append(MixedRegisterFinding("audit.projection_kind", "projection_execution/compatibility_identity/projection_kind", "hybrid condition requires projection_kind=hybrid"))
+    if audit.get("condition") == "latent-prefix" and kind == "hybrid":
+        findings.append(MixedRegisterFinding("audit.projection_kind", "projection_execution/compatibility_identity/projection_kind", "latent-prefix condition requires a non-hybrid model-specific projection kind"))
+    artifact_sha = projection.get("projection_artifact_sha256")
+    runtime = projection.get("runtime") if isinstance(projection.get("runtime"), dict) else {}
+    if runtime.get("executed_projection_sha256") != artifact_sha:
+        findings.append(MixedRegisterFinding("audit.projection_runtime", "projection_execution/runtime/executed_projection_sha256", "runtime evidence must identify the same projection artifact that was declared for the run"))
+    artifact_hashes = audit.get("artifact_hashes") if isinstance(audit.get("artifact_hashes"), dict) else {}
+    expected_artifacts = {
+        "projection_artifact": artifact_sha,
+        "projection_compatibility": expected_fingerprint,
+        "projection_runtime_evidence": runtime.get("evidence_sha256"),
+    }
+    for key, expected in expected_artifacts.items():
+        if artifact_hashes.get(key) != expected:
+            findings.append(MixedRegisterFinding("audit.projection_artifact_hash", f"artifact_hashes/{key}", "projection execution artifact hash is missing or inconsistent"))
+    return findings
+
+
+def _validate_comparison_report(report: dict[str, Any]) -> None:
+    if not isinstance(report, dict):
+        raise MixedRegisterError("comparison inputs must be JSON objects")
+    required = {"type", "schema_version", "artifact_class", "execution_kind", "run_id", "evaluator", "condition", "evaluation_bundle_sha256", "substrate", "metrics", "claim_scores"}
+    missing = sorted(required - set(report))
+    if missing:
+        raise MixedRegisterError(f"empirical report is missing required fields: {', '.join(missing)}")
+    if report.get("type") != "qsol-mixed-register-report" or report.get("schema_version") != "1.0.0" or report.get("artifact_class") != "derived_evaluation":
+        raise MixedRegisterError("comparison input is not a valid MIXED-REGISTER/1 derived report")
+    if report.get("execution_kind") != "empirical_consumer":
+        raise MixedRegisterError("only empirical_consumer reports may enter empirical comparison")
+    if not isinstance(report.get("run_id"), str) or not report["run_id"]:
+        raise MixedRegisterError("empirical report run_id must be a non-empty string")
+    if report.get("condition") not in CONDITION_IDS:
+        raise MixedRegisterError("empirical report condition is invalid")
+    bundle_sha = report.get("evaluation_bundle_sha256")
+    if not isinstance(bundle_sha, str) or re.fullmatch(r"[0-9a-f]{64}", bundle_sha) is None:
+        raise MixedRegisterError("empirical report evaluation_bundle_sha256 is missing or invalid")
+    evaluator = report.get("evaluator")
+    if not isinstance(evaluator, dict):
+        raise MixedRegisterError("empirical report evaluator identity is required")
+    for field in ("provider", "model_id", "immutable_model_revision"):
+        if not isinstance(evaluator.get(field), str) or not evaluator[field]:
+            raise MixedRegisterError(f"empirical report evaluator.{field} must be a non-empty string")
+    substrate = report.get("substrate")
+    if not isinstance(substrate, dict):
+        raise MixedRegisterError("empirical report substrate identity is required")
+    for field in ("protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"):
+        if not isinstance(substrate.get(field), str) or not substrate[field]:
+            raise MixedRegisterError(f"empirical report substrate.{field} is missing or invalid")
+    if re.fullmatch(r"[0-9a-f]{40}", substrate["source_commit"]) is None or re.fullmatch(r"[0-9a-f]{64}", substrate["substrate_sha256"]) is None:
+        raise MixedRegisterError("empirical report substrate commit or SHA-256 identity is invalid")
+    metrics = report.get("metrics")
+    metric_names = ("overall_accuracy", "primary_status_accuracy", "register_accuracy", "evidence_fidelity", "unsupported_assertion_rate")
+    if not isinstance(metrics, dict) or any(name not in metrics for name in metric_names):
+        raise MixedRegisterError("empirical report metrics are incomplete")
+    for name in metric_names:
+        value = metrics[name]
+        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0 or value > 1):
+            raise MixedRegisterError(f"empirical report metric {name} must be null or a rate in [0,1]")
+    if not isinstance(report.get("claim_scores"), list) or not report["claim_scores"]:
+        raise MixedRegisterError("empirical report claim_scores must be a non-empty array")
+
+
 def validate_claim_audit(root: Path, bundle: Path, audit: dict[str, Any]) -> list[MixedRegisterFinding]:
     findings: list[MixedRegisterFinding] = []
     try:
@@ -404,8 +545,14 @@ def validate_claim_audit(root: Path, bundle: Path, audit: dict[str, Any]) -> lis
             findings.append(MixedRegisterFinding("audit.claim_hash", f"claims/{index}/claim_sha256", "claim hash does not match frozen corpus text"))
         refs = claim.get("evidence_refs") if isinstance(claim.get("evidence_refs"), list) else []
         for ref in refs:
-            if isinstance(ref, str) and (ref.startswith("eval:") or ref.startswith("derived:") or ref.startswith("audit:")):
+            if not isinstance(ref, str):
+                continue
+            if _is_evaluation_evidence_ref(root, bundle, ref):
                 findings.append(MixedRegisterFinding("audit.self_evidence", f"claims/{index}/evidence_refs", "evaluation artifacts may not be used as factual evidence for audited claims"))
+                continue
+            if not _source_ref_exists(root, ref):
+                findings.append(MixedRegisterFinding("audit.evidence_ref", f"claims/{index}/evidence_refs", f"evidence reference cannot be resolved: {ref}"))
+    findings.extend(_projection_execution_findings(root, audit))
     if audit.get("summary") != _derived_summary([claim for claim in claims if isinstance(claim, dict)]):
         findings.append(MixedRegisterFinding("audit.summary", "summary", "summary must be mechanically derived from claim objects"))
     return findings
@@ -518,28 +665,28 @@ def score_claim_audit(root: Path, bundle: Path, audit: dict[str, Any]) -> dict[s
 def compare_mixed_register_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
     if len(reports) < 2:
         raise MixedRegisterError("at least two empirical reports are required for comparison")
-    if any(report.get("execution_kind") != "empirical_consumer" for report in reports):
-        raise MixedRegisterError("only empirical_consumer reports may enter empirical comparison")
+    for report in reports:
+        _validate_comparison_report(report)
     first = reports[0]
     identity = (
-        first.get("evaluation_bundle_sha256"),
-        first.get("substrate"),
-        first.get("evaluator", {}).get("provider"),
-        first.get("evaluator", {}).get("model_id"),
-        first.get("evaluator", {}).get("immutable_model_revision"),
+        first["evaluation_bundle_sha256"],
+        first["substrate"],
+        first["evaluator"]["provider"],
+        first["evaluator"]["model_id"],
+        first["evaluator"]["immutable_model_revision"],
     )
     seen_conditions: set[str] = set()
     for report in reports:
         current = (
-            report.get("evaluation_bundle_sha256"),
-            report.get("substrate"),
-            report.get("evaluator", {}).get("provider"),
-            report.get("evaluator", {}).get("model_id"),
-            report.get("evaluator", {}).get("immutable_model_revision"),
+            report["evaluation_bundle_sha256"],
+            report["substrate"],
+            report["evaluator"]["provider"],
+            report["evaluator"]["model_id"],
+            report["evaluator"]["immutable_model_revision"],
         )
         if current != identity:
             raise MixedRegisterError("empirical comparison requires identical evaluation bundle, substrate, provider, model ID, and immutable model revision")
-        condition = report.get("condition")
+        condition = report["condition"]
         if condition in seen_conditions:
             raise MixedRegisterError("empirical comparison may contain at most one report per condition")
         seen_conditions.add(condition)

@@ -101,6 +101,45 @@ class Phase9MixedRegisterTests(unittest.TestCase):
         wrapper_item = toolless_core.CapsuleItem("wrapper:projects/index.json", "wrapper", "projects/index.json", wrapper, 1)
         self.assertIn("REGISTRY_OMISSION != NEGATIVE_FACT", toolless_core._boundary_guards(wrapper_item))
 
+    def test_bundle_fingerprints_actual_scorer_implementation(self):
+        paths = {row["path"] for row in self.manifest["files"]}
+        self.assertTrue(set(mixed_register_core.SCORER_SOURCES).issubset(paths))
+        for name in mixed_register_core.SCORER_SOURCES:
+            self.assertTrue((self.bundle / name).is_file())
+        changed = [dict(row) for row in self.manifest["files"]]
+        next(row for row in changed if row["path"] == "mixed_register_core.py")["sha256"] = "0" * 64
+        self.assertNotEqual(self.manifest["bundle_sha256"], mixed_register_core._bundle_hash(self.manifest["substrate"], changed))
+
+    def test_projection_conditions_require_runtime_compatibility_evidence(self):
+        audit = mixed_register_core.build_scoring_oracle_audit(ROOT, self.bundle)
+        audit.update({"execution_kind": "empirical_consumer", "run_id": "latent-real-run", "condition": "latent-prefix"})
+        self.assertIn("audit.schema", [f.code for f in mixed_register_core.validate_claim_audit(ROOT, self.bundle, audit)])
+        compatibility = {"type": "qsol-model-projection-compatibility", "schema_version": "1.0.0", "projection_kind": "prefix_state", "model_id": audit["evaluator"]["model_id"], "model_revision": audit["evaluator"]["immutable_model_revision"], "architecture": "test", "tokenizer_id": "test", "tokenizer_sha256": "1" * 64, "context_length": 4096, "hidden_size": 1024, "num_hidden_layers": 12, "num_attention_heads": 16, "kv_layout_version": "v1", "tensor_dtype": "float16", "kv_cache_dtype": "float16", "quantization_id": "none"}
+        artifact_sha, runtime_sha = "2" * 64, "3" * 64
+        fingerprint = mixed_register_core._projection_compatibility_fingerprint(compatibility)
+        audit["projection_execution"] = {"projection_artifact_sha256": artifact_sha, "compatibility_fingerprint_sha256": fingerprint, "compatibility_identity": compatibility, "runtime": {"engine": "test-runtime", "engine_version": "1", "execution_id": "run-1", "executed_projection_sha256": artifact_sha, "evidence_sha256": runtime_sha}}
+        audit["artifact_hashes"].update({"projection_artifact": artifact_sha, "projection_compatibility": fingerprint, "projection_runtime_evidence": runtime_sha})
+        self.assertEqual(mixed_register_core.validate_claim_audit(ROOT, self.bundle, audit), [])
+
+    def test_comparison_rejects_identity_less_reports(self):
+        bogus = {"type": "qsol-mixed-register-report", "schema_version": "1.0.0", "artifact_class": "derived_evaluation", "execution_kind": "empirical_consumer"}
+        with self.assertRaises(mixed_register_core.MixedRegisterError):
+            mixed_register_core.compare_mixed_register_reports([bogus, dict(bogus)])
+
+    def test_path_based_evaluation_evidence_is_rejected(self):
+        audit = mixed_register_core.build_scoring_oracle_audit(ROOT, self.bundle)
+        audit["claims"][0]["evidence_refs"].append("file:dist/mixed-register-1/oracle.json")
+        self.assertIn("audit.self_evidence", [f.code for f in mixed_register_core.validate_claim_audit(ROOT, self.bundle, audit)])
+
+    def test_formalization_guard_is_present_in_normative_contract(self):
+        contract = json.loads((ROOT / "ai/epistemic-contract.json").read_text(encoding="utf-8"))
+        self.assertIn("FORMALIZATION != PHYSICAL_TRUTH", contract["rules"])
+
+    def test_phase9_ci_checks_out_the_stamped_source_commit(self):
+        workflow = (ROOT / ".github/workflows/phase9-mixed-register.yml").read_text(encoding="utf-8")
+        self.assertIn('ref: ${{ github.event.pull_request.head.sha || github.sha }}', workflow)
+        self.assertIn('SOURCE_COMMIT=$(git rev-parse HEAD)', workflow)
+
     def test_self_publication_chain_is_canonical_and_unique(self):
         sources = json.loads((ROOT / "sources/index.json").read_text(encoding="utf-8"))["sources"]
         publications = json.loads((ROOT / "publications/index.json").read_text(encoding="utf-8"))["records"]

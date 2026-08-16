@@ -6,95 +6,462 @@
   "$defs": {
     "counts": {
       "type": "object",
-      "required": ["SUPPORTED", "CONTRADICTED", "UNAVAILABLE_UNVERIFIED"],
+      "required": [
+        "SUPPORTED",
+        "CONTRADICTED",
+        "UNAVAILABLE_UNVERIFIED"
+      ],
       "properties": {
-        "SUPPORTED": {"type": "integer", "minimum": 0},
-        "CONTRADICTED": {"type": "integer", "minimum": 0},
-        "UNAVAILABLE_UNVERIFIED": {"type": "integer", "minimum": 0}
+        "SUPPORTED": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "CONTRADICTED": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "UNAVAILABLE_UNVERIFIED": {
+          "type": "integer",
+          "minimum": 0
+        }
       },
       "additionalProperties": false
     },
     "registerCounts": {
       "type": "object",
-      "required": ["literal", "satire", "fictional_control"],
+      "required": [
+        "literal",
+        "satire",
+        "fictional_control"
+      ],
       "properties": {
-        "literal": {"type": "integer", "minimum": 0},
-        "satire": {"type": "integer", "minimum": 0},
-        "fictional_control": {"type": "integer", "minimum": 0}
+        "literal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "satire": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fictional_control": {
+          "type": "integer",
+          "minimum": 0
+        }
       },
       "additionalProperties": false
     },
     "substrate": {
       "type": "object",
-      "required": ["protocol", "version", "version_kind", "schema_version", "snapshot_date", "source_commit", "substrate_sha256"],
+      "required": [
+        "protocol",
+        "version",
+        "version_kind",
+        "schema_version",
+        "snapshot_date",
+        "source_commit",
+        "substrate_sha256"
+      ],
       "properties": {
-        "protocol": {"const": "QSOL-SUBSTRATE"},
-        "version": {"type": "string", "minLength": 1},
-        "version_kind": {"const": "snapshot"},
-        "schema_version": {"const": "1.0.0"},
-        "snapshot_date": {"type": "string", "format": "date"},
-        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
-        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        "protocol": {
+          "const": "QSOL-SUBSTRATE"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version_kind": {
+          "const": "snapshot"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "snapshot_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "substrate_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "projectionCompatibility": {
+      "type": "object",
+      "required": [
+        "type",
+        "schema_version",
+        "projection_kind",
+        "model_id",
+        "model_revision",
+        "architecture",
+        "tokenizer_id",
+        "tokenizer_sha256",
+        "context_length",
+        "hidden_size",
+        "num_hidden_layers",
+        "num_attention_heads",
+        "kv_layout_version",
+        "tensor_dtype",
+        "kv_cache_dtype",
+        "quantization_id"
+      ],
+      "properties": {
+        "type": {
+          "const": "qsol-model-projection-compatibility"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "projection_kind": {
+          "enum": [
+            "soft_prompt",
+            "virtual_tokens",
+            "lora",
+            "kv_cache",
+            "prefix_state",
+            "hybrid"
+          ]
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tokenizer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tokenizer_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "context_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hidden_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "num_hidden_layers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "num_attention_heads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kv_layout_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tensor_dtype": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kv_cache_dtype": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quantization_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "projectionExecution": {
+      "type": "object",
+      "required": [
+        "projection_artifact_sha256",
+        "compatibility_fingerprint_sha256",
+        "compatibility_identity",
+        "runtime"
+      ],
+      "properties": {
+        "projection_artifact_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "compatibility_fingerprint_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "compatibility_identity": {
+          "$ref": "#/$defs/projectionCompatibility"
+        },
+        "runtime": {
+          "type": "object",
+          "required": [
+            "engine",
+            "engine_version",
+            "execution_id",
+            "executed_projection_sha256",
+            "evidence_sha256"
+          ],
+          "properties": {
+            "engine": {
+              "type": "string",
+              "minLength": 1
+            },
+            "engine_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "execution_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "executed_projection_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "evidence_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     }
   },
-  "required": ["type", "schema_version", "artifact_class", "execution_kind", "run_id", "evaluator", "condition", "tool_mode", "run_date", "prompt_test_identity", "classification_contract_version", "evaluation_bundle_sha256", "substrate", "artifact_hashes", "claims", "summary"],
+  "required": [
+    "type",
+    "schema_version",
+    "artifact_class",
+    "execution_kind",
+    "run_id",
+    "evaluator",
+    "condition",
+    "tool_mode",
+    "run_date",
+    "prompt_test_identity",
+    "classification_contract_version",
+    "evaluation_bundle_sha256",
+    "substrate",
+    "artifact_hashes",
+    "claims",
+    "summary"
+  ],
   "properties": {
-    "type": {"const": "qsol-claim-audit"},
-    "schema_version": {"const": "1.0.0"},
-    "artifact_class": {"const": "derived_evaluation"},
-    "execution_kind": {"enum": ["empirical_consumer", "scoring_oracle", "non_empirical_analysis"]},
-    "run_id": {"type": "string", "minLength": 1},
+    "type": {
+      "const": "qsol-claim-audit"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "artifact_class": {
+      "const": "derived_evaluation"
+    },
+    "execution_kind": {
+      "enum": [
+        "empirical_consumer",
+        "scoring_oracle",
+        "non_empirical_analysis"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
     "evaluator": {
       "type": "object",
-      "required": ["provider", "model_id", "immutable_model_revision"],
+      "required": [
+        "provider",
+        "model_id",
+        "immutable_model_revision"
+      ],
       "properties": {
-        "provider": {"type": "string", "minLength": 1},
-        "model_id": {"type": "string", "minLength": 1},
-        "immutable_model_revision": {"type": "string", "minLength": 1}
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "immutable_model_revision": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
-    "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
-    "tool_mode": {"enum": ["none", "repository", "web", "mixed", "other"]},
-    "run_date": {"type": "string", "format": "date"},
-    "prompt_test_identity": {"type": "string", "minLength": 1},
-    "classification_contract_version": {"const": "MIXED-REGISTER/1"},
-    "evaluation_bundle_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "substrate": {"$ref": "#/$defs/substrate"},
+    "condition": {
+      "enum": [
+        "naked",
+        "micro",
+        "standard",
+        "full",
+        "vector",
+        "latent-prefix",
+        "hybrid",
+        "tool-enabled"
+      ]
+    },
+    "tool_mode": {
+      "enum": [
+        "none",
+        "repository",
+        "web",
+        "mixed",
+        "other"
+      ]
+    },
+    "run_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prompt_test_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "classification_contract_version": {
+      "const": "MIXED-REGISTER/1"
+    },
+    "evaluation_bundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "substrate": {
+      "$ref": "#/$defs/substrate"
+    },
     "artifact_hashes": {
       "type": "object",
-      "propertyNames": {"pattern": "^[A-Za-z0-9_.:-]+$"},
-      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_.:-]+$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "minProperties": 1
     },
     "claims": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["claim_id", "claim_sha256", "epistemic_status", "register", "evidence_refs", "rationale"],
+        "required": [
+          "claim_id",
+          "claim_sha256",
+          "epistemic_status",
+          "register",
+          "evidence_refs",
+          "rationale"
+        ],
         "properties": {
-          "claim_id": {"type": "string", "pattern": "^mr1-[0-9]{3}$"},
-          "claim_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-          "epistemic_status": {"enum": ["SUPPORTED", "CONTRADICTED", "UNAVAILABLE_UNVERIFIED"]},
-          "register": {"enum": ["literal", "satire", "fictional_control"]},
-          "evidence_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
-          "rationale": {"type": "string", "minLength": 1}
+          "claim_id": {
+            "type": "string",
+            "pattern": "^mr1-[0-9]{3}$"
+          },
+          "claim_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "epistemic_status": {
+            "enum": [
+              "SUPPORTED",
+              "CONTRADICTED",
+              "UNAVAILABLE_UNVERIFIED"
+            ]
+          },
+          "register": {
+            "enum": [
+              "literal",
+              "satire",
+              "fictional_control"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
     },
     "summary": {
       "type": "object",
-      "required": ["auditable_claim_count", "primary_class_counts", "register_counts"],
+      "required": [
+        "auditable_claim_count",
+        "primary_class_counts",
+        "register_counts"
+      ],
       "properties": {
-        "auditable_claim_count": {"type": "integer", "minimum": 1},
-        "primary_class_counts": {"$ref": "#/$defs/counts"},
-        "register_counts": {"$ref": "#/$defs/registerCounts"}
+        "auditable_claim_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "primary_class_counts": {
+          "$ref": "#/$defs/counts"
+        },
+        "register_counts": {
+          "$ref": "#/$defs/registerCounts"
+        }
       },
       "additionalProperties": false
+    },
+    "projection_execution": {
+      "$ref": "#/$defs/projectionExecution"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution_kind": {
+            "const": "empirical_consumer"
+          },
+          "condition": {
+            "enum": [
+              "latent-prefix",
+              "hybrid"
+            ]
+          }
+        },
+        "required": [
+          "execution_kind",
+          "condition"
+        ]
+      },
+      "then": {
+        "required": [
+          "projection_execution"
+        ],
+        "properties": {
+          "artifact_hashes": {
+            "required": [
+              "projection_artifact",
+              "projection_compatibility",
+              "projection_runtime_evidence"
+            ]
+          }
+        }
+      }
+    }
+  ]
 }
