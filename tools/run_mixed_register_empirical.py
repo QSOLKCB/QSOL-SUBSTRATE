@@ -72,7 +72,7 @@ def _prepare_work_dir(path: Path) -> Path:
         if not resolved.is_dir():
             raise EmpiricalError("work directory must be a directory")
         marker = resolved / WORK_MARKER
-        if not marker.is_file() and not resolved.name.startswith("qsol-mixed-register-empirical"):
+        if not marker.is_file():
             raise EmpiricalError("refusing to recursively delete an unmarked existing work directory")
         shutil.rmtree(resolved)
     resolved.mkdir(parents=True)
@@ -95,6 +95,117 @@ def _prepare_output_dir(path: Path) -> Path:
     resolved.mkdir(parents=True)
     (resolved / OUTPUT_MARKER).write_text("dedicated Phase 9 empirical evidence directory\n", encoding="utf-8")
     return resolved
+
+
+def _protocol_failure_gate(message: str) -> dict[str, object]:
+    return {
+        "passed": False,
+        "checks": {"consumer_protocol_integrity": False},
+        "protocol_error": message,
+        "interpretation": (
+            "The consumer response violated the empirical output contract. "
+            "This is a measured consumer failure, not a harness or infrastructure failure."
+        ),
+    }
+
+
+def _metric_delta(
+    guarded: dict[str, object] | None,
+    ablated: dict[str, object] | None,
+    key: str,
+    *,
+    reverse: bool = False,
+) -> float | None:
+    if guarded is None or ablated is None:
+        return None
+    gv = guarded.get(key)
+    av = ablated.get(key)
+    if not isinstance(gv, (int, float)) or not isinstance(av, (int, float)):
+        return None
+    value = av - gv if reverse else gv - av
+    return round(float(value), 6)
+
+
+def _summary_with_protocol_failures(
+    results: list[dict[str, object]],
+    manifest: dict[str, object],
+    identity,
+    protocol: dict[str, object],
+) -> dict[str, object]:
+    indexed = {(str(row["condition"]), str(row["variant"])): row for row in results}
+    rows: list[dict[str, object]] = []
+    protocol_failure_count = 0
+    for condition in CONDITIONS:
+        guarded = indexed.get((condition, "guarded"))
+        ablated = indexed.get((condition, "ablated"))
+        if guarded is None or ablated is None:
+            raise EmpiricalError(f"missing paired empirical result for {condition}")
+        guarded_report = guarded.get("report")
+        ablated_report = ablated.get("report")
+        gm = guarded_report.get("metrics") if isinstance(guarded_report, dict) else None
+        am = ablated_report.get("metrics") if isinstance(ablated_report, dict) else None
+        gm = gm if isinstance(gm, dict) else None
+        am = am if isinstance(am, dict) else None
+        guarded_error = guarded.get("protocol_error")
+        ablated_error = ablated.get("protocol_error")
+        protocol_failure_count += int(bool(guarded_error)) + int(bool(ablated_error))
+        rows.append({
+            "condition": condition,
+            "guarded": gm,
+            "ablated": am,
+            "guarded_protocol_error": guarded_error,
+            "ablated_protocol_error": ablated_error,
+            "guard_effect": {
+                "primary_status_accuracy_delta": _metric_delta(gm, am, "primary_status_accuracy"),
+                "register_accuracy_delta": _metric_delta(gm, am, "register_accuracy"),
+                "evidence_fidelity_delta": _metric_delta(gm, am, "evidence_fidelity"),
+                "unsupported_assertion_rate_reduction": _metric_delta(
+                    gm, am, "unsupported_assertion_rate", reverse=True
+                ),
+            },
+            "cold_consumer_gate": guarded["cold_consumer_gate"],
+        })
+    passing = [
+        row["condition"]
+        for row in rows
+        if isinstance(row["cold_consumer_gate"], dict)
+        and row["cold_consumer_gate"].get("passed") is True
+    ]
+    return {
+        "type": "qsol-mixed-register-empirical-summary",
+        "schema_version": "1.0.0",
+        "empirical_spec_version": protocol["empirical_spec_version"],
+        "artifact_class": "derived_evaluation",
+        "canonical_truth_authority": False,
+        "evaluation_bundle_sha256": manifest["bundle_sha256"],
+        "substrate": manifest["substrate"],
+        "model": {
+            "provider": identity.provider,
+            "model_id": identity.model_id,
+            "immutable_model_revision": identity.immutable_revision,
+        },
+        "conditions": list(CONDITIONS),
+        "variants": ["guarded", "ablated"],
+        "rows": rows,
+        "consumer_protocol_failure_count": protocol_failure_count,
+        "cold_consumer_demonstrated": bool(passing),
+        "passing_guarded_conditions": passing,
+        "interpretation": (
+            "Consumer protocol violations are retained as empirical failures and do not make the harness fail. "
+            "Guard deltas are null where a paired quantitative score is unavailable."
+        ),
+    }
+
+
+def _summarize_results(
+    results: list[dict[str, object]],
+    manifest: dict[str, object],
+    identity,
+    protocol: dict[str, object],
+) -> dict[str, object]:
+    if any(row.get("protocol_error") for row in results):
+        return _summary_with_protocol_failures(results, manifest, identity, protocol)
+    return experiment_summary(results, manifest, identity)
 
 
 def main() -> int:
@@ -156,15 +267,49 @@ def main() -> int:
         identity = client.identity()
         output_dir = _prepare_output_dir(args.output)
 
-        results = []
+        results: list[dict[str, object]] = []
         for condition in CONDITIONS:
             for variant in ("guarded", "ablated"):
                 carrier = carrier_text(
                     ROOT, condition, variant, toolless_dir, vector_dir, built_claims, top_k=args.top_k
                 )
                 prompt = build_prompt(report_text, built_claims, carrier, condition, variant)
+                stem = f"{condition}.{variant}"
+                for name in ("prompts", "carriers", "raw", "audits", "reports"):
+                    (output_dir / name).mkdir(exist_ok=True)
+                (output_dir / "prompts" / f"{stem}.txt").write_text(prompt, encoding="utf-8")
+                (output_dir / "carriers" / f"{stem}.txt").write_text(carrier, encoding="utf-8")
+
                 raw_payload, provider_meta, raw_text = client.generate(prompt)
-                parsed_claims = parse_consumer_output(raw_payload, built_claims)
+                raw_path = output_dir / "raw" / f"{stem}.response.json"
+                raw_path.write_bytes(raw_text.encode("utf-8"))
+
+                try:
+                    parsed_claims = parse_consumer_output(raw_payload, built_claims)
+                except EmpiricalError as exc:
+                    protocol_error = str(exc)
+                    gate = _protocol_failure_gate(protocol_error)
+                    _write_json(output_dir / "raw" / f"{stem}.metadata.json", {
+                        "consumer_output": raw_payload,
+                        "provider_metadata": provider_meta,
+                        "raw_response_path": raw_path.name,
+                        "raw_response_sha256": provider_meta["raw_response_sha256"],
+                        "consumer_protocol_error": protocol_error,
+                    })
+                    results.append({
+                        "condition": condition,
+                        "variant": variant,
+                        "report": None,
+                        "cold_consumer_gate": gate,
+                        "protocol_error": protocol_error,
+                        "evidence_ref_violation_count": None,
+                    })
+                    print(
+                        f"{condition}/{variant}: consumer_protocol_error={protocol_error!r} "
+                        "cold_pass=False"
+                    )
+                    continue
+
                 constrained_claims, evidence_violations = constrain_evidence_refs(
                     ROOT, parsed_claims, carrier
                 )
@@ -187,13 +332,6 @@ def main() -> int:
                     report,
                     evidence_ref_violations=evidence_violations,
                 )
-                stem = f"{condition}.{variant}"
-                for name in ("prompts", "carriers", "raw", "audits", "reports"):
-                    (output_dir / name).mkdir(exist_ok=True)
-                (output_dir / "prompts" / f"{stem}.txt").write_text(prompt, encoding="utf-8")
-                (output_dir / "carriers" / f"{stem}.txt").write_text(carrier, encoding="utf-8")
-                raw_path = output_dir / "raw" / f"{stem}.response.json"
-                raw_path.write_bytes(raw_text.encode("utf-8"))
                 _write_json(output_dir / "raw" / f"{stem}.metadata.json", {
                     "consumer_output": raw_payload,
                     "provider_metadata": provider_meta,
@@ -220,7 +358,7 @@ def main() -> int:
                     f"cold_pass={gate['passed']}"
                 )
 
-        summary = experiment_summary(results, mixed_manifest, identity)
+        summary = _summarize_results(results, mixed_manifest, identity, protocol)
         summary["source_commit"] = source_commit
         summary["seed"] = args.seed
         summary["num_ctx"] = args.num_ctx
@@ -232,6 +370,7 @@ def main() -> int:
         _write_json(output_dir / "summary.json", summary)
         print(f"cold_consumer_demonstrated={summary['cold_consumer_demonstrated']}")
         print("passing_guarded_conditions=" + ",".join(summary["passing_guarded_conditions"]))
+        print(f"consumer_protocol_failures={summary.get('consumer_protocol_failure_count', 0)}")
         print(f"output={output_dir}")
         return 0
     except (
