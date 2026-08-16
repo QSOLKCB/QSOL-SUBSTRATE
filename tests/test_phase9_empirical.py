@@ -181,7 +181,7 @@ class Phase9EmpiricalTests(unittest.TestCase):
         self.assertTrue(protocol["consumer_contract"]["treatment_assignment_blinded"])
         self.assertTrue(protocol["consumer_contract"]["evidence_reference_violations_fail_gate"])
 
-    def test_experiment_summary_reports_guard_deltas_without_claiming_causality(self):
+    def _summary_fixture(self):
         identity = empirical.ModelIdentity("ollama-local", "demo:tag", "sha256:abc")
         manifest = {
             "bundle_sha256": "a" * 64,
@@ -195,6 +195,47 @@ class Phase9EmpiricalTests(unittest.TestCase):
                 "substrate_sha256": "c" * 64,
             },
         }
+        return identity, manifest
+
+    def test_protocol_failure_is_recorded_as_model_outcome_not_harness_failure(self):
+        identity, manifest = self._summary_fixture()
+        protocol = empirical.load_empirical_protocol(ROOT)
+        results = []
+        for condition in empirical.CONDITIONS:
+            for variant in empirical.VARIANTS:
+                if condition == "micro" and variant == "guarded":
+                    results.append({
+                        "condition": condition,
+                        "variant": variant,
+                        "report": None,
+                        "protocol_error": "consumer omitted frozen claims: mr1-030",
+                        "cold_consumer_gate": runner._protocol_failure_gate(
+                            "consumer omitted frozen claims: mr1-030"
+                        ),
+                    })
+                else:
+                    results.append({
+                        "condition": condition,
+                        "variant": variant,
+                        "report": {"metrics": {
+                            "primary_status_accuracy": 0.8,
+                            "register_accuracy": 0.8,
+                            "evidence_fidelity": 0.8,
+                            "unsupported_assertion_rate": 0.0,
+                        }},
+                        "cold_consumer_gate": {"passed": False},
+                    })
+        summary = runner._summarize_results(results, manifest, identity, protocol)
+        self.assertEqual(summary["consumer_protocol_failure_count"], 1)
+        self.assertFalse(summary["cold_consumer_demonstrated"])
+        micro = next(row for row in summary["rows"] if row["condition"] == "micro")
+        self.assertEqual(micro["guarded_protocol_error"], "consumer omitted frozen claims: mr1-030")
+        self.assertIsNone(micro["guarded"])
+        self.assertIsNone(micro["guard_effect"]["primary_status_accuracy_delta"])
+        self.assertFalse(micro["cold_consumer_gate"]["passed"])
+
+    def test_experiment_summary_reports_guard_deltas_without_claiming_causality(self):
+        identity, manifest = self._summary_fixture()
         results = []
         for condition in empirical.CONDITIONS:
             for variant, status_acc, unsupported in (
