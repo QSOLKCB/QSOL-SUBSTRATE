@@ -409,7 +409,7 @@ Phase 9 therefore treats **consumer epistemics** and **consumer-report integrity
 
 ### Epistemic guard extension
 
-- [ ] Add `ADJACENT_TRUTH != INHERITED_TRUTH` as a normative epistemic guard.
+- [x] Add `ADJACENT_TRUTH != INHERITED_TRUTH` as a normative epistemic guard.
 - [ ] Require every substantive claim in mixed-register material to stand on its own evidence rather than inheriting credibility from neighbouring supported claims.
 - [ ] Preserve the distinction between `CONTRADICTED` and `UNAVAILABLE / UNVERIFIED`; absence or non-assertion must never be silently converted into falsity.
 - [ ] Preserve satire/fiction/register classification independently from factual epistemic status so humorous framing cannot become biography.
