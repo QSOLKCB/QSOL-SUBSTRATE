@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/conflict-record.schema.json",
+  "title": "QSOL-SUBSTRATE consumer conflict record",
+  "type": "object",
+  "required": ["type", "schema_version", "id", "epistemic_state", "subject", "evidence", "resolution_status"],
+  "properties": {
+    "type": {"const": "qsol-substrate-conflict-record"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^conflict:[a-z0-9][a-z0-9._:-]*$"},
+    "epistemic_state": {"const": "conflict"},
+    "subject": {"type": "string", "minLength": 1},
+    "evidence": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["source_ref", "position"],
+        "properties": {
+          "source_ref": {"type": "string", "minLength": 1},
+          "position": {"type": "string", "minLength": 1},
+          "observed_at": {"type": "string", "format": "date-time"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "resolution_status": {"enum": ["unresolved", "resolved_by_stronger_primary_evidence", "historical_versions_reconciled"]},
+    "resolution": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/published-release-manifest.schema.json",
+  "title": "QSOL-SUBSTRATE published release identity manifest",
+  "type": "object",
+  "required": ["type", "schema_version", "version", "tag", "publication_date", "repository", "commit", "github_release_id", "doi", "canonical_substrate_sha256", "canonical_source_id", "canonical_publication_id", "artifact_class", "canonical_truth_authority"],
+  "properties": {
+    "type": {"const": "qsol-published-release-manifest"},
+    "schema_version": {"const": "1.0.0"},
+    "version": {"const": "1.0.0"},
+    "tag": {"const": "v1.0.0"},
+    "publication_date": {"const": "2026-08-15"},
+    "repository": {"const": "QSOLKCB/QSOL-SUBSTRATE"},
+    "commit": {"const": "4483582173abf62f61bcc18076b22c1db10b26ca"},
+    "github_release_id": {"const": 371154565},
+    "doi": {"const": "10.5281/zenodo.21959180"},
+    "canonical_substrate_sha256": {"const": "fb6e7a694ff1279af67d4aaf776e232e31025d9737011f6768fdc79c0f63eb25"},
+    "canonical_source_id": {"const": "src:qsol-substrate-v1.0.0-release"},
+    "canonical_publication_id": {"const": "publication:qsol-substrate-v1.0.0"},
+    "artifact_class": {"const": "immutable_published_release_identity"},
+    "canonical_truth_authority": {"const": false},
+    "notes": {"type": "string"}
+  },
+  "additionalProperties": false
+}

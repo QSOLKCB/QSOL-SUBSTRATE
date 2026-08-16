@@ -25,6 +25,10 @@ QSOL-SUBSTRATE is a public, vendor-neutral context substrate for AI systems. Cha
 17. Never present the Phase 7 scoring oracle as an empirical model result; `execution_kind=scoring_oracle` is scorer self-test evidence only.
 18. Empirical Phase 7 comparisons must bind the same probe-bundle and substrate identity and use the same model revision for naked-baseline uplift.
 19. Do not label a textual prompt simulation as a latent/KV/LoRA execution; model-specific projection claims require the Phase 6 compatibility identity and actual runtime evidence.
+20. Mixed-register claims are evaluated claim-locally; supported neighbouring text never supplies provenance.
+21. Keep primary epistemic status separate from satire/fiction/register annotations.
+22. Phase 9 consumer evaluations are `derived_evaluation`, not canonical evidence, and may not cite themselves as factual authority.
+23. Empirical MIXED-REGISTER/1 comparisons require the same complete evaluation-bundle fingerprint, substrate identity, provider/model ID, and immutable model revision; scoring-oracle runs are excluded.
 
 ## Documentation split
 

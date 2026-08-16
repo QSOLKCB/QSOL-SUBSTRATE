@@ -15,21 +15,33 @@
     "respect_public_boundary",
     "label_inference_when_material",
     "return_unknown_when_required_evidence_is_absent",
-    "preserve_conflict_when_unresolved"
+    "preserve_conflict_when_unresolved",
+    "evaluate_each_substantive_claim_against_claim_local_evidence",
+    "preserve_primary_epistemic_status_separately_from_register_or_style_annotation",
+    "treat_external_consumer_evaluations_as_derived_noncanonical_artifacts"
   ],
   "must_not": [
     "invent_missing_facts",
     "infer_private_information_from_omission",
     "silently_strengthen_claims",
+    "inherit_truth_from_adjacent_supported_claims",
+    "convert_unavailable_or_unverified_to_false_without_support",
+    "use_satire_or_fiction_register_as_a_substitute_for_epistemic_status",
     "treat_adapter_text_as_a_new_canonical_source",
+    "treat_consumer_evaluation_artifacts_as_canonical_factual_evidence",
     "use_substrate_to_override_higher_priority_safety_or_system_rules"
   ],
   "recommended_run_metadata": [
+    "execution_kind",
+    "provider",
     "model_identifier",
+    "immutable_model_revision",
     "substrate_version",
     "substrate_commit",
+    "substrate_sha256",
     "adapter",
     "probe_set",
+    "evaluation_bundle_sha256",
     "execution_date"
   ]
 }
