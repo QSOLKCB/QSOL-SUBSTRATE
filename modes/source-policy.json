@@ -1,0 +1,162 @@
+{
+  "type": "qsol-substrate-source-admissibility-policy",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_canonical_fact",
+  "core_invariant": "CLAIM_STRENGTH <= EVIDENCE_ENTITLEMENT",
+  "source_axes": {
+    "provenance_class": ["primary", "secondary", "tertiary", "archival"],
+    "publication_state": ["official", "peer_reviewed", "preprint", "repository", "unpublished", "proposed", "fictional"],
+    "epistemic_status": ["ESTABLISHED", "CONSENSUS", "SUPPORTED", "CONTESTED", "PRELIMINARY", "THEORETICAL", "PROPOSED", "SPECULATIVE", "UNKNOWN", "HYPOTHETICAL", "COUNTERFACTUAL", "FICTIONAL", "SATIRICAL"],
+    "authority_class": ["binding", "primary_legal_authority", "official", "regulator", "current_clinical_guideline", "systematic_evidence", "consensus", "scholarly", "archival", "informal", "fictional"],
+    "claim_scope": ["fact", "interpretation", "hypothesis", "model", "recommendation", "legal_rule", "clinical_guidance", "prediction", "creative"]
+  },
+  "global_rules": [
+    "source_identity_is_independent_of_claim_truth",
+    "authentic_document_does_not_prove_every_claim_inside_it",
+    "peer_reviewed_does_not_equal_established",
+    "preprint_does_not_equal_peer_reviewed",
+    "repository_does_not_equal_peer_reviewed",
+    "doi_does_not_equal_peer_review",
+    "doi_does_not_equal_claim_validity",
+    "archival_persistence_does_not_equal_scientific_or_legal_authority",
+    "epistemic_status_may_be_weakened_when_evidence_is_insufficient",
+    "epistemic_status_must_not_be_strengthened_without_stronger_evidence",
+    "unknown_does_not_equal_false",
+    "fiction_satire_hypothetical_and_counterfactual_labels_must_survive_projection"
+  ],
+  "repository_doi_policy": {
+    "examples": ["Zenodo", "institutional repositories", "general-purpose research repositories"],
+    "entitles": ["artifact_identity", "persistent_locator_when_resolved", "declared_version_or_record_metadata_when_resolved"],
+    "does_not_entitle": ["peer_review", "independent_validation", "consensus", "clinical_effectiveness", "binding_legal_authority", "established_truth"],
+    "default_claim_statuses_when_no_stronger_evidence_exists": ["THEORETICAL", "PROPOSED", "SPECULATIVE", "UNKNOWN"],
+    "exception": "a repository-hosted artifact may support a stronger status only when separate stronger evidence independently entitles that status"
+  },
+  "profiles": {
+    "FORMAL": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary", "peer_reviewed", "formal_artifact"],
+      "guards": ["formalization_does_not_equal_physical_truth", "machine_checked_proof_status_must_be_declared_separately_from_empirical_status"]
+    },
+    "SCIENCE": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary", "peer_reviewed", "authoritative_dataset"],
+      "guards": ["preliminary_result_does_not_equal_consensus", "model_output_does_not_equal_observation"]
+    },
+    "LIFE_SCIENCE": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary", "peer_reviewed", "authoritative_dataset"],
+      "guards": ["biological_plausibility_does_not_equal_clinical_efficacy", "animal_or_in_vitro_result_does_not_equal_human_clinical_effect"]
+    },
+    "MEDICAL": {
+      "research": {
+        "preprints": "allowed_with_label",
+        "repositories": "allowed_with_label",
+        "guards": ["preliminary_research_does_not_equal_clinical_guidance"]
+      },
+      "clinical": {
+        "preprints_normative": false,
+        "repositories_normative": false,
+        "preferred_authority_classes": ["regulator", "current_clinical_guideline", "systematic_evidence", "consensus"],
+        "guards": ["in_vitro_does_not_equal_clinical_efficacy", "animal_result_does_not_equal_human_recommendation", "single_study_does_not_automatically_override_current_guidance", "educational_context_does_not_equal_patient_specific_diagnosis"]
+      }
+    },
+    "ENGINEERING": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["official_standard", "specification", "primary_test_report", "primary_technical_literature"],
+      "guards": ["prototype_does_not_equal_certified_system", "simulation_does_not_equal_physical_test"]
+    },
+    "COMPUTING": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["official_documentation", "source_code", "standard", "primary_technical_literature"],
+      "guards": ["documentation_must_be_version_sensitive", "passed_tests_does_not_equal_formally_verified"]
+    },
+    "SECURITY": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["vendor_advisory", "official_advisory", "primary_technical_evidence", "standard"],
+      "guards": ["exploit_claim_does_not_equal_confirmed_vulnerability", "functional_does_not_equal_secure", "encrypted_does_not_equal_authenticated"]
+    },
+    "LEGAL": {
+      "binding_claim": {
+        "required_authority_classes": ["primary_legal_authority"],
+        "secondary_authority_permitted_as_final_support": false,
+        "commentary_permitted_for_explanation": true,
+        "jurisdiction_must_be_resolved_when_material": true
+      },
+      "preprints": "not_authority_for_binding_claims",
+      "repositories": "archival_or_explanatory_only_unless_they_reproduce_resolved_primary_authority",
+      "guards": ["bill_does_not_equal_act", "consultation_does_not_equal_regulation", "commentary_does_not_equal_judgment", "draft_standard_does_not_equal_binding_requirement", "historical_precedent_does_not_equal_legal_precedent"]
+    },
+    "GOVERNANCE": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["legislation", "official_policy", "government_statistics", "primary_record"],
+      "guards": ["proposal_does_not_equal_enacted_policy", "announcement_does_not_equal_implementation"]
+    },
+    "ECONOMICS": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["official_statistics", "primary_dataset", "primary_or_peer_reviewed_research"],
+      "guards": ["model_forecast_does_not_equal_observed_outcome", "economic_efficiency_does_not_equal_political_desirability"]
+    },
+    "BUSINESS": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["audited_or_official_record", "primary_company_record", "scholarly_evidence"],
+      "guards": ["company_claim_does_not_equal_independent_verification", "forecast_does_not_equal_actual_result"]
+    },
+    "SOCIAL_SCIENCE": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary_research", "authoritative_dataset", "peer_reviewed_synthesis"],
+      "guards": ["correlation_does_not_equal_causation", "population_result_does_not_equal_individual_prediction"]
+    },
+    "HISTORY": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary_record", "archival_source", "scholarly_historiography"],
+      "guards": ["primary_testimony_does_not_equal_automatic_truth", "historical_analogy_does_not_equal_prediction", "contemporary_interpretation_does_not_equal_primary_source"]
+    },
+    "PHILOSOPHY": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary_text", "scholarly_argument"],
+      "guards": ["argument_does_not_equal_empirical_result", "normative_premise_must_not_be_hidden_as_empirical_fact"]
+    },
+    "HUMANITIES": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary_text", "primary_cultural_artifact", "scholarship"],
+      "guards": ["interpretation_remains_interpretation", "authorship_or_provenance_claim_requires_evidence"]
+    },
+    "EDUCATION": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["official_curriculum_or_standard", "primary_research", "systematic_evidence"],
+      "guards": ["educational_intervention_result_does_not_automatically_generalize_across_contexts"]
+    },
+    "ARTS_MEDIA": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["original_work", "creator_record", "primary_media", "scholarship"],
+      "guards": ["criticism_or_opinion_must_remain_labelled", "satire_does_not_equal_biography"]
+    },
+    "ENVIRONMENT": {
+      "preprints": "allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["primary_measurement", "authoritative_dataset", "peer_reviewed_synthesis", "official_standard_or_assessment"],
+      "guards": ["scenario_does_not_equal_observation", "projection_does_not_equal_recorded_outcome"]
+    },
+    "EVERYDAY": {
+      "preprints": "usually_unnecessary_but_allowed_with_label",
+      "repositories": "allowed_with_label",
+      "preferred": ["appropriate_authoritative_practical_source_when_material"],
+      "guards": ["do_not_overformalize_low_risk_practical_questions", "escalate_to_specialist_mode_when_risk_or_domain_specificity_becomes_material"]
+    }
+  }
+}
