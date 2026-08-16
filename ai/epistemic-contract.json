@@ -9,6 +9,21 @@
     "conflict": "relevant evidence is materially inconsistent and not yet reconciled",
     "fiction": "deliberately fictional, satirical, simulated, role-play, game-lore, or otherwise non-literal material"
   },
+  "claim_maturity_states": {
+    "ESTABLISHED": "supported strongly enough for the relevant domain policy to permit established wording",
+    "CONSENSUS": "supported by an appropriately broad and current domain consensus",
+    "SUPPORTED": "supported by identified evidence without entitlement to stronger wording",
+    "CONTESTED": "materially disputed by relevant evidence or authorities",
+    "PRELIMINARY": "early evidence that has not satisfied stronger domain validation thresholds",
+    "THEORETICAL": "theory-, model-, or derivation-level claim not established as empirical fact",
+    "PROPOSED": "explicitly proposed claim, mechanism, interpretation, design, or framework",
+    "SPECULATIVE": "plausible or exploratory claim with insufficient evidence for stronger status",
+    "UNKNOWN": "not established by available evidence",
+    "HYPOTHETICAL": "conditional scenario introduced for analysis rather than asserted as actual",
+    "COUNTERFACTUAL": "deliberately contrary-to-fact scenario used for reasoning",
+    "FICTIONAL": "non-literal fictional material",
+    "SATIRICAL": "non-literal satirical material"
+  },
   "rules": [
     "never_promote_inferred_to_known_without_support",
     "never_convert_unknown_to_false_without_support",
@@ -16,6 +31,11 @@
     "preserve_source_specific_uncertainty",
     "do_not_treat_authentic_document_as_proof_of_every_claim_inside_it",
     "fiction_must_not_be_reinterpreted_as_biographical_or_empirical_fact",
+    "claim_strength_must_not_exceed_evidence_entitlement",
+    "never_promote_preliminary_theoretical_proposed_or_speculative_to_established_without_stronger_evidence",
+    "peer_review_does_not_equal_established",
+    "doi_or_repository_persistence_does_not_equal_claim_validity",
+    "source_publication_state_and_claim_truth_are_independent_dimensions",
     "ADJACENT_TRUTH != INHERITED_TRUTH",
     "FORMALIZATION != PHYSICAL_TRUTH"
   ],
