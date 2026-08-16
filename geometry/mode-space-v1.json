@@ -1,0 +1,71 @@
+{
+  "type": "qsol-substrate-mode-geometry",
+  "schema_version": "1.0.0",
+  "geometry_id": "QSOL-MODE-SPACE-24D-v1",
+  "classification": "validation_geometry_not_evidence",
+  "dimension_count": 24,
+  "range": {"min": 0.0, "max": 1.0},
+  "axes": [
+    {"index":1,"id":"empirical","meaning":"degree to which the claim depends on empirical observation"},
+    {"index":2,"id":"formal","meaning":"degree to which the claim depends on formal definitions, derivation, or proof"},
+    {"index":3,"id":"observational","meaning":"dependence on observational rather than intervention evidence"},
+    {"index":4,"id":"experimental","meaning":"dependence on controlled or intervention evidence"},
+    {"index":5,"id":"computational","meaning":"dependence on computation, simulation, or executable analysis"},
+    {"index":6,"id":"historical","meaning":"dependence on chronology, archival evidence, or past-state reconstruction"},
+    {"index":7,"id":"normative","meaning":"degree of ought, policy, ethical, or prescriptive content"},
+    {"index":8,"id":"interpretive","meaning":"degree of interpretive or hermeneutic judgement"},
+    {"index":9,"id":"causal","meaning":"strength of causal rather than associational claim"},
+    {"index":10,"id":"predictive","meaning":"degree of future-state or unseen-state prediction"},
+    {"index":11,"id":"descriptive","meaning":"degree of descriptive factual content"},
+    {"index":12,"id":"prescriptive","meaning":"degree of recommendation, instruction, or required action"},
+    {"index":13,"id":"individual_specific","meaning":"specificity to a named or individual case"},
+    {"index":14,"id":"population_level","meaning":"degree of population, aggregate, or group-level inference"},
+    {"index":15,"id":"jurisdiction_specific","meaning":"dependence on a legal or regulatory jurisdiction"},
+    {"index":16,"id":"temporally_sensitive","meaning":"likelihood that currentness materially changes correctness"},
+    {"index":17,"id":"uncertainty","meaning":"declared unresolved uncertainty"},
+    {"index":18,"id":"evidentiary_strength","meaning":"strength and directness of evidence supporting the claim"},
+    {"index":19,"id":"reproducibility","meaning":"degree to which evidence or analysis is reproducibly inspectable"},
+    {"index":20,"id":"source_authority","meaning":"authority of the source for the specific claim type"},
+    {"index":21,"id":"provenance_completeness","meaning":"completeness and resolvability of claim provenance"},
+    {"index":22,"id":"safety_criticality","meaning":"potential consequence of an incorrect or overstrong claim"},
+    {"index":23,"id":"terminology_rigidity","meaning":"need for field-specific term resolution"},
+    {"index":24,"id":"cross_domain_dependence","meaning":"dependence on translation between distinct domain modes"}
+  ],
+  "validation_principles": [
+    "coordinates_are_descriptors_not_facts",
+    "coordinates_are_not_source_authority",
+    "coordinates_do_not_prove_truth",
+    "geometry_may_reject_structurally_incompatible_claim_evidence_configurations",
+    "geometry_must_not_upgrade_epistemic_status",
+    "sparse_constraints_are_preferred_over_fake_precision"
+  ],
+  "hard_constraints": [
+    {
+      "id":"LEGAL_BINDING_AUTHORITY",
+      "when":{"mode":"LEGAL","claim_scope":"legal_rule","binding_claim":true},
+      "require":{"source_authority_min":0.9,"provenance_completeness_min":0.9,"jurisdiction_specific_min":0.5},
+      "policy_reference":"modes/source-policy.json#profiles.LEGAL",
+      "meaning":"a binding legal claim cannot be represented as strongly authoritative when its legal authority or provenance is weak"
+    },
+    {
+      "id":"MEDICAL_CLINICAL_GUIDANCE",
+      "when":{"mode":"MEDICAL","claim_scope":"clinical_guidance"},
+      "require":{"source_authority_min":0.8,"evidentiary_strength_min":0.7,"provenance_completeness_min":0.9},
+      "policy_reference":"modes/source-policy.json#profiles.MEDICAL.clinical",
+      "meaning":"clinical guidance cannot be structurally supported only by weak or preliminary evidence"
+    },
+    {
+      "id":"HIGH_SAFETY_LOW_EVIDENCE",
+      "when":{"safety_criticality_min":0.8,"evidentiary_strength_max":0.3},
+      "require":{"uncertainty_min":0.7},
+      "meaning":"high-consequence low-evidence claims must carry high uncertainty rather than confident presentation"
+    },
+    {
+      "id":"CROSS_DOMAIN_BRIDGE",
+      "when":{"cross_domain_dependence_min":0.5},
+      "require":{"declared_bridge":true},
+      "meaning":"material cross-domain dependence requires an explicit bridge"
+    }
+  ],
+  "consumer_rule": "if a vector violates a hard constraint, return MODE_VIOLATION or weaken the claim; never repair a violation by inventing stronger evidence"
+}
