@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mixed-register-empirical-experiment.schema.json",
+  "title": "QSOL-SUBSTRATE Phase 9 empirical experiment protocol",
+  "type": "object",
+  "required": ["$schema","type","schema_version","empirical_spec_version","artifact_class","canonical_truth_authority","research_questions","conditions","paired_variants","consumer_contract","retrieval","default_local_runner","cold_consumer_gate","interpretation"],
+  "properties": {
+    "$schema": {"const": "../../schema/mixed-register-empirical-experiment.schema.json"},
+    "type": {"const": "qsol-mixed-register-empirical-experiment"},
+    "schema_version": {"const": "1.0.0"},
+    "empirical_spec_version": {"const": "1.0.0"},
+    "artifact_class": {"const": "derived_evaluation_protocol"},
+    "canonical_truth_authority": {"const": false},
+    "research_questions": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}},
+    "conditions": {"const": ["micro","standard","full","vector","tool-enabled"]},
+    "paired_variants": {
+      "type": "object",
+      "required": ["guarded","ablated"],
+      "properties": {
+        "guarded": {"type": "string", "minLength": 1},
+        "ablated": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "consumer_contract": {
+      "type": "object",
+      "required": ["cold_start","prior_qsol_context_forbidden","oracle_not_visible_to_consumer","treatment_assignment_blinded","single_batch_per_condition_variant","claim_local_evidence_required","report_is_target_not_evidence","evidence_reference_violations_fail_gate"],
+      "properties": {
+        "cold_start": {"const": true},
+        "prior_qsol_context_forbidden": {"const": true},
+        "oracle_not_visible_to_consumer": {"const": true},
+        "treatment_assignment_blinded": {"const": true},
+        "single_batch_per_condition_variant": {"const": true},
+        "claim_local_evidence_required": {"const": true},
+        "report_is_target_not_evidence": {"const": true},
+        "evidence_reference_violations_fail_gate": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "retrieval": {
+      "type": "object",
+      "required": ["vector","tool-enabled"],
+      "properties": {
+        "vector": {"$ref": "#/$defs/retrievalMode"},
+        "tool-enabled": {"$ref": "#/$defs/retrievalMode"}
+      },
+      "additionalProperties": false
+    },
+    "default_local_runner": {
+      "type": "object",
+      "required": ["provider","model","temperature","seed","num_ctx","immutable_revision"],
+      "properties": {
+        "provider": {"const": "ollama-local"},
+        "model": {"type": "string", "pattern": "^[^:]+:.+$"},
+        "temperature": {"const": 0},
+        "seed": {"type": "integer"},
+        "num_ctx": {"type": "integer", "minimum": 1},
+        "immutable_revision": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "cold_consumer_gate": {
+      "type": "object",
+      "required": ["primary_status_accuracy_min","register_accuracy_min","evidence_fidelity_min","unsupported_assertion_rate_max","per_status_accuracy_min","satire_register_accuracy_min"],
+      "properties": {
+        "primary_status_accuracy_min": {"type": "number", "minimum": 0, "maximum": 1},
+        "register_accuracy_min": {"type": "number", "minimum": 0, "maximum": 1},
+        "evidence_fidelity_min": {"type": "number", "minimum": 0, "maximum": 1},
+        "unsupported_assertion_rate_max": {"type": "number", "minimum": 0, "maximum": 1},
+        "per_status_accuracy_min": {"type": "number", "minimum": 0, "maximum": 1},
+        "satire_register_accuracy_min": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "interpretation": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "retrievalMode": {
+      "type": "object",
+      "required": ["backend","top_k","query","provenance_closure"],
+      "properties": {
+        "backend": {"type": "string", "minLength": 1},
+        "top_k": {"type": "integer", "minimum": 1},
+        "query": {"const": "verbatim frozen claim text"},
+        "provenance_closure": {"const": true},
+        "note": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

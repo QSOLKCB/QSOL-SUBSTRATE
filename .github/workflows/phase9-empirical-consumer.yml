@@ -1,0 +1,123 @@
+name: Phase 9 Empirical Cold Consumer
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Ollama model tag to evaluate
+        required: false
+        default: qwen2.5:1.5b
+      num_ctx:
+        description: Ollama context length
+        required: false
+        default: '32768'
+  push:
+    branches: [agent/phase9-empirical-consumer]
+  pull_request:
+    paths:
+      - 'tools/mixed_register_empirical.py'
+      - 'tools/run_mixed_register_empirical.py'
+      - 'tests/test_phase9_empirical.py'
+      - 'empirical/mixed-register/**'
+      - 'docs/MIXED_REGISTER_EMPIRICAL.md'
+      - '.github/workflows/phase9-empirical-consumer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation dependencies
+        run: python -m pip install -r requirements-validation.txt
+      - name: Compile empirical runner
+        run: |
+          python -m py_compile tools/mixed_register_empirical.py
+          python -m py_compile tools/run_mixed_register_empirical.py
+      - name: Run empirical regression tests
+        run: python -m unittest tests.test_phase9_empirical
+      - name: Run Phase 9 regression suite
+        run: python -m unittest discover -s tests -p 'test_phase9*.py'
+
+  empirical:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MODEL: ${{ inputs.model || 'qwen2.5:1.5b' }}
+      NUM_CTX: ${{ inputs.num_ctx || '32768' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation dependencies
+        run: python -m pip install -r requirements-validation.txt
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          nohup ollama serve >/tmp/ollama.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/ollama.log
+          exit 1
+      - name: Pull local cold-consumer model
+        run: ollama pull "$MODEL"
+      - name: Run paired guarded and ablated experiment
+        run: |
+          python tools/run_mixed_register_empirical.py \
+            --model "$MODEL" \
+            --num-ctx "$NUM_CTX" \
+            --source-commit "$(git rev-parse HEAD)" \
+            --output dist/empirical/mixed-register
+      - name: Publish empirical summary
+        if: always()
+        run: |
+          if [ -f dist/empirical/mixed-register/summary.json ]; then
+            python - <<'PY'
+          import json, os
+          p = 'dist/empirical/mixed-register/summary.json'
+          data = json.load(open(p, encoding='utf-8'))
+          lines = [
+              '## Phase 9 empirical mixed-register run',
+              '',
+              f"Model: `{data['model']['model_id']}`",
+              f"Immutable revision: `{data['model']['immutable_model_revision']}`",
+              f"Cold-consumer demonstrated: **{data['cold_consumer_demonstrated']}**",
+              f"Passing guarded conditions: `{', '.join(data['passing_guarded_conditions']) or 'none'}`",
+              '',
+              '| Condition | Status Δ | Register Δ | Evidence Δ | Unsupported reduction | Cold gate |',
+              '|---|---:|---:|---:|---:|---:|',
+          ]
+          for row in data['rows']:
+              effect = row['guard_effect']
+              lines.append(
+                  f"| {row['condition']} | {effect['primary_status_accuracy_delta']} | "
+                  f"{effect['register_accuracy_delta']} | {effect['evidence_fidelity_delta']} | "
+                  f"{effect['unsupported_assertion_rate_reduction']} | {row['cold_consumer_gate']['passed']} |"
+              )
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as handle:
+              handle.write('\n'.join(lines) + '\n')
+          PY
+          else
+            echo 'Empirical runner did not produce a summary.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload empirical evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase9-mixed-register-empirical-${{ github.run_id }}
+          path: dist/empirical/mixed-register
+          if-no-files-found: warn
+          retention-days: 30
