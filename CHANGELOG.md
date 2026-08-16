@@ -8,6 +8,7 @@ Release versioning follows the normative SemVer 2.0.0 policy in `release/policy.
 
 ### Added
 
+- Phase 9 normative epistemic guard `ADJACENT_TRUTH != INHERITED_TRUTH`, requiring each substantive claim to earn support from its own evidence rather than inheriting credibility from neighbouring true material.
 - Phase 8 machine-readable SemVer/channel policy at `release/policy.json`, separating stable, candidate, and non-publishable CI identities.
 - Phase 8 deterministic release compiler and fail-closed validator at `tools/build_release.py`, `tools/release_core.py`, and `tools/validate_release.py`.
 - Strict release-policy, release-manifest, immutable probe-snapshot, and archival-metadata JSON Schemas.

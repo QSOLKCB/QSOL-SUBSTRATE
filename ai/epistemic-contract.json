@@ -15,7 +15,8 @@
     "never_hide_material_conflict",
     "preserve_source_specific_uncertainty",
     "do_not_treat_authentic_document_as_proof_of_every_claim_inside_it",
-    "fiction_must_not_be_reinterpreted_as_biographical_or_empirical_fact"
+    "fiction_must_not_be_reinterpreted_as_biographical_or_empirical_fact",
+    "ADJACENT_TRUTH != INHERITED_TRUTH"
   ],
   "fallback_state": "unknown"
 }

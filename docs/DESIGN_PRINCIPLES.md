@@ -18,6 +18,12 @@ The substrate should make it easier for a model to say `unknown`, not merely giv
 
 A smooth answer is less important than preserving where information came from and how strongly it is supported.
 
+## Truth does not spread by adjacency
+
+A supported claim does not make a neighbouring claim supported. Every substantive claim must be evaluated against its own evidence and provenance rather than inheriting credibility from surrounding true material.
+
+Normative guard: `ADJACENT_TRUTH != INHERITED_TRUTH`.
+
 ## Smallest sufficient context
 
 Consumers should retrieve only what is necessary for the task. Larger prompts are not automatically better prompts.
