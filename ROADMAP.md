@@ -515,7 +515,7 @@ Phase 9 is complete only when:
 - [x] CI mechanically rejects inconsistent claim-audit summary totals.
 - [x] CI rejects audits with missing, extra, or duplicate claim IDs relative to the frozen evaluation-bundle manifest.
 - [x] `MIXED-REGISTER/1` has a frozen deterministic corpus, expected claim-ID/answer set, oracle, scorer, scoring contract, manifest, and complete bundle fingerprint.
-- [x] Every evaluation run binds the exact complete `MIXED-REGISTER/1` bundle fingerprint and source substrate identity.
+- [x] Every evaluation run binds the exact complete `MIXED-REGISTER/1` bundle fingerprint and substrate identity.
 - [x] empirical comparisons require identical immutable model revisions across the compared conditions.
 - [x] `scoring_oracle` runs are mechanically excluded from empirical aggregates and performance comparisons.
 - [x] `ADJACENT_TRUTH != INHERITED_TRUTH` survives every relevant deterministic delivery projection.
@@ -526,10 +526,41 @@ Phase 9 is complete only when:
 
 Phase 9 deliberately does **not** expand the substrate into a complete biography. Better uncertainty handling is preferred over filling public omissions with additional personal data.
 
+## Phase 10 — Substrate Modes and Domain-Admissibility Geometry
+
+Add a public, vendor-neutral specialist-policy layer over the canonical substrate without turning domain policy into canonical facts.
+
+- [x] Add 19 top-level domain modes and 10 cross-cutting activity modes.
+- [x] Add explicit mode-resolution states and fail-closed ambiguity handling.
+- [x] Define `CLAIM_STRENGTH <= EVIDENCE_ENTITLEMENT`.
+- [x] Separate provenance class, publication state, epistemic status, authority class, and claim scope.
+- [x] Add preliminary/theoretical/proposed/speculative/unknown/hypothetical/counterfactual/fictional/satirical claim labels alongside stronger supported states.
+- [x] Define preprint and repository/DOI promotion guards.
+- [x] Require primary legal authority for binding Legal-mode claims.
+- [x] Separate Medical research evidence from normative clinical guidance.
+- [x] Add field-sensitive terminology namespaces.
+- [x] Add interpretable 24D validation geometry with sparse hard constraints.
+- [x] Add declared cross-domain bridges and non-equivalence contracts.
+- [x] Add schema, fail-closed validator, regression tests, and CI integration.
+- [x] Load the lightweight mode contract from the AI bootstrap while keeping detailed mode resources selective.
+
+Detailed implementation and deferred work are tracked in [`roadmap/substrate-modes.md`](roadmap/substrate-modes.md).
+
+### Deferred Phase 10 work
+
+- [ ] **DEFERRED:** Empirically calibrate 24D thresholds against frozen cross-model runs.
+- [ ] **DEFERRED:** Build `MODE-CONFUSION/1` and measure cross-mode contamination under multiple delivery conditions.
+- [ ] **DEFERRED:** Propagate mode policy into every tool-less, adapter, vector, and latent projection only after deterministic compatibility rules are specified.
+- [ ] **DEFERRED:** Add jurisdiction-specific Legal primary-authority resolvers.
+- [ ] **DEFERRED:** Add specialty-specific, freshness-aware Medical guideline/regulator bindings.
+- [ ] **DEFERRED:** Expand terminology ontologies, authoritative-source resolvers, conflict contracts, and justified bridge coverage by submode.
+- [ ] **DEFERRED:** Explore formal proofs of selected mode-separation invariants without confusing formal policy consistency with legal, clinical, or empirical truth.
+- [ ] **DEFERRED:** Compare sparse 24D constraints against simpler rule-only policies before adopting any learned classifier.
+
 The roadmap is intentionally incremental.
 
 A substrate should become more portable, more compact, and more useful without becoming less inspectable or less trustworthy.
 
 The canonical public substrate remains the source of truth.
 
-Everything else — prose bundles, vector indexes, adapters, soft prompts, KV caches, model-specific latent projections, probe/report artifacts, and consumer evaluations — is a reproducible projection or evaluation of that source.
+Everything else — prose bundles, vector indexes, adapters, soft prompts, KV caches, model-specific latent projections, probe/report artifacts, consumer evaluations, and substrate-mode policy — is a reproducible projection, policy, or evaluation of that source.
