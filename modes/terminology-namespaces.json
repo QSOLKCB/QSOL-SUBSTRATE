@@ -1,0 +1,27 @@
+{
+  "type": "qsol-substrate-terminology-namespace-policy",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_canonical_fact",
+  "resolution_rule": "a bare term that has materially different field meanings must be namespaced before it supports a substantive inference",
+  "mode_switch_rule": "re-resolve ambiguous terminology whenever the active domain mode changes",
+  "ambiguous_terms": [
+    {"term":"evidence","candidates":["LEGAL:evidence","MEDICAL:evidence","SCIENCE:evidence","HISTORY:evidence"]},
+    {"term":"proof","candidates":["FORMAL:proof","LEGAL:proof","EVERYDAY:proof"]},
+    {"term":"significance","candidates":["FORMAL:statistical_significance","MEDICAL:clinical_significance","EVERYDAY:significance"]},
+    {"term":"causation","candidates":["LEGAL:causation","SCIENCE:causation","MEDICAL:causation","SOCIAL_SCIENCE:causation"]},
+    {"term":"diagnosis","candidates":["MEDICAL:diagnosis","COMPUTING:diagnosis","ENGINEERING:diagnosis"]},
+    {"term":"theory","candidates":["SCIENCE:theory","FORMAL:theory","PHILOSOPHY:theory","EVERYDAY:theory"]},
+    {"term":"model","candidates":["SCIENCE:model","FORMAL:model","COMPUTING:model","ECONOMICS:model","EVERYDAY:model"]},
+    {"term":"test","candidates":["MEDICAL:test","SCIENCE:test","ENGINEERING:test","COMPUTING:test","FORMAL:test"]},
+    {"term":"risk","candidates":["MEDICAL:risk","SECURITY:risk","BUSINESS:risk","ECONOMICS:risk","ENGINEERING:risk"]},
+    {"term":"normal","candidates":["MEDICAL:normal","FORMAL:normal","EVERYDAY:normal"]},
+    {"term":"liability","candidates":["LEGAL:liability","BUSINESS:liability"]},
+    {"term":"validity","candidates":["FORMAL:validity","SCIENCE:validity","LEGAL:validity","SOCIAL_SCIENCE:validity"]}
+  ],
+  "rules": [
+    "namespace_resolution_does_not_itself_validate_a_claim",
+    "namespace_resolution_does_not_create_a_bridge",
+    "unresolved_ambiguity_must_not_be_hidden",
+    "consumer_may_request_clarification_or_use_MODE_UNRESOLVED_when_resolution_is_material"
+  ]
+}
