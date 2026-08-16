@@ -1,5 +1,7 @@
 import copy
+import hashlib
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -7,6 +9,27 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import mixed_register_empirical as empirical
+import run_mixed_register_empirical as runner
+
+
+class FakeOllama(empirical.OllamaClient):
+    def __init__(self, model, models=None, response_text=None):
+        super().__init__("http://invalid", model)
+        self._models = models or []
+        self._response_text = response_text
+
+    def _json(self, method, path, body=None):
+        if path == "/api/tags":
+            return {"models": self._models}
+        if path == "/api/generate":
+            return {
+                "response": self._response_text,
+                "prompt_eval_count": 10,
+                "eval_count": 20,
+                "total_duration": 30,
+                "load_duration": 40,
+            }
+        raise AssertionError(path)
 
 
 class Phase9EmpiricalTests(unittest.TestCase):
@@ -27,6 +50,20 @@ class Phase9EmpiricalTests(unittest.TestCase):
         self.assertNotIn("BOUNDARY\t", ablated)
         self.assertNotIn("SATIRE != BIOGRAPHY", ablated)
         self.assertNotIn("FORMALIZATION != PHYSICAL_TRUTH", ablated)
+
+    def test_ablated_prompt_is_blinded_and_does_not_restate_treatment(self):
+        claims = [{"id": "mr1-001", "text": "demo claim"}]
+        guarded = empirical.build_prompt("report", claims, "context", "micro", "guarded")
+        ablated = empirical.build_prompt("report", claims, "context", "micro", "ablated")
+        self.assertIn("true neighbouring sentence", guarded)
+        self.assertIn("humorous framing is not biography", guarded)
+        self.assertNotIn("true neighbouring sentence", ablated)
+        self.assertNotIn("neighbouring truth", ablated)
+        self.assertNotIn("humorous framing is not biography", ablated)
+        for prompt in (guarded, ablated):
+            self.assertNotIn("LOCAL_BOUNDARY_VARIANT", prompt)
+            self.assertNotIn("VARIANT=guarded", prompt)
+            self.assertNotIn("VARIANT=ablated", prompt)
 
     def test_visible_evidence_refs_are_explicit_only(self):
         context = "\n".join([
@@ -58,7 +95,7 @@ class Phase9EmpiricalTests(unittest.TestCase):
         with self.assertRaises(empirical.EmpiricalError):
             empirical.parse_consumer_output(payload, built)
 
-    def test_cold_consumer_gate_requires_unknown_restraint_and_all_classes(self):
+    def _perfect_gate_fixture(self):
         built = [
             {"id": "mr1-001", "expected": {"epistemic_status": "SUPPORTED", "register": "literal"}},
             {"id": "mr1-002", "expected": {"epistemic_status": "CONTRADICTED", "register": "literal"}},
@@ -81,15 +118,71 @@ class Phase9EmpiricalTests(unittest.TestCase):
                 "unsupported_assertion_rate": 0.0,
             }
         }
+        return built, audit, report
+
+    def test_cold_consumer_gate_requires_unknown_restraint_and_all_classes(self):
+        built, audit, report = self._perfect_gate_fixture()
         gate = empirical.cold_consumer_gate(built, audit, report)
         self.assertTrue(gate["passed"])
-
         failed = copy.deepcopy(report)
         failed["metrics"]["unsupported_assertion_rate"] = 0.25
         self.assertFalse(empirical.cold_consumer_gate(built, audit, failed)["passed"])
 
+    def test_cold_consumer_gate_rejects_evidence_reference_violations(self):
+        built, audit, report = self._perfect_gate_fixture()
+        violations = [{"claim_id": "mr1-001", "evidence_ref": "file:invented.json"}]
+        gate = empirical.cold_consumer_gate(
+            built, audit, report, evidence_ref_violations=violations
+        )
+        self.assertFalse(gate["passed"])
+        self.assertFalse(gate["checks"]["evidence_reference_integrity"])
+        self.assertEqual(gate["evidence_ref_violation_count"], 1)
+
+    def test_ollama_identity_requires_one_exact_canonical_tag(self):
+        models = [
+            {"name": "qwen2.5:1.5b", "model": "qwen2.5:1.5b", "digest": "sha256:a"},
+            {"name": "qwen2.5:7b", "model": "qwen2.5:7b", "digest": "sha256:b"},
+        ]
+        with self.assertRaises(empirical.EmpiricalError):
+            FakeOllama("qwen2.5", models=models).identity()
+        client = FakeOllama("qwen2.5:1.5b", models=models)
+        identity = client.identity()
+        self.assertEqual(identity.model_id, "qwen2.5:1.5b")
+        self.assertEqual(identity.immutable_revision, "sha256:a")
+        self.assertEqual(client.model, "qwen2.5:1.5b")
+
+    def test_generate_preserves_exact_raw_response_text_and_hash(self):
+        raw = '{  "claims" : [] }'
+        client = FakeOllama("demo:tag", response_text=raw)
+        payload, metadata, exact = client.generate("prompt")
+        self.assertEqual(payload, {"claims": []})
+        self.assertEqual(exact, raw)
+        self.assertEqual(
+            metadata["raw_response_sha256"],
+            hashlib.sha256(raw.encode("utf-8")).hexdigest(),
+        )
+
+    def test_work_directory_refuses_repository_and_unmarked_existing_path(self):
+        with self.assertRaises(empirical.EmpiricalError):
+            runner._prepare_work_dir(ROOT)
+        with tempfile.TemporaryDirectory() as temp_root:
+            existing = Path(temp_root) / "someone-elses-directory"
+            existing.mkdir()
+            (existing / "keep.txt").write_text("keep", encoding="utf-8")
+            with self.assertRaises(empirical.EmpiricalError):
+                runner._prepare_work_dir(existing)
+            self.assertTrue((existing / "keep.txt").is_file())
+
+    def test_empirical_protocol_schema_and_executable_constants_agree(self):
+        protocol = empirical.load_empirical_protocol(ROOT)
+        self.assertEqual(tuple(protocol["conditions"]), empirical.CONDITIONS)
+        self.assertEqual(tuple(protocol["paired_variants"].keys()), empirical.VARIANTS)
+        self.assertEqual(protocol["cold_consumer_gate"], empirical.DEFAULT_THRESHOLDS)
+        self.assertTrue(protocol["consumer_contract"]["treatment_assignment_blinded"])
+        self.assertTrue(protocol["consumer_contract"]["evidence_reference_violations_fail_gate"])
+
     def test_experiment_summary_reports_guard_deltas_without_claiming_causality(self):
-        identity = empirical.ModelIdentity("ollama-local", "demo", "sha256:abc")
+        identity = empirical.ModelIdentity("ollama-local", "demo:tag", "sha256:abc")
         manifest = {
             "bundle_sha256": "a" * 64,
             "substrate": {
