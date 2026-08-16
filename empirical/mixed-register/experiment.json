@@ -1,4 +1,5 @@
 {
+  "$schema": "../../schema/mixed-register-empirical-experiment.schema.json",
   "type": "qsol-mixed-register-empirical-experiment",
   "schema_version": "1.0.0",
   "empirical_spec_version": "1.0.0",
@@ -8,24 +9,20 @@
     "Do local nonclaims and ADJACENT_TRUTH != INHERITED_TRUTH improve mixed-register classification?",
     "Can a cold consumer classify supported, contradicted, unavailable/unverified, and satirical claims without using plausibility or neighbouring truth as provenance?"
   ],
-  "conditions": [
-    "micro",
-    "standard",
-    "full",
-    "vector",
-    "tool-enabled"
-  ],
+  "conditions": ["micro", "standard", "full", "vector", "tool-enabled"],
   "paired_variants": {
-    "guarded": "Normal delivery with local BOUNDARY nonclaims and the adjacency guard retained.",
-    "ablated": "Same delivery with only local BOUNDARY nonclaims and the tested adjacency/formalization/satire boundary lines removed; general UNKNOWN != FALSE semantics remain."
+    "guarded": "Normal delivery with local BOUNDARY nonclaims and the adjacency/satire guard treatment retained.",
+    "ablated": "Same delivery with only local BOUNDARY nonclaims and the tested adjacency/formalization/satire boundary treatment removed; general UNKNOWN != FALSE semantics remain."
   },
   "consumer_contract": {
     "cold_start": true,
     "prior_qsol_context_forbidden": true,
     "oracle_not_visible_to_consumer": true,
+    "treatment_assignment_blinded": true,
     "single_batch_per_condition_variant": true,
     "claim_local_evidence_required": true,
-    "report_is_target_not_evidence": true
+    "report_is_target_not_evidence": true,
+    "evidence_reference_violations_fail_gate": true
   },
   "retrieval": {
     "vector": {
@@ -48,7 +45,7 @@
     "temperature": 0,
     "seed": 18437,
     "num_ctx": 32768,
-    "immutable_revision": "resolved from the local Ollama model digest at run time"
+    "immutable_revision": "resolved from the exact installed Ollama tag digest at run time"
   },
   "cold_consumer_gate": {
     "primary_status_accuracy_min": 0.9,
@@ -58,5 +55,5 @@
     "per_status_accuracy_min": 0.8,
     "satire_register_accuracy_min": 0.8
   },
-  "interpretation": "Paired guarded/ablated measurements are empirical derived evidence. A positive delta is descriptive for the exact immutable model/run; it is not universal or causal proof without replication."
+  "interpretation": "Paired blinded guarded/ablated measurements are empirical derived evidence. A positive delta is descriptive for the exact immutable model/run; it is not universal or causal proof without replication."
 }
