@@ -1,0 +1,26 @@
+{
+  "type": "qsol-mode-freshness-policy",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_current_factual_state",
+  "freshness_classes": {
+    "snapshot_sufficient_unless_currentness_requested": {"rule": "snapshot evidence may answer stable historical/definitional questions; current-state claims require later evidence when material"},
+    "version_bound": {"rule": "resolve an exact version, edition, release, standard, instrument, dataset, or model revision before asserting version-sensitive behavior"},
+    "effective_date_bound": {"rule": "resolve effective/in-force/decision dates before asserting temporally scoped authority"},
+    "live_when_material": {"rule": "when the answer depends on current guidance, threat state, policy, implementation, or regulator status, live primary-source resolution is required"}
+  },
+  "profiles": {
+    "MEDICAL": {"default": "live_when_material", "clinical_guidance": "live_when_material", "research_history": "snapshot_sufficient_unless_currentness_requested", "required_metadata": ["version_or_effective_date", "applicable_scope", "retrieved_at"]},
+    "LEGAL": {"default": "effective_date_bound", "binding_legal_rule": "effective_date_bound", "current_law": "live_when_material", "required_metadata": ["jurisdiction", "authority_identifier", "effective_or_decision_date", "retrieved_at"]},
+    "ENGINEERING": {"default": "version_bound", "standards_or_codes": "version_bound", "certification_or_compliance": "live_when_material", "required_metadata": ["standard_or_specification_version", "status"]},
+    "SECURITY": {"default": "live_when_material", "vulnerability_or_advisory": "live_when_material", "required_metadata": ["product_version", "advisory_revision_or_identifier", "retrieved_at"]},
+    "COMPUTING": {"default": "version_bound", "api_or_library_behavior": "version_bound", "current_service_behavior": "live_when_material", "required_metadata": ["product_or_library_version"]},
+    "GOVERNANCE": {"default": "live_when_material", "policy_or_officeholder_state": "live_when_material", "historical_policy": "effective_date_bound", "required_metadata": ["jurisdiction_or_institution", "effective_or_event_date"]},
+    "ENVIRONMENT": {"default": "version_bound", "observational_dataset": "version_bound", "forecast_or_alert": "live_when_material", "required_metadata": ["dataset_or_model_version", "observation_or_issue_time"]}
+  },
+  "rules": [
+    "freshness is claim-relative, not a universal time-to-live",
+    "stale does not mean false; it means insufficient for an explicitly current claim",
+    "a newer secondary source does not automatically outrank an older still-controlling primary authority",
+    "when version or temporal scope cannot be resolved, weaken the claim or return MODE_UNRESOLVED"
+  ]
+}

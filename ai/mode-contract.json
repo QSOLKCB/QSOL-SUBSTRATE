@@ -9,54 +9,24 @@
     "activity_modes": "modes/activities.json",
     "source_policy": "modes/source-policy.json",
     "terminology_namespaces": "modes/terminology-namespaces.json",
+    "terminology_ontology": "modes/terminology-ontology.json",
     "mode_geometry": "geometry/mode-space-v1.json",
     "bridges": "bridges/index.json",
+    "legal_jurisdictions": "modes/legal-jurisdictions.json",
+    "medical_specialties": "modes/medical-specialties.json",
+    "authority_resolvers": "modes/authority-resolvers.json",
+    "freshness_policy": "modes/freshness-policy.json",
+    "conflict_policy": "modes/conflict-policy.json",
+    "mode_delivery": "ai/mode-delivery.json",
+    "mode_confusion_probe": "probe/mode-confusion-1.jsonl",
+    "formal_policy_witness": "formal/mode-separation.json",
     "human_documentation": "docs/SUBSTRATE_MODES.md"
   },
-  "resolution": {
-    "default_rule": "resolve the smallest sufficient domain mode set for the current task",
-    "ambiguity_rule": "if a task materially spans domains, declare primary_mode, secondary_modes, and every required bridge; otherwise return MODE_UNRESOLVED rather than guessing",
-    "mode_statuses": ["MODE_OK", "MODE_AMBIGUOUS", "MODE_CROSSOVER", "MODE_VIOLATION", "MODE_UNRESOLVED"],
-    "no_authority_escalation": true,
-    "no_permission_escalation": true
-  },
-  "terminology": {
-    "rule": "ambiguous field-sensitive terms must resolve through an explicit namespace before they justify a substantive cross-domain inference",
-    "bare_term_when_ambiguous": "forbidden",
-    "mode_switch_requires_re_resolution": true
-  },
-  "cross_mode": {
-    "undeclared_cross_mode_inference": "prohibited",
-    "bridge_required_for_material_cross_domain_claim": true,
-    "bridge_is_translation_not_evidence": true
-  },
-  "source_policy": {
-    "source_identity_is_independent_of_claim_truth": true,
-    "peer_review_does_not_imply_established": true,
-    "repository_doi_proves_artifact_identity_not_claim_validity": true,
-    "preprints_must_retain_preprint_status": true,
-    "claim_maturity_is_separate_from_register": true,
-    "claim_maturity_is_separate_from_scenario_status": true,
-    "profile_preferences_are_axis_qualified": true,
-    "legal_binding_claims_require_primary_legal_authority": true,
-    "medical_preprints_are_non_normative_for_clinical_guidance": true
-  },
-  "geometry": {
-    "dimensions": 24,
-    "purpose": "detect structurally incompatible mode, evidence, authority, and claim configurations",
-    "not_a_truth_engine": true,
-    "coordinates_are_not_evidence": true
-  },
-  "rules": [
-    "a_mode_does_not_confer_authority",
-    "a_mode_does_not_override_provenance",
-    "a_mode_does_not_weaken_uncertainty_requirements",
-    "a_mode_does_not_imply_professional_advice",
-    "terms_must_resolve_inside_an_explicit_namespace_when_ambiguous",
-    "cross_mode_claims_must_declare_their_bridge",
-    "undefined_cross_mode_inference_is_prohibited",
-    "geometry_is_validation_machinery_not_evidence_of_truth",
-    "claim_maturity_may_be_weakened_when_evidence_is_insufficient_but_must_not_be_strengthened_without_entitlement",
-    "register_and_scenario_annotations_must_not_replace_claim_local_evidence_classification"
-  ]
+  "resolution": {"default_rule":"resolve the smallest sufficient domain mode set for the current task","ambiguity_rule":"if a task materially spans domains, declare primary_mode, secondary_modes, and every required bridge; otherwise return MODE_UNRESOLVED rather than guessing","mode_statuses":["MODE_OK","MODE_AMBIGUOUS","MODE_CROSSOVER","MODE_VIOLATION","MODE_UNRESOLVED"],"no_authority_escalation":true,"no_permission_escalation":true},
+  "terminology": {"rule":"ambiguous field-sensitive terms must resolve through an explicit namespace before they justify a substantive cross-domain inference","bare_term_when_ambiguous":"forbidden","mode_switch_requires_re_resolution":true,"field_ontology":"modes/terminology-ontology.json"},
+  "cross_mode": {"undeclared_cross_mode_inference":"prohibited","bridge_required_for_material_cross_domain_claim":true,"bridge_is_translation_not_evidence":true},
+  "source_policy": {"source_identity_is_independent_of_claim_truth":true,"peer_review_does_not_imply_established":true,"repository_doi_proves_artifact_identity_not_claim_validity":true,"preprints_must_retain_preprint_status":true,"claim_maturity_is_separate_from_register":true,"claim_maturity_is_separate_from_scenario_status":true,"profile_preferences_are_axis_qualified":true,"legal_binding_claims_require_primary_legal_authority":true,"medical_preprints_are_non_normative_for_clinical_guidance":true,"legal_jurisdiction_resolution_required_when_material":true,"medical_currentness_resolution_required_for_current_guidance":true,"freshness_is_claim_relative":true},
+  "geometry": {"dimensions":24,"purpose":"detect structurally incompatible mode, evidence, authority, and claim configurations","not_a_truth_engine":true,"coordinates_are_not_evidence":true,"calibration":{"suite":"MODE-CONFUSION/1","contract":"dist/modes/calibration-contract.json","empirical_runs_required_for_threshold_claims":true,"automatic_threshold_mutation":false}},
+  "delivery": {"policy_version":"QSOL-MODE-POLICY/1","contract":"ai/mode-delivery.json","policy_fingerprint_required_for_empirical_comparison":true,"mutable_authority_and_freshness_facts_remain_textual":true},
+  "rules": ["a_mode_does_not_confer_authority","a_mode_does_not_override_provenance","a_mode_does_not_weaken_uncertainty_requirements","a_mode_does_not_imply_professional_advice","terms_must_resolve_inside_an_explicit_namespace_when_ambiguous","cross_mode_claims_must_declare_their_bridge","undefined_cross_mode_inference_is_prohibited","geometry_is_validation_machinery_not_evidence_of_truth","claim_maturity_may_be_weakened_when_evidence_is_insufficient_but_must_not_be_strengthened_without_entitlement","register_and_scenario_annotations_must_not_replace_claim_local_evidence_classification","unresolved_primary_authority_or_currentness_must_fail_closed_in_high_stakes_modes","conflict_resolution_must_not_invent_a_compromise_authority","empirical_calibration_must_bind_exact_model_revision_delivery_condition_and_mode_policy_fingerprint"]
 }

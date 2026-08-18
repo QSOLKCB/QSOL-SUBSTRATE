@@ -1,0 +1,27 @@
+{
+  "type": "qsol-authoritative-source-resolver-registry",
+  "schema_version": "1.0.0",
+  "classification": "resolver_policy_not_source_authority_itself",
+  "resolver_contract": {
+    "required_output_fields": ["resolver_id", "authority_class", "publisher_or_issuing_body", "jurisdiction_or_scope", "canonical_identifier_or_version", "effective_or_decision_date", "retrieved_at", "source_locator", "content_sha256_or_equivalent_integrity_identity"],
+    "must_fail_closed_on": ["unresolved_publisher_identity", "unresolved_jurisdiction_or_scope", "missing_version_when_version_material", "missing_effective_or_decision_date_when_temporally_material", "conflicting_primary_authority_without_conflict_record"],
+    "resolver_does_not_entitle_claim_truth": true
+  },
+  "resolvers": [
+    {"id":"resolver:au-commonwealth-legislation","domain":"LEGAL","authority_class":"primary_legal_authority","jurisdiction":"AU-COMMONWEALTH","source_kind":"official_legislation_register","accepted_document_states":["in_force","as_made","historical"],"binding_claim_requires_state":"in_force_or_explicit_historical_scope"},
+    {"id":"resolver:au-commonwealth-case-law","domain":"LEGAL","authority_class":"primary_legal_authority","jurisdiction":"AU-COMMONWEALTH","source_kind":"official_or_court_authenticated_judgment","binding_claim_requires":["court_identity","decision_identifier","decision_date","jurisdiction"]},
+    {"id":"resolver:au-commonwealth-regulator","domain":"LEGAL","authority_class":"official","jurisdiction":"AU-COMMONWEALTH","source_kind":"official_regulator_instrument_or_notice","binding_status_must_be_resolved_separately":true},
+    {"id":"resolver:au-sa-legislation","domain":"LEGAL","authority_class":"primary_legal_authority","jurisdiction":"AU-SA","source_kind":"official_legislation_register","accepted_document_states":["in_force","as_made","historical"],"binding_claim_requires_state":"in_force_or_explicit_historical_scope"},
+    {"id":"resolver:au-sa-case-law","domain":"LEGAL","authority_class":"primary_legal_authority","jurisdiction":"AU-SA","source_kind":"official_or_court_authenticated_judgment","binding_claim_requires":["court_identity","decision_identifier","decision_date","jurisdiction"]},
+    {"id":"resolver:au-sa-regulator","domain":"LEGAL","authority_class":"official","jurisdiction":"AU-SA","source_kind":"official_regulator_instrument_or_notice","binding_status_must_be_resolved_separately":true},
+    {"id":"resolver:medical-regulator","domain":"MEDICAL","authority_class":"regulator","source_kind":"official_health_or_medicines_regulator","currentness":"live_or_versioned_primary_source"},
+    {"id":"resolver:clinical-guideline","domain":"MEDICAL","authority_class":"current_clinical_guideline","source_kind":"official_or_recognized_guideline_issuer","currentness":"version_effective_date_and_applicable_scope_required"},
+    {"id":"resolver:systematic-evidence","domain":"MEDICAL","authority_class":"systematic_evidence","source_kind":"systematic_review_or_evidence_synthesis","cannot_override_current_regulator_or_guideline_without_explicit_conflict_handling":true},
+    {"id":"resolver:public-health-authority","domain":"MEDICAL","authority_class":"official","source_kind":"official_public_health_authority","currentness":"live_when_material"},
+    {"id":"resolver:standards-body","domain":"ENGINEERING","authority_class":"official","source_kind":"official_standard_or_specification","version_and_status_required":true},
+    {"id":"resolver:security-advisory","domain":"SECURITY","authority_class":"official","source_kind":"vendor_or_coordinating_authority_security_advisory","version_product_scope_and_revision_required":true},
+    {"id":"resolver:computing-documentation","domain":"COMPUTING","authority_class":"official","source_kind":"first_party_versioned_documentation","version_or_release_required_when_material":true},
+    {"id":"resolver:official-statistics","domain":"GOVERNANCE","authority_class":"official","source_kind":"official_statistical_agency_dataset_or_release","dataset_release_period_and_revision_required":true},
+    {"id":"resolver:primary-dataset","domain":"SCIENCE","authority_class":"official","source_kind":"first_party_or_canonical_primary_dataset","dataset_version_and_provenance_required":true}
+  ]
+}

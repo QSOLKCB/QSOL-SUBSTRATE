@@ -30,22 +30,39 @@ Substrate Modes extend QSOL-SUBSTRATE with a public, vendor-neutral policy layer
 - [x] Load the lightweight mode contract from `ai/bootstrap.json` while leaving detailed mode resources selective/on-demand.
 - [x] Extend the canonical epistemic contract with claim maturity states and DOI/preprint/peer-review promotion guards.
 
-## Deferred — requires additional evidence, domain maintenance, or empirical evaluation
+## Completed deferred work — QSOL-MODE-POLICY/1
 
-- [ ] **DEFERRED:** Calibrate 24D thresholds empirically against frozen cross-model evaluation runs. The current thresholds are conservative structural guards, not empirically fitted performance claims.
-- [ ] **DEFERRED:** Build a deterministic `MODE-CONFUSION/1` probe corpus measuring accidental cross-mode terminology transfer, bridge omission, authority escalation, and claim-strength inflation.
-- [ ] **DEFERRED:** Measure mode-boundary performance across MICRO, STANDARD, FULL, vector-selected, latent-prefix, hybrid, and tool-enabled delivery conditions.
-- [ ] **DEFERRED:** Propagate mode policy into every generated tool-less capsule and adapter only after deterministic size/compatibility rules are specified and regression-tested.
-- [ ] **DEFERRED:** Define jurisdiction-specific Legal subprofiles and primary-authority resolvers for individual jurisdictions. Do not ship generic pseudo-jurisdictional rules as if they were binding law.
-- [ ] **DEFERRED:** Define specialty-specific Medical clinical profiles and current guideline/regulator bindings. These require continuous freshness handling and must not be frozen as timeless clinical truth.
-- [ ] **DEFERRED:** Define formal update/freshness policies for standards-heavy Engineering, Security, Computing, Governance, and Environment submodes.
-- [ ] **DEFERRED:** Expand the bridge registry only where a concrete category-error contract is justified; do not auto-generate all pairwise mode combinations.
-- [ ] **DEFERRED:** Add comprehensive field-level terminology ontologies for each submode after collision and maintenance policy is defined.
-- [ ] **DEFERRED:** Add authoritative source resolvers for legislation, case law, regulators, clinical guidelines, standards bodies, official statistical agencies, and primary datasets.
-- [ ] **DEFERRED:** Add conflict-resolution contracts for cases where multiple primary/official authorities disagree or where jurisdiction/version/date changes the answer.
-- [ ] **DEFERRED:** Explore machine-checkable/formal proofs of selected mode-separation invariants. A future Lean 4 formalization may prove internal policy properties but must retain `FORMALIZATION != PHYSICAL_OR_LEGAL_OR_CLINICAL_TRUTH`.
-- [ ] **DEFERRED:** Evaluate whether sparse 24D constraints outperform simpler rule-only policies before adding any learned or continuous classifier.
-- [ ] **DEFERRED:** Add mode-policy fingerprints and compatibility identity to release manifests after the policy stabilizes enough to become a versioned derived artifact surface.
+The former deferred list is now implemented as a versioned **derived policy/evaluation surface**. A checked item means the deterministic contract, resolver, runner, validator, or release binding exists. It does not fabricate empirical model results or convert policy into external truth.
+
+- [x] Implement an empirical 24D calibration contract tied to frozen source commit, canonical substrate SHA-256, mode-policy SHA-256, exact model revision, and all delivery conditions. `tools/calibrate_mode_geometry.py` rejects scoring-oracle reports and never mutates thresholds automatically.
+- [x] Build deterministic `MODE-CONFUSION/1` with 30 cases covering terminology transfer, bridge omission, authority escalation, jurisdiction/scope confusion, currentness, claim-strength inflation, DOI/peer-review promotion, high-safety/low-evidence uncertainty, register loss, and unresolved authority conflict.
+- [x] Add scoring, condition comparison, and frozen cross-model calibration tooling for MICRO, STANDARD, FULL, vector-selected, latent-prefix, hybrid, tool-enabled, and naked conditions.
+- [x] Propagate `QSOL-MODE-POLICY/1` through generated adapters and deterministic mode-bound delivery surfaces. Adapters embed `ai/mode-delivery.json`; `dist/mode-delivery/` supplies token-budgeted mode-aware tool-less capsules, vector retrieval prefixes, latent prefixes, and hybrid prefixes.
+- [x] Define jurisdiction-specific Legal profiles and primary-authority resolver contracts for `AU-COMMONWEALTH` and `AU-SA`, with fail-closed jurisdiction/scope/time handling.
+- [x] Define specialty-specific Medical policy profiles for general clinical medicine, emergency medicine, cardiology, oncology, psychiatry, pharmacology/medicines, and public health, with explicit current guideline/regulator resolution requirements.
+- [x] Define claim-relative update/freshness policies for Medical, Legal, Engineering, Security, Computing, Governance, and Environment modes.
+- [x] Expand the bridge registry only with concrete non-equivalence contracts, including Engineering→Legal, Security→Legal, Computing→Governance, and Medical→Governance.
+- [x] Add a field-level terminology ontology for the highest-risk cross-domain collisions while retaining explicit namespace resolution.
+- [x] Add authoritative-source resolver contracts for legislation, case law, regulators, clinical guidelines, standards bodies, security advisories, versioned computing documentation, official statistics, and primary datasets.
+- [x] Add conflict-resolution contracts that partition sources by domain, jurisdiction/scope, authority, version, and time and preserve unresolved co-primary conflicts.
+- [x] Add machine-checkable finite policy witnesses for claim-strength monotonicity, bridge non-authority, geometry non-evidentiary behavior, high-stakes fail-closed behavior, and conflict preservation. These prove internal policy properties only.
+- [x] Add a deterministic sparse-24D versus rule-only structural benchmark before any learned classifier. The benchmark is mechanically labelled non-empirical; cross-model superiority still requires actual frozen consumer runs.
+- [x] Add `mode_policy_sha256`, policy version, `MODE-CONFUSION/1` identity, and deterministic mode-delivery binding to the release bill of materials.
+
+See [`docs/MODE_POLICY_V1.md`](../docs/MODE_POLICY_V1.md) for the executable contract and the empirical/non-empirical boundary.
+
+## Empirical completion semantics
+
+The implementation no longer has deferred **code** work in this Phase 10 list. Empirical claims remain run artifacts rather than repository checkboxes.
+
+The following statements require real frozen consumer reports before they may be asserted:
+
+- that one numeric 24D threshold is better calibrated than another;
+- that sparse 24D constraints outperform rule-only policy on a particular model population;
+- that one delivery condition improves a specific model;
+- that a resolver has identified currently controlling legal authority or current clinical guidance.
+
+The repository supplies the deterministic machinery to collect and compare that evidence. It does not substitute an oracle self-test for it.
 
 ## Exit principle
 

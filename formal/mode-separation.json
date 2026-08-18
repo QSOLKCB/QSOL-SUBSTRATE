@@ -1,0 +1,23 @@
+{
+  "type": "qsol-mode-separation-formal-witness",
+  "schema_version": "1.0.0",
+  "classification": "machine_checkable_policy_witness_not_external_truth",
+  "formalization_boundary": "FORMALIZATION != PHYSICAL_OR_LEGAL_OR_CLINICAL_TRUTH",
+  "finite_domains": {
+    "claim_strength": ["UNKNOWN","SPECULATIVE","PROPOSED","THEORETICAL","PRELIMINARY","CONTESTED","SUPPORTED","CONSENSUS","ESTABLISHED"],
+    "evidence_entitlement": ["UNKNOWN","SPECULATIVE","PROPOSED","THEORETICAL","PRELIMINARY","CONTESTED","SUPPORTED","CONSENSUS","ESTABLISHED"],
+    "mode_status": ["MODE_OK","MODE_AMBIGUOUS","MODE_CROSSOVER","MODE_VIOLATION","MODE_UNRESOLVED"]
+  },
+  "invariants": [
+    {"id":"CLAIM_STRENGTH_MONOTONICITY","statement":"accepted_claim_strength_rank <= evidence_entitlement_rank","witness_method":"exhaustive_finite_enumeration"},
+    {"id":"BRIDGE_NON_AUTHORITY","statement":"declaring a bridge cannot increase source_authority or evidence_entitlement","witness_method":"state_transition_noninterference"},
+    {"id":"GEOMETRY_NON_EVIDENTIARY","statement":"changing geometry coordinates alone cannot increase evidence_entitlement","witness_method":"state_transition_noninterference"},
+    {"id":"UNRESOLVED_HIGH_STAKES_FAIL_CLOSED","statement":"an unresolved material jurisdiction or unresolved current clinical-guidance source cannot produce MODE_OK for a binding legal rule or normative clinical-guidance claim","witness_method":"exhaustive_guard_table"},
+    {"id":"CONFLICT_PRESERVATION","statement":"uncontrolled co-primary conflict cannot be transformed into a single stronger claim by conflict resolution","witness_method":"exhaustive_guard_table"}
+  ],
+  "nonclaims": [
+    "These witnesses establish only internal consistency properties of a finite policy model.",
+    "They do not establish that any external law, clinical recommendation, physical theory, or empirical result is correct.",
+    "A future Lean 4 formalization may strengthen machine checking without changing this boundary."
+  ]
+}

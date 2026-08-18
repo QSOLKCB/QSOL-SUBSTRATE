@@ -18,13 +18,11 @@
     {"id":"PHILOSOPHY_TO_SCIENCE","from":"PHILOSOPHY","to":"SCIENCE","non_equivalences":["conceptual_argument != empirical_result","epistemic_possibility != measured_probability","philosophical_model != scientific_validation"]},
     {"id":"ARTS_MEDIA_TO_HISTORY","from":"ARTS_MEDIA","to":"HISTORY","non_equivalences":["dramatisation != historical_record","satire != biography","adaptation != primary_source","critical_interpretation != event_fact"]},
     {"id":"ENVIRONMENT_TO_GOVERNANCE","from":"ENVIRONMENT","to":"GOVERNANCE","non_equivalences":["environmental_projection != enacted_policy","risk_assessment != legal_requirement","scientific_scenario != political_decision"]},
-    {"id":"ENVIRONMENT_TO_ECONOMICS","from":"ENVIRONMENT","to":"ECONOMICS","non_equivalences":["physical_impact != monetary_valuation","scenario != market_outcome","environmental_cost != agreed_price"]}
+    {"id":"ENVIRONMENT_TO_ECONOMICS","from":"ENVIRONMENT","to":"ECONOMICS","non_equivalences":["physical_impact != monetary_valuation","scenario != market_outcome","environmental_cost != agreed_price"]},
+    {"id":"ENGINEERING_TO_LEGAL","from":"ENGINEERING","to":"LEGAL","non_equivalences":["engineering_standard != binding_law","certification != statutory_compliance","design_failure != legal_negligence","safety_factor != legal_standard_of_care"]},
+    {"id":"SECURITY_TO_LEGAL","from":"SECURITY","to":"LEGAL","non_equivalences":["vulnerability != legal_authorization_to_test","exploitability != unlawfulness","security_advisory != binding_legal_duty","technical_attribution != legal_attribution"]},
+    {"id":"COMPUTING_TO_GOVERNANCE","from":"COMPUTING","to":"GOVERNANCE","non_equivalences":["technical_capability != policy_authority","platform_rule != public_law","software_default != enacted_policy","algorithmic_output != administrative_decision"]},
+    {"id":"MEDICAL_TO_GOVERNANCE","from":"MEDICAL","to":"GOVERNANCE","non_equivalences":["clinical_guidance != enacted_public_policy","population_health_evidence != political_mandate","medical_risk_assessment != legal_restriction","professional_recommendation != government_order"]}
   ],
-  "rules": [
-    "bridge_is_translation_not_evidence",
-    "bridge_does_not_upgrade_source_authority",
-    "bridge_does_not_remove_uncertainty",
-    "undeclared_material_cross_domain_inference_is_prohibited",
-    "reverse_direction_requires_its_own_declared_semantics_when_direction_matters"
-  ]
+  "rules": ["bridge_is_translation_not_evidence","bridge_does_not_upgrade_source_authority","bridge_does_not_remove_uncertainty","undeclared_material_cross_domain_inference_is_prohibited","reverse_direction_requires_its_own_declared_semantics_when_direction_matters"]
 }
