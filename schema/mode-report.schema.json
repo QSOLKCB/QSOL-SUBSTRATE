@@ -1,1 +1,86 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mode-report.schema.json","title":"MODE-CONFUSION/1 scored report","type":"object","required":["type","schema_version","suite","execution_kind","empirical_model_result","condition","model","mode_bundle_sha256","mode_policy_sha256","source_commit","substrate_sha256","counts","metrics","rows"],"properties":{"type":{"const":"qsol-mode-confusion-report"},"schema_version":{"const":"1.0.0"},"suite":{"const":"MODE-CONFUSION/1"},"execution_kind":{"enum":["empirical_consumer","scoring_oracle"]},"empirical_model_result":{"type":"boolean"},"condition":{"enum":["naked","micro","standard","full","vector","latent-prefix","hybrid","tool-enabled"]},"model":{"type":"object"},"mode_bundle_sha256":{"$ref":"#/$defs/hash"},"mode_policy_sha256":{"$ref":"#/$defs/hash"},"source_commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},"substrate_sha256":{"$ref":"#/$defs/hash"},"counts":{"type":"object"},"metrics":{"type":"object"},"rows":{"type":"array"}},"$defs":{"hash":{"type":"string","pattern":"^[0-9a-f]{64}$"}},"additionalProperties":false}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mode-report.schema.json",
+  "title": "MODE-CONFUSION/1 scored report",
+  "type": "object",
+  "required": ["type", "schema_version", "suite", "execution_kind", "empirical_model_result", "condition", "model", "mode_bundle_sha256", "mode_policy_sha256", "source_commit", "substrate_sha256", "counts", "metrics", "rows"],
+  "properties": {
+    "type": {"const": "qsol-mode-confusion-report"},
+    "schema_version": {"const": "1.0.0"},
+    "suite": {"const": "MODE-CONFUSION/1"},
+    "execution_kind": {"enum": ["empirical_consumer", "scoring_oracle"]},
+    "empirical_model_result": {"type": "boolean"},
+    "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+    "model": {
+      "type": "object",
+      "required": ["provider", "model_id", "model_revision"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "model_revision": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "mode_bundle_sha256": {"$ref": "#/$defs/hash"},
+    "mode_policy_sha256": {"$ref": "#/$defs/hash"},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "substrate_sha256": {"$ref": "#/$defs/hash"},
+    "counts": {
+      "type": "object",
+      "required": ["correct", "reason_codes_correct", "total", "false_mode_ok", "cross_mode_correct", "cross_mode_total"],
+      "properties": {
+        "correct": {"type": "integer", "minimum": 0},
+        "reason_codes_correct": {"type": "integer", "minimum": 0},
+        "total": {"type": "integer", "minimum": 1},
+        "false_mode_ok": {"type": "integer", "minimum": 0},
+        "cross_mode_correct": {"type": "integer", "minimum": 0},
+        "cross_mode_total": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["accuracy", "reason_code_accuracy", "false_mode_ok_rate", "cross_mode_accuracy", "category_accuracy"],
+      "properties": {
+        "accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "reason_code_accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "false_mode_ok_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "cross_mode_accuracy": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "category_accuracy": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}}
+      },
+      "additionalProperties": false
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["case_id", "category", "expected_status", "observed_status", "expected_reason_codes", "observed_reason_codes", "status_correct", "reason_codes_correct", "correct"],
+        "properties": {
+          "case_id": {"type": "string", "pattern": "^MC1-[0-9]{3}$"},
+          "category": {"type": "string", "minLength": 1},
+          "expected_status": {"enum": ["MODE_OK", "MODE_AMBIGUOUS", "MODE_CROSSOVER", "MODE_VIOLATION", "MODE_UNRESOLVED"]},
+          "observed_status": {"enum": ["MODE_OK", "MODE_AMBIGUOUS", "MODE_CROSSOVER", "MODE_VIOLATION", "MODE_UNRESOLVED"]},
+          "expected_reason_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "observed_reason_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "status_correct": {"type": "boolean"},
+          "reason_codes_correct": {"type": "boolean"},
+          "correct": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"execution_kind": {"const": "empirical_consumer"}}, "required": ["execution_kind"]},
+      "then": {"properties": {"empirical_model_result": {"const": true}}}
+    },
+    {
+      "if": {"properties": {"execution_kind": {"const": "scoring_oracle"}}, "required": ["execution_kind"]},
+      "then": {"properties": {"empirical_model_result": {"const": false}}}
+    }
+  ],
+  "$defs": {"hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+  "additionalProperties": false
+}

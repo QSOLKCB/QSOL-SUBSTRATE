@@ -17,6 +17,21 @@ from vector_core import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _safe_context_output(path: Path) -> Path:
+    if path.exists() and path.is_symlink():
+        raise ModeError("refusing to write mode-aware retrieved context through a symlink")
+    resolved = path.resolve()
+    root = ROOT.resolve()
+    retrieved_root = (root / "dist" / "retrieved").resolve()
+    if resolved == root or resolved in root.parents:
+        raise ModeError("retrieved-context output may not replace or contain repository root")
+    if root in resolved.parents and retrieved_root not in resolved.parents:
+        raise ModeError("in-repository mode-aware retrieved-context output is restricted to dist/retrieved/")
+    if resolved.exists() and not resolved.is_file():
+        raise ModeError("retrieved-context output must be a regular file path")
+    return resolved
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Retrieve vector-selected QSOL context with QSOL-MODE-POLICY/1 prepended")
     parser.add_argument("query")
@@ -47,8 +62,9 @@ def main() -> int:
         prefix = (args.mode_bundle / "delivery-contract.txt").read_text(encoding="utf-8")
         text = prefix.rstrip() + "\nVECTOR_DELIVERY=MODE_BOUND\n\n" + context
         if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(text, encoding="utf-8")
+            output = _safe_context_output(args.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(text, encoding="utf-8")
         else:
             print(text, end="")
     except (OSError, UnicodeDecodeError, VectorError, ModeError, KeyError) as exc:

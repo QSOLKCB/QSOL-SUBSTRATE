@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mode-policy-resource.schema.json",
+  "title": "QSOL-MODE-POLICY/1 extended policy resource",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "policy_version", "classification", "core_invariant", "guards", "mode_statuses", "delivery", "resources", "compatibility", "nonclaims"],
+      "properties": {
+        "type": {"const": "qsol-substrate-mode-delivery-contract"},
+        "schema_version": {"const": "1.0.0"},
+        "policy_version": {"const": "QSOL-MODE-POLICY/1"},
+        "classification": {"const": "noncanonical_policy_projection"},
+        "core_invariant": {"const": "CLAIM_STRENGTH <= EVIDENCE_ENTITLEMENT"},
+        "guards": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "mode_statuses": {"type": "array", "minItems": 5, "uniqueItems": true, "items": {"type": "string"}},
+        "delivery": {"type": "object", "minProperties": 1},
+        "resources": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}},
+        "compatibility": {"type": "object", "minProperties": 1},
+        "nonclaims": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "default", "jurisdictions", "resolution_rules"],
+      "properties": {
+        "type": {"const": "qsol-legal-jurisdiction-profiles"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "policy_not_legal_authority"},
+        "default": {"type": "object"},
+        "jurisdictions": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "legal_system_scope", "primary_authority_resolvers", "guards"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "label": {"type": "string", "minLength": 1},
+              "parent": {"type": "string"},
+              "legal_system_scope": {"type": "string", "minLength": 1},
+              "primary_authority_resolvers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^resolver:"}},
+              "guards": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            },
+            "additionalProperties": false
+          }
+        },
+        "resolution_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "default", "specialties", "resolution_rules"],
+      "properties": {
+        "type": {"const": "qsol-medical-specialty-profiles"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "policy_not_clinical_guidance"},
+        "default": {"type": "object"},
+        "specialties": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "required_resolvers", "guards"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "label": {"type": "string", "minLength": 1},
+              "required_resolvers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^resolver:"}},
+              "freshness_class": {"type": "string", "minLength": 1},
+              "guards": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            },
+            "additionalProperties": false
+          }
+        },
+        "resolution_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "resolver_contract", "resolvers"],
+      "properties": {
+        "type": {"const": "qsol-authoritative-source-resolver-registry"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "resolver_policy_not_source_authority_itself"},
+        "resolver_contract": {"type": "object", "minProperties": 1},
+        "resolvers": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "domain", "authority_class", "source_kind"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^resolver:"},
+              "domain": {"type": "string", "minLength": 1},
+              "authority_class": {"type": "string", "minLength": 1},
+              "jurisdiction": {"type": "string", "minLength": 1},
+              "source_kind": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "freshness_classes", "profiles", "rules"],
+      "properties": {
+        "type": {"const": "qsol-mode-freshness-policy"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "policy_not_current_factual_state"},
+        "freshness_classes": {"type": "object", "minProperties": 1},
+        "profiles": {"type": "object", "minProperties": 1},
+        "rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "steps", "conflict_record_required_fields", "resolution_statuses", "high_stakes_guards"],
+      "properties": {
+        "type": {"const": "qsol-mode-conflict-resolution-policy"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "policy_not_conflict_fact"},
+        "steps": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "conflict_record_required_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "resolution_statuses": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "high_stakes_guards": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "collision_policy", "terms", "rules"],
+      "properties": {
+        "type": {"const": "qsol-field-terminology-ontology"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "terminology_policy_not_dictionary_truth"},
+        "collision_policy": {"type": "object", "minProperties": 1},
+        "terms": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["term", "senses"],
+            "properties": {
+              "term": {"type": "string", "minLength": 1},
+              "senses": {"type": "object", "minProperties": 2, "additionalProperties": {"type": "string", "minLength": 1}}
+            },
+            "additionalProperties": false
+          }
+        },
+        "rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["type", "schema_version", "classification", "formalization_boundary", "finite_domains", "invariants", "nonclaims"],
+      "properties": {
+        "type": {"const": "qsol-mode-separation-formal-witness"},
+        "schema_version": {"const": "1.0.0"},
+        "classification": {"const": "machine_checkable_policy_witness_not_external_truth"},
+        "formalization_boundary": {"const": "FORMALIZATION != PHYSICAL_OR_LEGAL_OR_CLINICAL_TRUTH"},
+        "finite_domains": {"type": "object", "minProperties": 3},
+        "invariants": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "statement", "witness_method"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "statement": {"type": "string", "minLength": 1},
+              "witness_method": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        "nonclaims": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    }
+  ]
+}

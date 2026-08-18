@@ -1,1 +1,43 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mode-run.schema.json","title":"MODE-CONFUSION/1 consumer run","type":"object","required":["type","schema_version","execution_kind","condition","model","mode_bundle_sha256","mode_policy_sha256","source_commit","substrate_sha256","responses"],"properties":{"type":{"const":"qsol-mode-confusion-run"},"schema_version":{"const":"1.0.0"},"execution_kind":{"enum":["empirical_consumer","scoring_oracle"]},"condition":{"enum":["naked","micro","standard","full","vector","latent-prefix","hybrid","tool-enabled"]},"model":{"type":"object","required":["provider","model_id","model_revision"],"properties":{"provider":{"type":"string","minLength":1},"model_id":{"type":"string","minLength":1},"model_revision":{"type":"string","minLength":1}},"additionalProperties":false},"mode_bundle_sha256":{"$ref":"#/$defs/hash"},"mode_policy_sha256":{"$ref":"#/$defs/hash"},"source_commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},"substrate_sha256":{"$ref":"#/$defs/hash"},"responses":{"type":"array","minItems":1,"items":{"type":"object","required":["case_id","status"],"properties":{"case_id":{"type":"string","pattern":"^MC1-[0-9]{3}$"},"status":{"enum":["MODE_OK","MODE_AMBIGUOUS","MODE_CROSSOVER","MODE_VIOLATION","MODE_UNRESOLVED"]},"reason_codes":{"type":"array","items":{"type":"string"}}},"additionalProperties":false}}},"$defs":{"hash":{"type":"string","pattern":"^[0-9a-f]{64}$"}},"additionalProperties":false}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mode-run.schema.json",
+  "title": "MODE-CONFUSION/1 consumer run",
+  "type": "object",
+  "required": ["type", "schema_version", "execution_kind", "condition", "model", "mode_bundle_sha256", "mode_policy_sha256", "source_commit", "substrate_sha256", "responses"],
+  "properties": {
+    "type": {"const": "qsol-mode-confusion-run"},
+    "schema_version": {"const": "1.0.0"},
+    "execution_kind": {"enum": ["empirical_consumer", "scoring_oracle"]},
+    "condition": {"enum": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]},
+    "model": {
+      "type": "object",
+      "required": ["provider", "model_id", "model_revision"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "model_revision": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "mode_bundle_sha256": {"$ref": "#/$defs/hash"},
+    "mode_policy_sha256": {"$ref": "#/$defs/hash"},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "substrate_sha256": {"$ref": "#/$defs/hash"},
+    "responses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["case_id", "status", "reason_codes"],
+        "properties": {
+          "case_id": {"type": "string", "pattern": "^MC1-[0-9]{3}$"},
+          "status": {"enum": ["MODE_OK", "MODE_AMBIGUOUS", "MODE_CROSSOVER", "MODE_VIOLATION", "MODE_UNRESOLVED"]},
+          "reason_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {"hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+  "additionalProperties": false
+}

@@ -503,6 +503,7 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
                 raise ReleaseError(f"{name} manifest hash mismatch")
             if recorded["bundle_sha256"] != current.get(bundle_key):
                 raise ReleaseError(f"{name} bundle fingerprint mismatch")
+
         mode_current = _read_json(root / "dist/modes/manifest.json")
         mode_recorded = manifest["components"]["modes"]
         if mode_recorded.get("mode_policy_sha256") != mode_current.get("mode_policy_sha256"):
@@ -512,8 +513,13 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
 
         delivery_current = _read_json(root / "dist/mode-delivery/manifest.json")
         delivery_recorded = manifest["components"]["mode_delivery"]
-        if delivery_recorded.get("mode_policy_sha256") != delivery_current.get("mode_policy", {}).get("mode_policy_sha256"):
+        delivery_policy = delivery_current.get("mode_policy", {})
+        if delivery_recorded.get("mode_policy_sha256") != delivery_policy.get("mode_policy_sha256"):
             raise ReleaseError("mode-delivery policy fingerprint mismatch")
+        if delivery_recorded.get("mode_bundle_sha256") != delivery_policy.get("mode_bundle_sha256"):
+            raise ReleaseError("mode-delivery source mode-bundle fingerprint mismatch")
+        if delivery_recorded.get("tool_less_profile_count") != len(delivery_current.get("tool_less_profiles", [])):
+            raise ReleaseError("mode-delivery tool-less profile count mismatch")
 
         if deterministic_rebuild:
             with tempfile.TemporaryDirectory() as tmp:
