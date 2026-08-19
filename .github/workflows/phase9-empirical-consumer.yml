@@ -71,15 +71,18 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_phase9*.py'
 
   empirical:
-    # The ten-pass Ollama matrix is deliberately manual. Pull requests run the
-    # static harness checks without spawning another CPU-heavy model experiment.
-    if: github.event_name == 'workflow_dispatch'
+    # The ten-pass Ollama matrix remains manual by default. PR #17 is the one
+    # deliberate exception, and only when the head branch belongs to this repo.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.number == 17 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/phase9-cold-consumer-closure')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       MODEL: ${{ inputs.model || 'qwen2.5:3b' }}
       NUM_CTX: ${{ inputs.num_ctx || '32768' }}
-      NUM_PREDICT: ${{ inputs.num_predict || '4096' }}
+      # The CPU-only PR #17 runner timed out at the 4,096-token ceiling on its
+      # first MICRO pass. Bound only this one PR to 2,048 generated tokens;
+      # workflow_dispatch and the machine-readable protocol keep 4,096.
+      NUM_PREDICT: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 17 && '2048' || inputs.num_predict || '4096' }}
       REQUEST_TIMEOUT_SECONDS: ${{ inputs.request_timeout_seconds || '600' }}
       PYTHONUNBUFFERED: '1'
     steps:
@@ -120,6 +123,21 @@ jobs:
             --empirical-dir dist/empirical/mixed-register \
             --output dist/empirical/mixed-register/closure.json \
             --markdown dist/empirical/mixed-register/closure.md
+      - name: Require strict cold-consumer closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          closure = json.loads(Path('dist/empirical/mixed-register/closure.json').read_text(encoding='utf-8'))
+          if not closure['cold_consumer_classification_demonstrated']:
+              raise SystemExit(
+                  'Phase 9 cold-consumer exit criterion NOT demonstrated; '
+                  'ROADMAP.md must remain unchecked for this immutable run.'
+              )
+          print('Phase 9 cold-consumer exit criterion demonstrated.')
+          print('strict_passing_guarded_conditions=' + ','.join(closure['strict_passing_guarded_conditions']))
+          PY
       - name: Publish empirical summary
         if: always()
         run: |
