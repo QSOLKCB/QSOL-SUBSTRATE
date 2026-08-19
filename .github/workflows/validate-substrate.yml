@@ -1,72 +1,192 @@
 name: Substrate Validation
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-runtime-bounds:
-    name: apply bounded empirical runtime
+  validate:
+    name: validate / python-3.12
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout PR head
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-validation.txt
 
       - name: Install validation dependencies
         run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
 
-      - name: Apply bounded empirical runtime contract
-        run: python tools/apply_empirical_runtime_bounds.py
+      - name: Run regression tests
+        run: python -m unittest discover -s tests -v
 
-      - name: Compile and test bounded runner
-        run: |
-          python -m py_compile tools/mixed_register_empirical.py
-          python -m py_compile tools/run_mixed_register_empirical.py
-          python -m py_compile tests/test_phase9_empirical.py
-          python -m unittest tests.test_phase9_empirical
-          python -m unittest tests.test_phase9_empirical_closure
-          python -m unittest discover -s tests -p 'test_phase9*.py'
-          git diff --check
+      - name: Validate canonical substrate
+        run: python tools/validate_substrate.py --json-report validation-report.json
 
-      - name: Keep workflow bytes outside the bot commit
-        run: |
-          git checkout HEAD -- .github/workflows/phase9-empirical-consumer.yml
-          rm -f tools/apply_empirical_runtime_bounds.py
-          if git diff --name-only -- .github/workflows | grep -q .; then
-            echo "Refusing to push workflow-file changes from GITHUB_TOKEN."
-            git diff --name-only -- .github/workflows
-            exit 1
-          fi
+      - name: Validate substrate modes
+        run: python tools/validate_modes.py
 
-      - name: Commit non-workflow runtime changes
+      - name: Build substrate fingerprint
+        run: python tools/fingerprint_substrate.py --output substrate-fingerprint.json
+
+      - name: Resolve derived-artifact source commit
+        id: artifact-source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build Phase 10 mode-policy bundle
+        run: python tools/build_modes.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/modes
+
+      - name: Validate Phase 10 mode-policy bundle
+        run: python tools/validate_mode_bundle.py --bundle dist/modes
+
+      - name: Build MODE-CONFUSION/1 scoring-oracle self-test
+        run: python tools/build_mode_oracle.py --bundle dist/modes --output mode-oracle-run.json
+
+      - name: Score MODE-CONFUSION/1 scoring-oracle self-test
+        run: python tools/score_mode_run.py --bundle dist/modes --run mode-oracle-run.json --output mode-oracle-report.json --require-perfect-oracle
+
+      - name: Build portable adapters
+        run: python tools/build_adapters.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/adapters
+
+      - name: Validate portable adapters
+        run: python tools/validate_adapter_bundle.py --bundle dist/adapters
+
+      - name: Build tool-less capsules
+        run: python tools/build_toolless.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/toolless
+
+      - name: Validate tool-less capsules
+        run: python tools/validate_toolless_capsule.py --bundle dist/toolless
+
+      - name: Build vector substrate
+        run: python tools/build_vectors.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/vectors
+
+      - name: Validate vector substrate
+        run: python tools/validate_vector_bundle.py --bundle dist/vectors
+
+      - name: Build model projection experiment bundle
+        run: python tools/build_projections.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/projections
+
+      - name: Validate model projection experiment bundle
+        run: python tools/validate_projection_bundle.py --bundle dist/projections
+
+      - name: Build deterministic Phase 7 probe bundle
+        run: python tools/build_probes.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/probes
+
+      - name: Validate Phase 7 probe bundle
+        run: python tools/validate_probe_bundle.py --bundle dist/probes
+
+      - name: Build scoring-oracle self-test
+        run: python tools/build_probe_oracle.py --bundle dist/probes --output probe-oracle-run.json
+
+      - name: Score scoring-oracle self-test
+        run: python tools/score_probe_run.py --bundle dist/probes --run probe-oracle-run.json --output probe-oracle-report.json --markdown probe-oracle-report.md --require-perfect-oracle
+
+      - name: Bind mode policy to deterministic delivery surfaces
+        run: python tools/bind_mode_delivery.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/mode-delivery
+
+      - name: Validate mode-bound delivery surfaces
+        run: python tools/validate_mode_delivery.py --bundle dist/mode-delivery
+
+      - name: Build Phase 8 release candidate
+        run: python tools/build_release.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --version 0.8.0-ci.0 --channel ci --output dist/release
+
+      - name: Validate Phase 8 release candidate
+        run: python tools/validate_release.py --bundle dist/release
+
+      - name: Publish integrity summary
+        if: success()
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            tools/mixed_register_empirical.py \
-            tools/run_mixed_register_empirical.py \
-            empirical/mixed-register/experiment.json \
-            schema/mixed-register-empirical-experiment.schema.json \
-            tests/test_phase9_empirical.py \
-            docs/MIXED_REGISTER_EMPIRICAL.md \
-            CHANGELOG.md \
-            tools/apply_empirical_runtime_bounds.py
-          git diff --cached --quiet && {
-            echo "Runtime-bound patch produced no staged changes."
-            exit 1
-          }
-          git commit -m "Bound empirical model runtime and output"
-          git push origin HEAD:agent/finish-deferred-substrate-modes
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          fingerprint = json.loads(Path("substrate-fingerprint.json").read_text())
+          modes = json.loads(Path("dist/modes/manifest.json").read_text())
+          mode_reference = json.loads(Path("dist/modes/reference-report.json").read_text())
+          mode_oracle = json.loads(Path("mode-oracle-report.json").read_text())
+          mode_delivery = json.loads(Path("dist/mode-delivery/manifest.json").read_text())
+          adapters = json.loads(Path("dist/adapters/manifest.json").read_text())
+          toolless = json.loads(Path("dist/toolless/manifest.json").read_text())
+          vectors = json.loads(Path("dist/vectors/manifest.json").read_text())
+          retrieval = json.loads(Path("dist/vectors/retrieval-report.json").read_text())
+          projections = json.loads(Path("dist/projections/manifest.json").read_text())
+          probes = json.loads(Path("dist/probes/manifest.json").read_text())
+          oracle = json.loads(Path("probe-oracle-report.json").read_text())
+          release = json.loads(Path("dist/release/manifest.json").read_text())
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as out:
+              out.write("## QSOL-SUBSTRATE integrity\n\n")
+              out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
+              out.write(f"- Substrate SHA-256: `{fingerprint['substrate_sha256']}`\n")
+              out.write(f"- Canonical payload files: `{len(fingerprint['files'])}`\n")
+              out.write(f"- Mode policy: `{modes['policy_version']}` / `{modes['mode_policy_sha256']}`\n")
+              out.write(f"- MODE-CONFUSION/1 cases: `{modes['case_count']}`\n")
+              out.write(f"- Sparse-24D structural oracle: `{mode_reference['sparse_24d']['correct']}/{mode_reference['sparse_24d']['total']}`; empirical model result: `false`\n")
+              out.write(f"- Rule-only structural oracle: `{mode_reference['rule_only']['correct']}/{mode_reference['rule_only']['total']}`; empirical model result: `false`\n")
+              out.write(f"- MODE-CONFUSION scoring-oracle self-test: `{mode_oracle['counts']['correct']}/{mode_oracle['counts']['total']}`; empirical model result: `false`\n")
+              out.write(f"- Mode-delivery bundle SHA-256: `{mode_delivery['bundle_sha256']}`\n")
+              out.write(f"- Portable adapters: `{len(adapters['adapters'])}`\n")
+              out.write(f"- Adapter source commit: `{adapters['substrate']['source_commit']}`\n")
+              out.write(f"- Adapter bundle SHA-256: `{adapters['adapter_bundle_sha256']}`\n")
+              out.write(f"- Tool-less capsule bundle SHA-256: `{toolless['bundle_sha256']}`\n")
+              for profile in toolless["profiles"]:
+                  out.write(
+                      f"- {profile['name']}: `{profile['portable_tokens']}/{profile['token_budget']}` portable tokens, "
+                      f"`{profile['included_items']}` included / `{profile['omitted_items']}` omitted items\n"
+                  )
+              for profile in mode_delivery["tool_less_profiles"]:
+                  out.write(
+                      f"- MODE-{profile['name']}: `{profile['portable_tokens']}/{profile['token_budget']}` portable tokens, "
+                      f"`{profile['included_items']}` included / `{profile['omitted_items']}` omitted items\n"
+                  )
+              out.write(f"- Vector records: `{vectors['record_count']}` at `{vectors['embedding']['dimension']}` dimensions\n")
+              out.write(f"- Vector bundle SHA-256: `{vectors['bundle_sha256']}`\n")
+              out.write(f"- Reference retrieval hit rate: `{retrieval['hit_rate']}`\n")
+              out.write(f"- Reference retrieval average closed context: `{retrieval['average_closed_context_portable_tokens']}` portable tokens\n")
+              out.write(f"- Projection recipes: `{len(projections['recipes'])}`\n")
+              out.write(f"- Projection bundle SHA-256: `{projections['bundle_sha256']}`\n")
+              out.write(f"- Phase 7 probes: `{probes['probe_count']}` (`{probes['suite_counts']['substrate']}` substrate + `{probes['suite_counts']['yeah-nah-1']}` YEAH-NAH/1)\n")
+              out.write(f"- Probe bundle SHA-256: `{probes['bundle_sha256']}`\n")
+              out.write(f"- Scoring-oracle self-test: `{oracle['counts']['correct']}/{oracle['counts']['total']}`; empirical model result: `false`\n")
+              out.write(f"- Phase 8 CI release version: `{release['release']['version']}`; publishable: `{str(release['release']['publishable']).lower()}`\n")
+              out.write(f"- Release-bound mode policy: `{release['components']['modes']['mode_policy_sha256']}`\n")
+              out.write(f"- Release snapshot ID: `{release['substrate']['snapshot_id']}`\n")
+              out.write(f"- Release SHA-256: `{release['release_sha256']}`\n")
+          PY
+
+      - name: Upload validation and derived artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: substrate-integrity-${{ github.sha }}
+          path: |
+            validation-report.json
+            substrate-fingerprint.json
+            mode-oracle-run.json
+            mode-oracle-report.json
+            probe-oracle-run.json
+            probe-oracle-report.json
+            probe-oracle-report.md
+            dist/modes/
+            dist/mode-delivery/
+            dist/adapters/
+            dist/toolless/
+            dist/vectors/
+            dist/projections/
+            dist/probes/
+            dist/release/
+          if-no-files-found: ignore
+          retention-days: 30
