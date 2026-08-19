@@ -181,6 +181,15 @@ class Phase9EmpiricalTests(unittest.TestCase):
         self.assertTrue(protocol["consumer_contract"]["treatment_assignment_blinded"])
         self.assertTrue(protocol["consumer_contract"]["evidence_reference_violations_fail_gate"])
 
+    def test_workflow_default_model_matches_machine_protocol(self):
+        protocol = empirical.load_empirical_protocol(ROOT)
+        model = protocol["default_local_runner"]["model"]
+        workflow = (ROOT / ".github/workflows/phase9-empirical-consumer.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("default: " + model, workflow)
+        self.assertIn("inputs.model || '" + model + "'", workflow)
+
     def _summary_fixture(self):
         identity = empirical.ModelIdentity("ollama-local", "demo:tag", "sha256:abc")
         manifest = {

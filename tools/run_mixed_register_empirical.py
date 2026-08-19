@@ -208,6 +208,35 @@ def _summarize_results(
     return experiment_summary(results, manifest, identity)
 
 
+def _file_binding(output_dir: Path, relative: str) -> dict[str, object] | None:
+    path = output_dir / relative
+    if not path.is_file() or path.is_symlink():
+        return None
+    data = path.read_bytes()
+    return {
+        "path": relative,
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "bytes": len(data),
+    }
+
+
+def _artifact_bindings(output_dir: Path) -> dict[str, object]:
+    bindings: dict[str, object] = {}
+    for condition in CONDITIONS:
+        variants: dict[str, object] = {}
+        for variant in ("guarded", "ablated"):
+            stem = f"{condition}.{variant}"
+            variants[variant] = {
+                "prompt": _file_binding(output_dir, f"prompts/{stem}.txt"),
+                "carrier": _file_binding(output_dir, f"carriers/{stem}.txt"),
+                "raw_response": _file_binding(output_dir, f"raw/{stem}.response.json"),
+                "audit": _file_binding(output_dir, f"audits/{stem}.json"),
+                "report": _file_binding(output_dir, f"reports/{stem}.json"),
+            }
+        bindings[condition] = variants
+    return bindings
+
+
 def main() -> int:
     try:
         protocol = load_empirical_protocol(ROOT)
@@ -367,6 +396,7 @@ def main() -> int:
         summary["protocol_sha256"] = hashlib.sha256(
             (ROOT / "empirical/mixed-register/experiment.json").read_bytes()
         ).hexdigest()
+        summary["artifact_bindings"] = _artifact_bindings(output_dir)
         _write_json(output_dir / "summary.json", summary)
         print(f"cold_consumer_demonstrated={summary['cold_consumer_demonstrated']}")
         print("passing_guarded_conditions=" + ",".join(summary["passing_guarded_conditions"]))

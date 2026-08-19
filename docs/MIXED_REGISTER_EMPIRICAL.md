@@ -88,6 +88,8 @@ dist/empirical/mixed-register/
 └── raw/
 ```
 
+Before deriving any metric, the closure pass verifies every available audit and scored report against `summary.json`: complete evaluation-bundle and substrate identity, immutable provider/model revision, condition and guarded/ablated run identity, plus the recorded prompt, carrier, raw-response, audit, and report hashes. Mixed-run or edited evidence is refused even when each individual JSON file remains schema-shaped.
+
 `closure.json` derives adjacency traps from the frozen corpus, computes targeted guarded-versus-ablated metrics, classifies each condition as `improved`, `neutral`, `degraded`, `mixed`, or `unavailable`, and records whether at least one guarded condition satisfies the stricter cold-consumer criterion.
 
 Generated results are `derived_evaluation`; they do not become canonical `source_refs`.

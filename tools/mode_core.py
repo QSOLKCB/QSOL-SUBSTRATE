@@ -1015,24 +1015,39 @@ def score_mode_run(bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
 
 
 def compare_mode_reports(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+    root = Path(__file__).resolve().parents[1]
+    for label, report in (("left", left), ("right", right)):
+        _require_schema_valid(root, MODE_REPORT_SCHEMA, report, f"mode comparison {label} report")
+        if report.get("execution_kind") != "empirical_consumer" or report.get("empirical_model_result") is not True:
+            raise ModeError(
+                "mode condition comparison requires schema-valid empirical_consumer reports; "
+                "scoring-oracle and non-empirical reports are refused"
+            )
+
     identity_fields = ("mode_bundle_sha256", "mode_policy_sha256", "source_commit", "substrate_sha256")
     for field in identity_fields:
         if left.get(field) != right.get(field):
             raise ModeError(f"cannot compare reports with different {field}")
     if left.get("model") != right.get("model"):
         raise ModeError("condition comparison requires exact same model identity/revision")
-    lm = left.get("metrics", {})
-    rm = right.get("metrics", {})
-    if not isinstance(lm, dict) or not isinstance(rm, dict):
-        raise ModeError("reports missing metrics")
+    if left.get("condition") == right.get("condition"):
+        raise ModeError("condition comparison requires two distinct delivery conditions")
+
+    lm = left["metrics"]
+    rm = right["metrics"]
     return {
         "type": "qsol-mode-confusion-comparison",
         "schema_version": "1.0.0",
+        "artifact_class": "derived_evaluation",
+        "execution_kind": "empirical_consumer_comparison",
+        "empirical_model_result": True,
         "mode_bundle_sha256": left["mode_bundle_sha256"],
         "mode_policy_sha256": left["mode_policy_sha256"],
+        "source_commit": left["source_commit"],
+        "substrate_sha256": left["substrate_sha256"],
         "model": left["model"],
-        "left_condition": left.get("condition"),
-        "right_condition": right.get("condition"),
+        "left_condition": left["condition"],
+        "right_condition": right["condition"],
         "delta": {
             "accuracy": round(float(rm["accuracy"]) - float(lm["accuracy"]), 6),
             "reason_code_accuracy": round(float(rm["reason_code_accuracy"]) - float(lm["reason_code_accuracy"]), 6),
@@ -1043,7 +1058,11 @@ def compare_mode_reports(left: dict[str, Any], right: dict[str, Any]) -> dict[st
                 else None
             ),
         },
-        "interpretation": "Positive accuracy/reason-code/cross-mode deltas favor the right condition; negative false-mode-OK delta favors the right condition.",
+        "interpretation": (
+            "This is a derived comparison of two schema-valid empirical-consumer reports for one exact "
+            "model revision and frozen mode/substrate identity. Positive accuracy/reason-code/cross-mode "
+            "deltas favor the right condition; negative false-mode-OK delta favors the right condition."
+        ),
     }
 
 

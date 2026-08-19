@@ -41,7 +41,7 @@
   },
   "default_local_runner": {
     "provider": "ollama-local",
-    "model": "qwen2.5:1.5b",
+    "model": "qwen2.5:3b",
     "temperature": 0,
     "seed": 18437,
     "num_ctx": 32768,

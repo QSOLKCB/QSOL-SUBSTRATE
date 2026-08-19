@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import shutil
 import sys
@@ -22,6 +23,7 @@ from mode_core import (  # noqa: E402
     build_oracle_run,
     calibrate_reports,
     classify_case,
+    compare_mode_reports,
     policy_index,
     score_mode_run,
     validate_mode_bundle,
@@ -102,6 +104,37 @@ class DeferredModeWorkTests(unittest.TestCase):
             self.assertFalse(report["empirical_model_result"])
             with self.assertRaises(ModeError):
                 calibrate_reports([report])
+
+    def test_mode_comparison_requires_schema_valid_empirical_consumers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp) / "modes"
+            build_mode_bundle(ROOT, out, "6" * 40)
+            oracle_run = build_oracle_run(out)
+            oracle_report = score_mode_run(out, oracle_run)
+            with self.assertRaisesRegex(ModeError, "empirical_consumer"):
+                compare_mode_reports(oracle_report, oracle_report)
+
+            left_run = copy.deepcopy(oracle_run)
+            left_run["execution_kind"] = "empirical_consumer"
+            left_run["condition"] = "micro"
+            left_run["model"] = {
+                "provider": "fixture",
+                "model_id": "fixture-model",
+                "model_revision": "fixture-revision",
+            }
+            right_run = copy.deepcopy(left_run)
+            right_run["condition"] = "full"
+            left_report = score_mode_run(out, left_run)
+            right_report = score_mode_run(out, right_run)
+            comparison = compare_mode_reports(left_report, right_report)
+            self.assertEqual(comparison["execution_kind"], "empirical_consumer_comparison")
+            self.assertTrue(comparison["empirical_model_result"])
+            self.assertEqual(comparison["source_commit"], "6" * 40)
+
+            malformed = copy.deepcopy(left_report)
+            malformed["unexpected"] = True
+            with self.assertRaisesRegex(ModeError, "mode comparison left report violates"):
+                compare_mode_reports(malformed, right_report)
 
     def test_calibration_rejects_forged_oracle_boolean(self) -> None:
         forged = {
