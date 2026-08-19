@@ -33,6 +33,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: phase9-empirical-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   static:
     runs-on: ubuntu-latest
@@ -59,12 +63,15 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_phase9*.py'
 
   empirical:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'pull_request'
+    # The ten-pass Ollama matrix is deliberately manual. Pull requests run the
+    # static harness checks without spawning another CPU-heavy model experiment.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       MODEL: ${{ inputs.model || 'qwen2.5:3b' }}
       NUM_CTX: ${{ inputs.num_ctx || '32768' }}
+      PYTHONUNBUFFERED: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -90,14 +97,14 @@ jobs:
         run: ollama pull "$MODEL"
       - name: Run paired guarded and ablated experiment
         run: |
-          python tools/run_mixed_register_empirical.py \
+          python -u tools/run_mixed_register_empirical.py \
             --model "$MODEL" \
             --num-ctx "$NUM_CTX" \
             --source-commit "$(git rev-parse HEAD)" \
             --output dist/empirical/mixed-register
       - name: Close Phase 9 empirical questions
         run: |
-          python tools/close_mixed_register_empirical.py \
+          python -u tools/close_mixed_register_empirical.py \
             --empirical-dir dist/empirical/mixed-register \
             --output dist/empirical/mixed-register/closure.json \
             --markdown dist/empirical/mixed-register/closure.md
