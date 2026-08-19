@@ -1,0 +1,21 @@
+{
+  "type": "qsol-field-terminology-ontology",
+  "schema_version": "1.0.0",
+  "classification": "terminology_policy_not_dictionary_truth",
+  "collision_policy": {"bare_ambiguous_term":"MODE_UNRESOLVED_WHEN_SUBSTANTIVE","resolution_key":"MODE:submode:term","mode_switch":"re_resolve_term","bridge_does_not_equate_terms":true},
+  "terms": [
+    {"term":"evidence","senses":{"SCIENCE":"empirical or analytical support relevant to a scientific claim","LEGAL":"material admitted, admissible, or relied upon under a legal evidentiary context; not synonymous with scientific evidence","MEDICAL":"research or clinical support whose authority depends on claim type and clinical context"}},
+    {"term":"proof","senses":{"FORMAL":"a derivation meeting a specified formal system or proof standard","SCIENCE":"avoid as a synonym for empirical confirmation; use evidence/support","LEGAL":"a burden or standard of proof is a legal threshold, not a formal mathematical proof"}},
+    {"term":"significance","senses":{"SCIENCE":"may refer to statistical significance only when the statistical definition is explicit","MEDICAL":"clinical significance is separate from statistical significance","EVERYDAY":"importance or consequence in ordinary language"}},
+    {"term":"causation","senses":{"SCIENCE":"causal claim under a stated empirical or formal identification framework","MEDICAL":"clinical/epidemiological causal assessment does not automatically determine legal causation","LEGAL":"legal causation applies jurisdiction-specific legal tests"}},
+    {"term":"diagnosis","senses":{"MEDICAL":"clinical classification requiring an appropriate clinical context and authority","ENGINEERING":"fault identification or system diagnosis","COMPUTING":"problem identification in a software or hardware system"}},
+    {"term":"theory","senses":{"SCIENCE":"a scientific explanatory framework; strength depends on field and evidence","FORMAL":"a set of axioms, definitions, or formal structures","EVERYDAY":"an informal idea or conjecture"}},
+    {"term":"model","senses":{"SCIENCE":"a representation used for explanation, simulation, or prediction","FORMAL":"an interpretation satisfying a formal theory","COMPUTING":"may mean a software/data model or machine-learning model"}},
+    {"term":"test","senses":{"SCIENCE":"an experiment, assay, or statistical procedure","MEDICAL":"a diagnostic or screening investigation","COMPUTING":"an executable verification check","EDUCATION":"an assessment instrument"}},
+    {"term":"risk","senses":{"MEDICAL":"health outcome probability or clinical risk under a stated population/context","SECURITY":"threat likelihood/consequence under a stated threat model","ENGINEERING":"hazard likelihood/consequence under a stated safety framework","ECONOMICS":"uncertainty or exposure under an economic/financial model"}},
+    {"term":"normal","senses":{"MEDICAL":"reference-range or clinical usage requiring population/context","FORMAL":"a technical property whose meaning depends on the formal subfield","EVERYDAY":"ordinary or typical; not a clinical classification"}},
+    {"term":"liability","senses":{"LEGAL":"a legal responsibility determined under applicable law","BUSINESS":"an accounting obligation when used in accounting context","EVERYDAY":"a disadvantage or burden; not a legal conclusion"}},
+    {"term":"validity","senses":{"FORMAL":"truth under all interpretations or validity under a formal system, depending on subfield","SCIENCE":"whether a method or inference measures/supports what it claims under a stated design","LEGAL":"legal validity depends on applicable law and authority","EDUCATION":"evidence supporting interpretation/use of assessment results"}}
+  ],
+  "rules": ["definitions do not transfer across modes without an explicit bridge","terminology resolution does not provide evidence for the underlying claim","when multiple senses remain materially plausible, preserve ambiguity"]
+}

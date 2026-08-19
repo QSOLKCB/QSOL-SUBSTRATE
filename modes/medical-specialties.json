@@ -1,0 +1,70 @@
+{
+  "type": "qsol-medical-specialty-profiles",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_clinical_guidance",
+  "default": {
+    "patient_specific_diagnosis_from_substrate": "prohibited",
+    "current_guidance_claim_requires": [
+      "resolved_specialty",
+      "resolved_jurisdiction_or_applicable_scope",
+      "current_primary_regulator_or_guideline_source",
+      "version_or_effective_date",
+      "retrieval_date",
+      "provenance"
+    ],
+    "missing_currentness": "MODE_UNRESOLVED",
+    "preprint_or_repository_as_normative_guidance": "MODE_VIOLATION"
+  },
+  "specialties": [
+    {
+      "id": "GENERAL_CLINICAL",
+      "label": "General clinical medicine",
+      "required_resolvers": ["resolver:medical-regulator", "resolver:clinical-guideline"],
+      "guards": ["educational_summary != patient_specific_diagnosis", "single_study != current_guideline"]
+    },
+    {
+      "id": "EMERGENCY_MEDICINE",
+      "label": "Emergency medicine",
+      "required_resolvers": ["resolver:medical-regulator", "resolver:clinical-guideline"],
+      "freshness_class": "live_when_material",
+      "guards": ["time_critical_context_requires_current_guidance", "general_information != emergency_triage"]
+    },
+    {
+      "id": "CARDIOLOGY",
+      "label": "Cardiology",
+      "required_resolvers": ["resolver:medical-regulator", "resolver:clinical-guideline", "resolver:systematic-evidence"],
+      "guards": ["risk_model != individual_outcome", "research_endpoint != treatment_recommendation"]
+    },
+    {
+      "id": "ONCOLOGY",
+      "label": "Oncology",
+      "required_resolvers": ["resolver:medical-regulator", "resolver:clinical-guideline", "resolver:systematic-evidence"],
+      "freshness_class": "live_when_material",
+      "guards": ["trial_result != universal_standard_of_care", "biomarker_association != treatment_indication"]
+    },
+    {
+      "id": "PSYCHIATRY",
+      "label": "Psychiatry",
+      "required_resolvers": ["resolver:medical-regulator", "resolver:clinical-guideline", "resolver:systematic-evidence"],
+      "guards": ["screening_result != diagnosis", "population_association != individual_diagnosis"]
+    },
+    {
+      "id": "PHARMACOLOGY",
+      "label": "Pharmacology and medicines",
+      "required_resolvers": ["resolver:medical-regulator", "resolver:clinical-guideline"],
+      "freshness_class": "live_when_material",
+      "guards": ["mechanism != approved_indication", "preclinical_result != human_recommendation"]
+    },
+    {
+      "id": "PUBLIC_HEALTH",
+      "label": "Public health",
+      "required_resolvers": ["resolver:public-health-authority", "resolver:official-statistics", "resolver:clinical-guideline"],
+      "guards": ["population_guidance != individual_diagnosis", "association != causal_policy_effect"]
+    }
+  ],
+  "resolution_rules": [
+    "specialty policy constrains evidence use; it does not provide diagnosis or treatment",
+    "currentness is a property of resolved source metadata, not an assumed age threshold",
+    "guidance that lacks an applicable scope or version remains unresolved"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "type": "qsol-substrate-mode-delivery-contract",
+  "schema_version": "1.0.0",
+  "policy_version": "QSOL-MODE-POLICY/1",
+  "classification": "noncanonical_policy_projection",
+  "core_invariant": "CLAIM_STRENGTH <= EVIDENCE_ENTITLEMENT",
+  "guards": [
+    "MODE != AUTHORITY",
+    "GEOMETRY != TRUTH",
+    "BRIDGE != EVIDENCE",
+    "DOI != VALIDATION",
+    "UNRESOLVED_JURISDICTION != BINDING_LEGAL_CLAIM",
+    "STALE_OR_UNVERSIONED_GUIDANCE != CURRENT_CLINICAL_GUIDANCE",
+    "MATERIAL_CROSS_DOMAIN_DEPENDENCE => DECLARED_BRIDGE",
+    "AMBIGUOUS_FIELD_TERM => RESOLVE_NAMESPACE_OR_RETURN_MODE_UNRESOLVED"
+  ],
+  "mode_statuses": [
+    "MODE_OK",
+    "MODE_AMBIGUOUS",
+    "MODE_CROSSOVER",
+    "MODE_VIOLATION",
+    "MODE_UNRESOLVED"
+  ],
+  "delivery": {
+    "tool_less": "prepend_or_embed_this_contract_without_reclassifying_it_as_canonical_fact",
+    "adapter": "embed_with_normative_machine_contracts",
+    "vector_selected": "prepend_to_every_retrieved_context",
+    "latent_prefix": "carry_stable_mode_guards_only; keep mutable authority/freshness facts textual",
+    "hybrid": "mode_guard_prefix_plus_inspectable_factual_or_retrieved_context",
+    "tool_enabled": "apply_this_contract_before_live primary-source resolution"
+  },
+  "resources": {
+    "domain_modes": "modes/index.json",
+    "activities": "modes/activities.json",
+    "source_policy": "modes/source-policy.json",
+    "legal_jurisdictions": "modes/legal-jurisdictions.json",
+    "medical_specialties": "modes/medical-specialties.json",
+    "authority_resolvers": "modes/authority-resolvers.json",
+    "freshness_policy": "modes/freshness-policy.json",
+    "conflict_policy": "modes/conflict-policy.json",
+    "terminology_namespaces": "modes/terminology-namespaces.json",
+    "terminology_ontology": "modes/terminology-ontology.json",
+    "geometry": "geometry/mode-space-v1.json",
+    "bridges": "bridges/index.json",
+    "formal_policy_witness": "formal/mode-separation.json",
+    "mode_confusion_probe": "probe/mode-confusion-1.jsonl"
+  },
+  "compatibility": {
+    "policy_fingerprint_required": true,
+    "exact_policy_version_match_required_for_empirical_comparison": true,
+    "resource_fingerprint_mismatch": "MODE_UNRESOLVED",
+    "mutable_primary_authority_or_guideline_content_must_not_be_baked_into_stable_latent_state": true
+  },
+  "nonclaims": [
+    "This contract is policy and validation machinery, not evidence that any legal rule, clinical recommendation, scientific claim, or model output is true.",
+    "Deterministic oracle results are implementation self-tests and are not empirical model-performance evidence."
+  ]
+}

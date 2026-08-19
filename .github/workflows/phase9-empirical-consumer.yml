@@ -6,24 +6,44 @@ on:
       model:
         description: Ollama model tag to evaluate
         required: false
-        default: qwen2.5:1.5b
+        default: qwen2.5:3b
       num_ctx:
         description: Ollama context length
         required: false
         default: '32768'
+      num_predict:
+        description: Maximum generated tokens per Ollama pass
+        required: false
+        default: '4096'
+      request_timeout_seconds:
+        description: Maximum seconds per Ollama request
+        required: false
+        default: '600'
   push:
     branches: [agent/phase9-empirical-consumer]
   pull_request:
     paths:
       - 'tools/mixed_register_empirical.py'
+      - 'tools/mixed_register_empirical_closure.py'
       - 'tools/run_mixed_register_empirical.py'
+      - 'tools/close_mixed_register_empirical.py'
+      - 'tools/mode_core.py'
+      - 'tools/retrieve_mode_context.py'
+      - 'ai/manifest.json'
+      - 'schema/manifest.schema.json'
       - 'tests/test_phase9_empirical.py'
+      - 'tests/test_phase9_empirical_closure.py'
+      - 'schema/mixed-register-empirical-closure.schema.json'
       - 'empirical/mixed-register/**'
       - 'docs/MIXED_REGISTER_EMPIRICAL.md'
       - '.github/workflows/phase9-empirical-consumer.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: phase9-empirical-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   static:
@@ -40,21 +60,32 @@ jobs:
       - name: Compile empirical runner
         run: |
           python -m py_compile tools/mixed_register_empirical.py
+          python -m py_compile tools/mixed_register_empirical_closure.py
           python -m py_compile tools/run_mixed_register_empirical.py
+          python -m py_compile tools/close_mixed_register_empirical.py
       - name: Run empirical regression tests
-        run: python -m unittest tests.test_phase9_empirical
+        run: |
+          python -m unittest tests.test_phase9_empirical
+          python -m unittest tests.test_phase9_empirical_closure
       - name: Run Phase 9 regression suite
         run: python -m unittest discover -s tests -p 'test_phase9*.py'
 
   empirical:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    # The ten-pass Ollama matrix is deliberately manual. Pull requests run the
+    # static harness checks without spawning another CPU-heavy model experiment.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MODEL: ${{ inputs.model || 'qwen2.5:1.5b' }}
+      MODEL: ${{ inputs.model || 'qwen2.5:3b' }}
       NUM_CTX: ${{ inputs.num_ctx || '32768' }}
+      NUM_PREDICT: ${{ inputs.num_predict || '4096' }}
+      REQUEST_TIMEOUT_SECONDS: ${{ inputs.request_timeout_seconds || '600' }}
+      PYTHONUNBUFFERED: '1'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -76,43 +107,68 @@ jobs:
         run: ollama pull "$MODEL"
       - name: Run paired guarded and ablated experiment
         run: |
-          python tools/run_mixed_register_empirical.py \
+          python -u tools/run_mixed_register_empirical.py \
             --model "$MODEL" \
             --num-ctx "$NUM_CTX" \
+            --num-predict "$NUM_PREDICT" \
+            --request-timeout-seconds "$REQUEST_TIMEOUT_SECONDS" \
             --source-commit "$(git rev-parse HEAD)" \
             --output dist/empirical/mixed-register
+      - name: Close Phase 9 empirical questions
+        run: |
+          python -u tools/close_mixed_register_empirical.py \
+            --empirical-dir dist/empirical/mixed-register \
+            --output dist/empirical/mixed-register/closure.json \
+            --markdown dist/empirical/mixed-register/closure.md
       - name: Publish empirical summary
         if: always()
         run: |
-          if [ -f dist/empirical/mixed-register/summary.json ]; then
-            python - <<'PY'
+          python - <<'PY'
           import json, os
-          p = 'dist/empirical/mixed-register/summary.json'
-          data = json.load(open(p, encoding='utf-8'))
-          lines = [
-              '## Phase 9 empirical mixed-register run',
-              '',
-              f"Model: `{data['model']['model_id']}`",
-              f"Immutable revision: `{data['model']['immutable_model_revision']}`",
-              f"Cold-consumer demonstrated: **{data['cold_consumer_demonstrated']}**",
-              f"Passing guarded conditions: `{', '.join(data['passing_guarded_conditions']) or 'none'}`",
-              '',
-              '| Condition | Status Δ | Register Δ | Evidence Δ | Unsupported reduction | Cold gate |',
-              '|---|---:|---:|---:|---:|---:|',
-          ]
-          for row in data['rows']:
-              effect = row['guard_effect']
-              lines.append(
-                  f"| {row['condition']} | {effect['primary_status_accuracy_delta']} | "
-                  f"{effect['register_accuracy_delta']} | {effect['evidence_fidelity_delta']} | "
-                  f"{effect['unsupported_assertion_rate_reduction']} | {row['cold_consumer_gate']['passed']} |"
-              )
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as handle:
+          from pathlib import Path
+
+          summary_path = Path('dist/empirical/mixed-register/summary.json')
+          closure_path = Path('dist/empirical/mixed-register/closure.json')
+          lines = ['## Phase 9 empirical mixed-register run', '']
+
+          if summary_path.is_file():
+              data = json.loads(summary_path.read_text(encoding='utf-8'))
+              lines.extend([
+                  f"Model: `{data['model']['model_id']}`",
+                  f"Immutable revision: `{data['model']['immutable_model_revision']}`",
+                  f"Original cold-consumer gate demonstrated: **{data['cold_consumer_demonstrated']}**",
+                  f"Passing guarded conditions: `{', '.join(data['passing_guarded_conditions']) or 'none'}`",
+                  '',
+              ])
+
+          if closure_path.is_file():
+              closure = json.loads(closure_path.read_text(encoding='utf-8'))
+              lines.extend([
+                  f"Adjacency-trap claims: `{closure['adjacency_trap_claim_count']}`",
+                  f"Guard-effect conclusion: **{closure['guard_effect_conclusion']}**",
+                  f"Local guards improved in any condition: **{closure['local_guards_improved_in_any_condition']}**",
+                  f"Consistent non-degradation with improvement: **{closure['local_guards_consistent_non_degradation']}**",
+                  f"Strict cold-consumer classification demonstrated: **{closure['cold_consumer_classification_demonstrated']}**",
+                  f"Strict passing guarded conditions: `{', '.join(closure['strict_passing_guarded_conditions']) or 'none'}`",
+                  '',
+                  '| Condition | Effect | Adj. status Δ | False-support reduction | Unavailable Δ | Strict cold gate |',
+                  '|---|---|---:|---:|---:|---:|',
+              ])
+              for row in closure['rows']:
+                  effect = row['guard_effect']
+                  lines.append(
+                      f"| {row['condition']} | {row['guard_effect_classification']} | "
+                      f"{effect['adjacency_status_accuracy_delta']} | "
+                      f"{effect['adjacency_false_support_rate_reduction']} | "
+                      f"{effect['unavailable_status_accuracy_delta']} | "
+                      f"{row['strict_cold_consumer_gate']['passed']} |"
+                  )
+          else:
+              lines.append('Empirical closure artifact was not produced.')
+
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as handle:
               handle.write('\n'.join(lines) + '\n')
           PY
-          else
-            echo 'Empirical runner did not produce a summary.' >> "$GITHUB_STEP_SUMMARY"
-          fi
       - name: Upload empirical evidence
         if: always()
         uses: actions/upload-artifact@v4

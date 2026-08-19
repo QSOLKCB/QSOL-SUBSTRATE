@@ -123,7 +123,7 @@ dist/toolless/
 └── manifest.json
 ```
 
-Phase 5 uses deterministic model-independent `qsol-portable-token-v1` build budgets: `MICRO=8192`, `STANDARD=24576`, and `FULL=131072`. These values control compilation only and are not claims about any vendor/model tokenizer.
+Phase 5 uses `qsol-portable-token-v1` build budgets: `MICRO=8192`, `STANDARD=24576`, and `FULL=131072`. These values control compilation only and are not claims about any vendor/model tokenizer.
 
 Records are admitted only at whole canonical-item boundaries. Admission brings public `source_refs`, relationship endpoints, and other resolvable canonical-ID dependencies with the record, so compact profiles cannot gain space by leaving dangling provenance. Omitted material remains unavailable, not false.
 
@@ -544,18 +544,33 @@ Add a public, vendor-neutral specialist-policy layer over the canonical substrat
 - [x] Add schema, fail-closed validator, regression tests, and CI integration.
 - [x] Load the lightweight mode contract from the AI bootstrap while keeping detailed mode resources selective.
 
-Detailed implementation and deferred work are tracked in [`roadmap/substrate-modes.md`](roadmap/substrate-modes.md).
+Detailed implementation and empirical boundaries are tracked in [`roadmap/substrate-modes.md`](roadmap/substrate-modes.md).
 
-### Deferred Phase 10 work
+### Completed deferred Phase 10 implementation — `QSOL-MODE-POLICY/1`
 
-- [ ] **DEFERRED:** Empirically calibrate 24D thresholds against frozen cross-model runs.
-- [ ] **DEFERRED:** Build `MODE-CONFUSION/1` and measure cross-mode contamination under multiple delivery conditions.
-- [ ] **DEFERRED:** Propagate mode policy into every tool-less, adapter, vector, and latent projection only after deterministic compatibility rules are specified.
-- [ ] **DEFERRED:** Add jurisdiction-specific Legal primary-authority resolvers.
-- [ ] **DEFERRED:** Add specialty-specific, freshness-aware Medical guideline/regulator bindings.
-- [ ] **DEFERRED:** Expand terminology ontologies, authoritative-source resolvers, conflict contracts, and justified bridge coverage by submode.
-- [ ] **DEFERRED:** Explore formal proofs of selected mode-separation invariants without confusing formal policy consistency with legal, clinical, or empirical truth.
-- [ ] **DEFERRED:** Compare sparse 24D constraints against simpler rule-only policies before adopting any learned classifier.
+A checked item below means the deterministic policy, resolver, evaluation contract, validator, delivery binding, or release identity exists. It does **not** mean that CI has fabricated cross-model evidence or resolved live legal/clinical authority.
+
+- [x] Add a frozen empirical-calibration contract and runner for the 24D thresholds. Calibration binds the exact substrate, mode policy, model revision, and delivery condition, rejects scoring-oracle reports, and never mutates thresholds automatically.
+- [x] Build deterministic `MODE-CONFUSION/1` and executable scoring/comparison across naked, MICRO, STANDARD, FULL, vector-selected, latent-prefix, hybrid, and tool-enabled conditions. Actual contamination rates remain empirical run outputs.
+- [x] Propagate the versioned mode policy through generated adapters and deterministic tool-less, vector, latent-prefix, hybrid, and tool-enabled delivery contracts with exact policy-fingerprint compatibility.
+- [x] Add jurisdiction-specific Legal primary-authority resolver contracts for `AU-COMMONWEALTH` and `AU-SA`, with fail-closed jurisdiction, scope, time, and authority handling.
+- [x] Add specialty-specific, freshness-aware Medical policy profiles and guideline/regulator resolver contracts.
+- [x] Expand field terminology ontology, authoritative-source resolver contracts, conflict policy, and justified bridge coverage without auto-generating meaningless pairwise bridges.
+- [x] Add machine-checkable finite witnesses for selected mode-separation invariants while explicitly retaining `FORMALIZATION != PHYSICAL_OR_LEGAL_OR_CLINICAL_TRUTH`.
+- [x] Add a deterministic sparse-24D versus rule-only structural benchmark before any learned classifier. Cross-model superiority still requires real frozen consumer runs.
+- [x] Add mode-policy and mode-delivery fingerprints to the release bill of materials so canonical substrate identity and derived policy identity remain separately reproducible.
+
+### Evidence-bearing follow-through
+
+There is no remaining deferred **implementation** work in Phase 10. The following are results to be produced by real frozen runs or live authority resolution, not repository fixtures:
+
+- empirical threshold calibration across an actual model population;
+- measured sparse-24D versus rule-only performance across actual models;
+- measured delivery uplift or regression for particular model revisions;
+- current controlling legal authority for a concrete jurisdiction/question;
+- current applicable clinical guideline/regulator state for a concrete specialty/question.
+
+The repository now supplies the machinery to collect, bind, score, compare, and audit those results without pretending the deterministic oracle is the experiment.
 
 The roadmap is intentionally incremental.
 

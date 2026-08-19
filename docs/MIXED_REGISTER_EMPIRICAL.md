@@ -35,7 +35,7 @@ For guarded retrieval, local `BOUNDARY` semantics are rendered beside the canoni
 
 A run is cold when the consumer starts with no prior QSOL context and is instructed to use only the supplied carrier/retrieval evidence. The report itself is an evaluation target and may never become evidence.
 
-The strict default cold-consumer gate requires:
+The original cold-consumer gate requires:
 
 - primary epistemic-status accuracy >= 0.90;
 - register accuracy >= 0.90;
@@ -44,6 +44,17 @@ The strict default cold-consumer gate requires:
 - accuracy >= 0.80 inside each primary status class;
 - satire-register accuracy >= 0.80.
 
+Phase 9 closure adds a targeted adjacency gate rather than relying only on aggregate accuracy. An **adjacency trap** is derived mechanically as any non-supported claim in a paragraph that also contains at least one supported claim. The frozen corpus currently contains 16 such traps.
+
+A guarded condition closes the cold-consumer criterion only when the original gate passes **and**:
+
+- adjacency-trap status accuracy >= 0.80;
+- adjacency false-support rate == 0;
+- unavailable/unverified status accuracy >= 0.80;
+- unavailable/unverified spurious-evidence rate == 0.
+
+This directly tests the failure mode “the sentence beside this one was true, therefore this claim may borrow its provenance.”
+
 Passing is evidence only for the recorded immutable model digest and run. It is not a claim that all models, prompts, or future revisions behave the same way.
 
 ## Local Ollama runner
@@ -51,19 +62,61 @@ Passing is evidence only for the recorded immutable model digest and run. It is 
 Build/run:
 
 ```bash
-ollama pull qwen2.5:1.5b
+ollama pull qwen2.5:3b
 python tools/run_mixed_register_empirical.py \
-  --model qwen2.5:1.5b \
+  --model qwen2.5:3b \
   --source-commit "$(git rev-parse HEAD)" \
   --output dist/empirical/mixed-register
+
+python tools/close_mixed_register_empirical.py \
+  --empirical-dir dist/empirical/mixed-register
 ```
 
 The runner builds fresh tool-less, vector, and `MIXED-REGISTER/1` bundles from the checked-out commit, resolves the immutable Ollama model digest, performs the ten paired runs, normalises only explicitly visible evidence references, scores each audit with the canonical Phase 9 scorer, and writes `summary.json`.
+
+The canonical local-run defaults cap each response at 4,096 generated tokens and each Ollama request at 600 seconds. Reaching either bound is retained as a consumer/protocol failure for that exact condition; it is not silently retried, extended, or converted into a passing result. These limits prevent one malformed JSON generation from monopolising the complete matrix.
+
+The closure pass writes:
+
+```text
+dist/empirical/mixed-register/
+├── summary.json
+├── closure.json
+├── closure.md
+├── audits/
+├── reports/
+├── carriers/
+├── prompts/
+└── raw/
+```
+
+Before deriving any metric, the closure pass verifies every available audit and scored report against `summary.json`: complete evaluation-bundle and substrate identity, immutable provider/model revision, condition and guarded/ablated run identity, plus the recorded prompt, carrier, raw-response, audit, and report hashes. Mixed-run or edited evidence is refused even when each individual JSON file remains schema-shaped.
+
+`closure.json` derives adjacency traps from the frozen corpus, computes targeted guarded-versus-ablated metrics, classifies each condition as `improved`, `neutral`, `degraded`, `mixed`, or `unavailable`, and records whether at least one guarded condition satisfies the stricter cold-consumer criterion.
 
 Generated results are `derived_evaluation`; they do not become canonical `source_refs`.
 
 ## Interpreting guard effect
 
-For each condition the summary reports guarded-minus-ablated deltas for status accuracy, register accuracy, and evidence fidelity, plus the reduction in unsupported assertions.
+For each condition the original summary reports guarded-minus-ablated deltas for status accuracy, register accuracy, and evidence fidelity, plus the reduction in unsupported assertions.
 
-A positive delta is a measured effect for that exact run. It is **not** sufficient by itself to claim statistical significance or cross-model causality. Replication across immutable model revisions is a later empirical step, not something CI is allowed to invent.
+The closure adds:
+
+- adjacency-trap status-accuracy delta;
+- adjacency false-support-rate reduction;
+- adjacency evidence-fidelity delta;
+- unavailable/unverified status-accuracy delta;
+- unavailable/unverified spurious-evidence reduction;
+- satire-register and satire-status deltas.
+
+A condition is `improved` when at least one measured delta moves in the desired direction and none move backwards. `degraded` is the inverse, `mixed` records movement in both directions, and `neutral` means the measured deltas are all zero. The repository also records whether improvement is observed in any condition and whether improvement occurs without degradation across the complete five-condition matrix.
+
+These are descriptive paired measurements for one immutable model revision. A positive delta is **not** sufficient by itself to claim statistical significance or cross-model causality. Replication across immutable model revisions remains a separate empirical step.
+
+## CI evidence
+
+Pull requests run the static empirical-harness regression suite, but the full ten-pass Ollama matrix is deliberately **manual** through `workflow_dispatch`. A CPU-only hosted runner may spend many minutes evaluating the `FULL` carrier, so ordinary documentation or review-fix commits must not spawn another model experiment automatically.
+
+The workflow uses a concurrency group with `cancel-in-progress: true`, preventing future superseded runs for the same pull request or ref from accumulating. The runner is invoked with unbuffered Python output so each completed condition/variant appears in the live log rather than arriving as one late blob.
+
+A dispatched run binds evidence to the exact checked-out commit and immutable Ollama digest, publishes aggregate and adjacency-specific metrics, and uploads the complete prompts, carriers, raw responses, audits, reports, summary, and closure artifacts for inspection. Superseded runs are not evidence for the current pull-request head even when they eventually complete successfully.

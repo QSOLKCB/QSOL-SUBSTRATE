@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/mixed-register-empirical-closure.schema.json",
+  "title": "QSOL-SUBSTRATE Phase 9 empirical closure",
+  "type": "object",
+  "required": ["type", "schema_version", "closure_spec_version", "artifact_class", "canonical_truth_authority", "provenance_binding_validated", "validated_audit_count", "validated_artifact_count", "source_summary_sha256", "source_commit", "evaluation_bundle_sha256", "model", "conditions", "adjacency_trap_claim_ids", "adjacency_trap_claim_count", "rows", "guard_effect_conclusion", "local_guards_improved_in_any_condition", "local_guards_consistent_non_degradation", "strict_passing_guarded_conditions", "cold_consumer_classification_demonstrated", "interpretation"],
+  "properties": {
+    "type": {"const": "qsol-mixed-register-empirical-closure"},
+    "schema_version": {"const": "1.0.0"},
+    "closure_spec_version": {"const": "1.0.0"},
+    "artifact_class": {"const": "derived_evaluation"},
+    "canonical_truth_authority": {"const": false},
+    "provenance_binding_validated": {"const": true},
+    "validated_audit_count": {"type": "integer", "minimum": 0, "maximum": 10},
+    "validated_artifact_count": {"type": "integer", "minimum": 0, "maximum": 50},
+    "source_summary_sha256": {"$ref": "#/$defs/hash"},
+    "source_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "evaluation_bundle_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "model": {
+      "type": "object",
+      "required": ["provider", "model_id", "immutable_model_revision"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "immutable_model_revision": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "conditions": {"const": ["micro", "standard", "full", "vector", "tool-enabled"]},
+    "adjacency_trap_claim_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^mr1-[0-9]{3}$"}},
+    "adjacency_trap_claim_count": {"type": "integer", "minimum": 1},
+    "rows": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"$ref": "#/$defs/row"}},
+    "guard_effect_conclusion": {"enum": ["improved", "neutral", "degraded", "mixed", "unavailable"]},
+    "local_guards_improved_in_any_condition": {"type": "boolean"},
+    "local_guards_consistent_non_degradation": {"type": "boolean"},
+    "strict_passing_guarded_conditions": {"type": "array", "uniqueItems": true, "items": {"enum": ["micro", "standard", "full", "vector", "tool-enabled"]}},
+    "cold_consumer_classification_demonstrated": {"type": "boolean"},
+    "interpretation": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "metric": {"type": ["number", "null"], "minimum": -1, "maximum": 1},
+    "targeted": {
+      "type": ["object", "null"],
+      "properties": {
+        "adjacency_status_accuracy": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "adjacency_false_support_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "adjacency_evidence_fidelity": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "unavailable_status_accuracy": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "unavailable_spurious_evidence_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "satire_register_accuracy": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "satire_status_accuracy": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "strictGate": {
+      "type": "object",
+      "required": ["passed", "checks"],
+      "properties": {
+        "passed": {"type": "boolean"},
+        "checks": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "boolean"}},
+        "thresholds": {
+          "type": "object",
+          "properties": {
+            "adjacency_status_accuracy_min": {"const": 0.8},
+            "adjacency_false_support_rate_max": {"const": 0.0},
+            "unavailable_status_accuracy_min": {"const": 0.8},
+            "unavailable_spurious_evidence_rate_max": {"const": 0.0}
+          },
+          "required": ["adjacency_status_accuracy_min", "adjacency_false_support_rate_max", "unavailable_status_accuracy_min", "unavailable_spurious_evidence_rate_max"],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "row": {
+      "type": "object",
+      "required": ["condition", "guarded_targeted_metrics", "ablated_targeted_metrics", "guard_effect", "guard_effect_classification", "strict_cold_consumer_gate"],
+      "properties": {
+        "condition": {"enum": ["micro", "standard", "full", "vector", "tool-enabled"]},
+        "guarded_targeted_metrics": {"$ref": "#/$defs/targeted"},
+        "ablated_targeted_metrics": {"$ref": "#/$defs/targeted"},
+        "guard_effect": {
+          "type": "object",
+          "required": ["primary_status_accuracy_delta", "register_accuracy_delta", "evidence_fidelity_delta", "unsupported_assertion_rate_reduction", "adjacency_status_accuracy_delta", "adjacency_false_support_rate_reduction", "adjacency_evidence_fidelity_delta", "unavailable_status_accuracy_delta", "unavailable_spurious_evidence_rate_reduction", "satire_register_accuracy_delta", "satire_status_accuracy_delta"],
+          "additionalProperties": {"$ref": "#/$defs/metric"}
+        },
+        "guard_effect_classification": {"enum": ["improved", "neutral", "degraded", "mixed", "unavailable"]},
+        "strict_cold_consumer_gate": {"$ref": "#/$defs/strictGate"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

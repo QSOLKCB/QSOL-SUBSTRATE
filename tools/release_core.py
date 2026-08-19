@@ -7,6 +7,8 @@ from typing import Any, Callable
 
 import release_core_base as base
 from adapter_core import validate_adapter_bundle
+from mode_core import validate_mode_bundle
+from mode_delivery_core import validate_mode_delivery_bundle
 from probe_core import validate_probe_bundle
 from projection_core import validate_projection_bundle
 from toolless_core import validate_toolless_bundle
@@ -41,21 +43,28 @@ REPRODUCIBILITY_SOURCE_DIRS = {
     ".github",
     "adapters",
     "ai",
+    "bridges",
     "chronology",
     "context",
+    "docs",
+    "formal",
+    "geometry",
     "identity",
+    "modes",
+    "probe",
     "projects",
     "public_export",
     "publications",
     "relationships",
     "release",
+    "roadmap",
     "schema",
     "sources",
     "terminology",
     "tests",
     "tools",
 }
-REPRODUCIBILITY_SOURCE_FILES = {"requirements-validation.txt"}
+REPRODUCIBILITY_SOURCE_FILES = {"requirements-validation.txt", "ROADMAP.md"}
 
 
 def snapshot_identity(snapshot_date: str, source_commit: str, substrate_sha256: str) -> str:
@@ -163,7 +172,10 @@ def build_reproducible_plan(
         "commands": [
             "python -m unittest discover -s tests -v",
             "python tools/validate_substrate.py --json-report validation-report.json",
+            "python tools/validate_modes.py",
             "python tools/fingerprint_substrate.py --output substrate-fingerprint.json",
+            "python tools/build_modes.py --source-commit $SOURCE_COMMIT --output dist/modes",
+            "python tools/validate_mode_bundle.py --bundle dist/modes",
             "python tools/build_adapters.py --source-commit $SOURCE_COMMIT --output dist/adapters",
             "python tools/validate_adapter_bundle.py --bundle dist/adapters",
             "python tools/build_toolless.py --source-commit $SOURCE_COMMIT --output dist/toolless",
@@ -174,6 +186,8 @@ def build_reproducible_plan(
             "python tools/validate_projection_bundle.py --bundle dist/projections",
             "python tools/build_probes.py --source-commit $SOURCE_COMMIT --output dist/probes",
             "python tools/validate_probe_bundle.py --bundle dist/probes",
+            "python tools/bind_mode_delivery.py --source-commit $SOURCE_COMMIT --output dist/mode-delivery",
+            "python tools/validate_mode_delivery.py --bundle dist/mode-delivery",
             release_command,
             "python tools/validate_release.py --bundle dist/release",
         ],
@@ -187,7 +201,7 @@ def build_archive_metadata(
     status: str = "unassigned",
     doi: str | None = None,
 ) -> dict[str, Any]:
-    value = {
+    return {
         "type": "qsol-substrate-archive-metadata",
         "schema_version": SCHEMA_VERSION,
         "provider": "Zenodo",
@@ -204,7 +218,6 @@ def build_archive_metadata(
             "A DOI records an archive location; it does not redefine canonical substrate facts or the canonical substrate fingerprint.",
         ],
     }
-    return value
 
 
 def _validate_archive_binding(
@@ -245,10 +258,12 @@ def _run_component_validator(
 
 def _validate_component_bundles(root: Path) -> None:
     checks: tuple[tuple[str, Callable[[Path, Path], list[Any]], str], ...] = (
+        ("modes", validate_mode_bundle, "dist/modes"),
         ("adapters", validate_adapter_bundle, "dist/adapters"),
         ("toolless", validate_toolless_bundle, "dist/toolless"),
         ("vectors", validate_vector_bundle, "dist/vectors"),
         ("projections", validate_projection_bundle, "dist/projections"),
+        ("mode_delivery", validate_mode_delivery_bundle, "dist/mode-delivery"),
         ("probes", validate_probe_bundle, "dist/probes"),
     )
     for label, validator, rel_path in checks:
@@ -276,21 +291,38 @@ def build_release_bundle(
     substrate_sha = canonical["substrate_sha256"]
     snapshot_date = canonical["snapshot_date"]
 
-    # Never seal a component merely because its manifest still looks plausible.
     _validate_component_bundles(root)
 
+    modes, mode_entry = _component(root, "dist/modes/manifest.json", "bundle_sha256", source_commit, substrate_sha)
     adapters, adapter_entry = _component(root, "dist/adapters/manifest.json", "adapter_bundle_sha256", source_commit, substrate_sha)
     toolless, toolless_entry = _component(root, "dist/toolless/manifest.json", "bundle_sha256", source_commit, substrate_sha)
     vectors, vector_entry = _component(root, "dist/vectors/manifest.json", "bundle_sha256", source_commit, substrate_sha)
     projections, projection_entry = _component(root, "dist/projections/manifest.json", "bundle_sha256", source_commit, substrate_sha)
+    mode_delivery, mode_delivery_entry = _component(root, "dist/mode-delivery/manifest.json", "bundle_sha256", source_commit, substrate_sha)
     probes, probe_entry = _component(root, "dist/probes/manifest.json", "bundle_sha256", source_commit, substrate_sha)
 
+    mode_entry.update(
+        {
+            "policy_version": modes.get("policy_version"),
+            "mode_policy_sha256": modes.get("mode_policy_sha256"),
+            "mode_confusion_version": modes.get("mode_confusion_version"),
+            "case_count": modes.get("case_count"),
+            "empirical_model_results_in_ci": modes.get("empirical_model_results_in_ci"),
+        }
+    )
     toolless_entry["profiles"] = [
         {"name": item["name"], "sha256": item["sha256"]}
         for item in toolless.get("profiles", [])
     ]
     vector_entry["index_sha256"] = _sha256((root / "dist/vectors/index.json").read_bytes())
     vector_entry["embeddings_sha256"] = _sha256((root / "dist/vectors/embeddings.f16").read_bytes())
+    mode_delivery_entry.update(
+        {
+            "mode_policy_sha256": mode_delivery.get("mode_policy", {}).get("mode_policy_sha256"),
+            "mode_bundle_sha256": mode_delivery.get("mode_policy", {}).get("mode_bundle_sha256"),
+            "tool_less_profile_count": len(mode_delivery.get("tool_less_profiles", [])),
+        }
+    )
     projection_entry.update(
         {
             "compatibility_schema": "schema/model-projection-compatibility.schema.json",
@@ -343,10 +375,12 @@ def build_release_bundle(
             "substrate_sha256": substrate_sha,
         },
         "components": {
+            "modes": mode_entry,
             "adapters": adapter_entry,
             "toolless": toolless_entry,
             "vectors": vector_entry,
             "projections": projection_entry,
+            "mode_delivery": mode_delivery_entry,
             "probes": probe_entry,
         },
         "reproducibility": {
@@ -379,7 +413,6 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
     candidate = bundle if bundle.is_absolute() else root / bundle
     findings: list[str] = []
     try:
-        # Check the user-supplied path before resolve(), otherwise a symlink is erased by resolution.
         if candidate.is_symlink():
             raise ReleaseError("release bundle must be a real directory, not a symlink")
         bundle = candidate.resolve()
@@ -443,7 +476,6 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
         if plan != expected_plan:
             raise ReleaseError("reproducible build plan mismatch")
 
-        # Component validation is a core trust check and remains active even with --no-rebuild.
         _validate_component_bundles(root)
 
         probes = _read_json(root / "dist/probes/manifest.json")
@@ -456,10 +488,12 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
             raise ReleaseError("immutable probe snapshot does not match built probe bundle")
 
         component_keys = {
+            "modes": ("dist/modes/manifest.json", "bundle_sha256"),
             "adapters": ("dist/adapters/manifest.json", "adapter_bundle_sha256"),
             "toolless": ("dist/toolless/manifest.json", "bundle_sha256"),
             "vectors": ("dist/vectors/manifest.json", "bundle_sha256"),
             "projections": ("dist/projections/manifest.json", "bundle_sha256"),
+            "mode_delivery": ("dist/mode-delivery/manifest.json", "bundle_sha256"),
             "probes": ("dist/probes/manifest.json", "bundle_sha256"),
         }
         for name, (rel_path, bundle_key) in component_keys.items():
@@ -469,6 +503,23 @@ def validate_release_bundle(root: Path, bundle: Path, deterministic_rebuild: boo
                 raise ReleaseError(f"{name} manifest hash mismatch")
             if recorded["bundle_sha256"] != current.get(bundle_key):
                 raise ReleaseError(f"{name} bundle fingerprint mismatch")
+
+        mode_current = _read_json(root / "dist/modes/manifest.json")
+        mode_recorded = manifest["components"]["modes"]
+        if mode_recorded.get("mode_policy_sha256") != mode_current.get("mode_policy_sha256"):
+            raise ReleaseError("mode policy fingerprint mismatch")
+        if mode_recorded.get("policy_version") != mode_current.get("policy_version"):
+            raise ReleaseError("mode policy version mismatch")
+
+        delivery_current = _read_json(root / "dist/mode-delivery/manifest.json")
+        delivery_recorded = manifest["components"]["mode_delivery"]
+        delivery_policy = delivery_current.get("mode_policy", {})
+        if delivery_recorded.get("mode_policy_sha256") != delivery_policy.get("mode_policy_sha256"):
+            raise ReleaseError("mode-delivery policy fingerprint mismatch")
+        if delivery_recorded.get("mode_bundle_sha256") != delivery_policy.get("mode_bundle_sha256"):
+            raise ReleaseError("mode-delivery source mode-bundle fingerprint mismatch")
+        if delivery_recorded.get("tool_less_profile_count") != len(delivery_current.get("tool_less_profiles", [])):
+            raise ReleaseError("mode-delivery tool-less profile count mismatch")
 
         if deterministic_rebuild:
             with tempfile.TemporaryDirectory() as tmp:

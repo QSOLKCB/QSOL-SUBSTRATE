@@ -47,6 +47,18 @@ jobs:
         id: artifact-source
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Build Phase 10 mode-policy bundle
+        run: python tools/build_modes.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/modes
+
+      - name: Validate Phase 10 mode-policy bundle
+        run: python tools/validate_mode_bundle.py --bundle dist/modes
+
+      - name: Build MODE-CONFUSION/1 scoring-oracle self-test
+        run: python tools/build_mode_oracle.py --bundle dist/modes --output mode-oracle-run.json
+
+      - name: Score MODE-CONFUSION/1 scoring-oracle self-test
+        run: python tools/score_mode_run.py --bundle dist/modes --run mode-oracle-run.json --output mode-oracle-report.json --require-perfect-oracle
+
       - name: Build portable adapters
         run: python tools/build_adapters.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/adapters
 
@@ -83,6 +95,12 @@ jobs:
       - name: Score scoring-oracle self-test
         run: python tools/score_probe_run.py --bundle dist/probes --run probe-oracle-run.json --output probe-oracle-report.json --markdown probe-oracle-report.md --require-perfect-oracle
 
+      - name: Bind mode policy to deterministic delivery surfaces
+        run: python tools/bind_mode_delivery.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --output dist/mode-delivery
+
+      - name: Validate mode-bound delivery surfaces
+        run: python tools/validate_mode_delivery.py --bundle dist/mode-delivery
+
       - name: Build Phase 8 release candidate
         run: python tools/build_release.py --source-commit "${{ steps.artifact-source.outputs.sha }}" --version 0.8.0-ci.0 --channel ci --output dist/release
 
@@ -97,6 +115,10 @@ jobs:
           import os
           from pathlib import Path
           fingerprint = json.loads(Path("substrate-fingerprint.json").read_text())
+          modes = json.loads(Path("dist/modes/manifest.json").read_text())
+          mode_reference = json.loads(Path("dist/modes/reference-report.json").read_text())
+          mode_oracle = json.loads(Path("mode-oracle-report.json").read_text())
+          mode_delivery = json.loads(Path("dist/mode-delivery/manifest.json").read_text())
           adapters = json.loads(Path("dist/adapters/manifest.json").read_text())
           toolless = json.loads(Path("dist/toolless/manifest.json").read_text())
           vectors = json.loads(Path("dist/vectors/manifest.json").read_text())
@@ -110,6 +132,12 @@ jobs:
               out.write(f"- Snapshot: `{fingerprint['snapshot_date']}`\n")
               out.write(f"- Substrate SHA-256: `{fingerprint['substrate_sha256']}`\n")
               out.write(f"- Canonical payload files: `{len(fingerprint['files'])}`\n")
+              out.write(f"- Mode policy: `{modes['policy_version']}` / `{modes['mode_policy_sha256']}`\n")
+              out.write(f"- MODE-CONFUSION/1 cases: `{modes['case_count']}`\n")
+              out.write(f"- Sparse-24D structural oracle: `{mode_reference['sparse_24d']['correct']}/{mode_reference['sparse_24d']['total']}`; empirical model result: `false`\n")
+              out.write(f"- Rule-only structural oracle: `{mode_reference['rule_only']['correct']}/{mode_reference['rule_only']['total']}`; empirical model result: `false`\n")
+              out.write(f"- MODE-CONFUSION scoring-oracle self-test: `{mode_oracle['counts']['correct']}/{mode_oracle['counts']['total']}`; empirical model result: `false`\n")
+              out.write(f"- Mode-delivery bundle SHA-256: `{mode_delivery['bundle_sha256']}`\n")
               out.write(f"- Portable adapters: `{len(adapters['adapters'])}`\n")
               out.write(f"- Adapter source commit: `{adapters['substrate']['source_commit']}`\n")
               out.write(f"- Adapter bundle SHA-256: `{adapters['adapter_bundle_sha256']}`\n")
@@ -117,6 +145,11 @@ jobs:
               for profile in toolless["profiles"]:
                   out.write(
                       f"- {profile['name']}: `{profile['portable_tokens']}/{profile['token_budget']}` portable tokens, "
+                      f"`{profile['included_items']}` included / `{profile['omitted_items']}` omitted items\n"
+                  )
+              for profile in mode_delivery["tool_less_profiles"]:
+                  out.write(
+                      f"- MODE-{profile['name']}: `{profile['portable_tokens']}/{profile['token_budget']}` portable tokens, "
                       f"`{profile['included_items']}` included / `{profile['omitted_items']}` omitted items\n"
                   )
               out.write(f"- Vector records: `{vectors['record_count']}` at `{vectors['embedding']['dimension']}` dimensions\n")
@@ -129,6 +162,7 @@ jobs:
               out.write(f"- Probe bundle SHA-256: `{probes['bundle_sha256']}`\n")
               out.write(f"- Scoring-oracle self-test: `{oracle['counts']['correct']}/{oracle['counts']['total']}`; empirical model result: `false`\n")
               out.write(f"- Phase 8 CI release version: `{release['release']['version']}`; publishable: `{str(release['release']['publishable']).lower()}`\n")
+              out.write(f"- Release-bound mode policy: `{release['components']['modes']['mode_policy_sha256']}`\n")
               out.write(f"- Release snapshot ID: `{release['substrate']['snapshot_id']}`\n")
               out.write(f"- Release SHA-256: `{release['release_sha256']}`\n")
           PY
@@ -141,9 +175,13 @@ jobs:
           path: |
             validation-report.json
             substrate-fingerprint.json
+            mode-oracle-run.json
+            mode-oracle-report.json
             probe-oracle-run.json
             probe-oracle-report.json
             probe-oracle-report.md
+            dist/modes/
+            dist/mode-delivery/
             dist/adapters/
             dist/toolless/
             dist/vectors/

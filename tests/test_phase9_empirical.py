@@ -17,11 +17,13 @@ class FakeOllama(empirical.OllamaClient):
         super().__init__("http://invalid", model)
         self._models = models or []
         self._response_text = response_text
+        self.last_generate_body = None
 
     def _json(self, method, path, body=None):
         if path == "/api/tags":
             return {"models": self._models}
         if path == "/api/generate":
+            self.last_generate_body = body
             return {
                 "response": self._response_text,
                 "prompt_eval_count": 10,
@@ -157,6 +159,9 @@ class Phase9EmpiricalTests(unittest.TestCase):
         payload, metadata, exact = client.generate("prompt")
         self.assertEqual(payload, {"claims": []})
         self.assertEqual(exact, raw)
+        self.assertEqual(client.last_generate_body["options"]["num_predict"], 4096)
+        self.assertEqual(metadata["num_predict"], 4096)
+        self.assertEqual(metadata["request_timeout_seconds"], 600)
         self.assertEqual(
             metadata["raw_response_sha256"],
             hashlib.sha256(raw.encode("utf-8")).hexdigest(),
@@ -180,6 +185,22 @@ class Phase9EmpiricalTests(unittest.TestCase):
         self.assertEqual(protocol["cold_consumer_gate"], empirical.DEFAULT_THRESHOLDS)
         self.assertTrue(protocol["consumer_contract"]["treatment_assignment_blinded"])
         self.assertTrue(protocol["consumer_contract"]["evidence_reference_violations_fail_gate"])
+        runner = protocol["default_local_runner"]
+        self.assertGreater(runner["num_predict"], 0)
+        self.assertLessEqual(runner["num_predict"], runner["num_ctx"])
+        self.assertGreater(runner["request_timeout_seconds"], 0)
+
+    def test_workflow_default_model_matches_machine_protocol(self):
+        protocol = empirical.load_empirical_protocol(ROOT)
+        model = protocol["default_local_runner"]["model"]
+        workflow = (ROOT / ".github/workflows/phase9-empirical-consumer.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("default: " + model, workflow)
+        self.assertIn("inputs.model || '" + model + "'", workflow)
+        self.assertIn("inputs.num_predict || '4096'", workflow)
+        self.assertIn("inputs.request_timeout_seconds || '600'", workflow)
+        self.assertIn("python -u tools/run_mixed_register_empirical.py", workflow)
 
     def _summary_fixture(self):
         identity = empirical.ModelIdentity("ollama-local", "demo:tag", "sha256:abc")

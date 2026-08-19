@@ -1,0 +1,55 @@
+{
+  "type": "qsol-legal-jurisdiction-profiles",
+  "schema_version": "1.0.0",
+  "classification": "policy_not_legal_authority",
+  "default": {
+    "unresolved_jurisdiction": "MODE_UNRESOLVED",
+    "binding_claim_without_resolved_primary_authority": "MODE_VIOLATION",
+    "secondary_sources": "explanatory_only_for_binding_claims",
+    "required_temporal_fields": [
+      "retrieved_at",
+      "effective_or_decision_date",
+      "authority_version_or_identifier"
+    ]
+  },
+  "jurisdictions": [
+    {
+      "id": "AU-COMMONWEALTH",
+      "label": "Australia — Commonwealth",
+      "parent": "AU",
+      "legal_system_scope": "Commonwealth/federal",
+      "primary_authority_resolvers": [
+        "resolver:au-commonwealth-legislation",
+        "resolver:au-commonwealth-case-law",
+        "resolver:au-commonwealth-regulator"
+      ],
+      "guards": [
+        "bill_or_exposure_draft != enacted_act",
+        "historical_text != current_text",
+        "lower_or_other_jurisdiction_authority != controlling_commonwealth_authority"
+      ]
+    },
+    {
+      "id": "AU-SA",
+      "label": "Australia — South Australia",
+      "parent": "AU",
+      "legal_system_scope": "South Australia",
+      "primary_authority_resolvers": [
+        "resolver:au-sa-legislation",
+        "resolver:au-sa-case-law",
+        "resolver:au-sa-regulator"
+      ],
+      "guards": [
+        "commonwealth_rule != automatically_south_australian_rule",
+        "bill != act",
+        "historical_text != current_text"
+      ]
+    }
+  ],
+  "resolution_rules": [
+    "resolve jurisdiction before asserting a binding legal rule when jurisdiction is material",
+    "a resolver classifies first-party authority metadata; it does not infer the legal conclusion",
+    "if jurisdiction, temporal scope, or authority identity conflicts, preserve CONFLICT or MODE_UNRESOLVED",
+    "do not silently generalize one Australian jurisdiction to another"
+  ]
+}

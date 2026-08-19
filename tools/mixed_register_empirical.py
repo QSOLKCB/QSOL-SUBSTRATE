@@ -41,6 +41,8 @@ DEFAULT_THRESHOLDS = {
     "per_status_accuracy_min": 0.80,
     "satire_register_accuracy_min": 0.80,
 }
+DEFAULT_NUM_PREDICT = 4096
+DEFAULT_REQUEST_TIMEOUT_SECONDS = 600
 WORD_RE = re.compile(r"[A-Za-z0-9_.:/=-]+", re.UNICODE)
 
 
@@ -96,6 +98,17 @@ def load_empirical_protocol(root: Path) -> dict[str, Any]:
         raise EmpiricalError("empirical protocol retrieval conditions are incomplete")
     if vector_cfg.get("top_k") != tool_cfg.get("top_k"):
         raise EmpiricalError("vector and tool-enabled canonical top_k must match")
+    runner = value.get("default_local_runner")
+    if not isinstance(runner, dict):
+        raise EmpiricalError("empirical protocol default_local_runner is missing")
+    num_predict = runner.get("num_predict")
+    timeout_seconds = runner.get("request_timeout_seconds")
+    if not isinstance(num_predict, int) or isinstance(num_predict, bool) or num_predict < 1:
+        raise EmpiricalError("default_local_runner.num_predict must be a positive integer")
+    if not isinstance(timeout_seconds, int) or isinstance(timeout_seconds, bool) or timeout_seconds < 1:
+        raise EmpiricalError("default_local_runner.request_timeout_seconds must be a positive integer")
+    if num_predict > int(runner.get("num_ctx", 0)):
+        raise EmpiricalError("default_local_runner.num_predict may not exceed num_ctx")
     return value
 
 
@@ -327,11 +340,27 @@ def constrain_evidence_refs(root: Path, claims: list[dict[str, Any]], context: s
 
 
 class OllamaClient:
-    def __init__(self, base_url: str, model: str, num_ctx: int = 32768, seed: int = 18437):
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        num_ctx: int = 32768,
+        seed: int = 18437,
+        num_predict: int = DEFAULT_NUM_PREDICT,
+        request_timeout_seconds: int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    ):
+        if num_ctx < 1:
+            raise EmpiricalError("num_ctx must be positive")
+        if num_predict < 1 or num_predict > num_ctx:
+            raise EmpiricalError("num_predict must be positive and no greater than num_ctx")
+        if request_timeout_seconds < 1:
+            raise EmpiricalError("request_timeout_seconds must be positive")
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.num_ctx = num_ctx
         self.seed = seed
+        self.num_predict = num_predict
+        self.request_timeout_seconds = request_timeout_seconds
 
     def _json(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
         data = canonical_json_bytes(body) if body is not None else None
@@ -342,7 +371,7 @@ class OllamaClient:
             headers={"Content-Type": "application/json"} if body is not None else {},
         )
         try:
-            with urllib.request.urlopen(request, timeout=1800) as response:
+            with urllib.request.urlopen(request, timeout=self.request_timeout_seconds) as response:
                 value = json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise EmpiricalError(f"Ollama request failed for {path}: {exc}") from exc
@@ -395,6 +424,7 @@ class OllamaClient:
                 "temperature": 0,
                 "seed": self.seed,
                 "num_ctx": self.num_ctx,
+                "num_predict": self.num_predict,
             },
         })
         raw = response.get("response")
@@ -411,6 +441,9 @@ class OllamaClient:
             "eval_count": response.get("eval_count"),
             "total_duration": response.get("total_duration"),
             "load_duration": response.get("load_duration"),
+            "num_ctx": self.num_ctx,
+            "num_predict": self.num_predict,
+            "request_timeout_seconds": self.request_timeout_seconds,
             "raw_response_sha256": _sha256(raw.encode("utf-8")),
         }
         return payload, metadata, raw
