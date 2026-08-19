@@ -1,0 +1,66 @@
+name: Apply Empirical Runtime Bounds
+
+on:
+  push:
+    branches:
+      - agent/finish-deferred-substrate-modes
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: contains(github.event.head_commit.message, '[apply-empirical-runtime-bounds]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/finish-deferred-substrate-modes
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install validation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+
+      - name: Apply bounded empirical runtime contract
+        run: python tools/apply_empirical_runtime_bounds.py
+
+      - name: Compile changed Python
+        run: |
+          python -m py_compile tools/mixed_register_empirical.py
+          python -m py_compile tools/run_mixed_register_empirical.py
+          python -m py_compile tests/test_phase9_empirical.py
+
+      - name: Run focused regression tests
+        run: |
+          python -m unittest tests.test_phase9_empirical
+          python -m unittest tests.test_phase9_empirical_closure
+          python -m unittest discover -s tests -p 'test_phase9*.py'
+          git diff --check
+
+      - name: Commit and push runtime bounds
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            tools/mixed_register_empirical.py \
+            tools/run_mixed_register_empirical.py \
+            empirical/mixed-register/experiment.json \
+            schema/mixed-register-empirical-experiment.schema.json \
+            .github/workflows/phase9-empirical-consumer.yml \
+            tests/test_phase9_empirical.py \
+            docs/MIXED_REGISTER_EMPIRICAL.md \
+            CHANGELOG.md
+          git diff --cached --quiet && {
+            echo "Patch script produced no staged changes."
+            exit 1
+          }
+          git commit -m "Bound empirical model runtime and output"
+          git push origin HEAD:agent/finish-deferred-substrate-modes
