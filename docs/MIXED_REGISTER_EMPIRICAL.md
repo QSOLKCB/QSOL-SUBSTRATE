@@ -113,6 +113,8 @@ These are descriptive paired measurements for one immutable model revision. A po
 
 ## CI evidence
 
-The Phase 9 empirical workflow now runs the cold Ollama consumer on pull requests that modify this empirical harness. This keeps the two roadmap exit questions tied to an actual open-weight model execution rather than a scoring oracle.
+Pull requests run the static empirical-harness regression suite, but the full ten-pass Ollama matrix is deliberately **manual** through `workflow_dispatch`. A CPU-only hosted runner may spend many minutes evaluating the `FULL` carrier, so ordinary documentation or review-fix commits must not spawn another model experiment automatically.
 
-The workflow binds the evidence to the exact PR head commit and immutable Ollama digest, publishes both the aggregate and adjacency-specific metrics, and uploads the complete prompts, carriers, raw responses, audits, reports, summary, and closure artifacts for inspection.
+The workflow uses a concurrency group with `cancel-in-progress: true`, preventing future superseded runs for the same pull request or ref from accumulating. The runner is invoked with unbuffered Python output so each completed condition/variant appears in the live log rather than arriving as one late blob.
+
+A dispatched run binds evidence to the exact checked-out commit and immutable Ollama digest, publishes aggregate and adjacency-specific metrics, and uploads the complete prompts, carriers, raw responses, audits, reports, summary, and closure artifacts for inspection. Superseded runs are not evidence for the current pull-request head even when they eventually complete successfully.
