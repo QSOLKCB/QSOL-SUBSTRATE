@@ -11,6 +11,14 @@ on:
         description: Ollama context length
         required: false
         default: '32768'
+      num_predict:
+        description: Maximum generated tokens per Ollama pass
+        required: false
+        default: '4096'
+      request_timeout_seconds:
+        description: Maximum seconds per Ollama request
+        required: false
+        default: '600'
   push:
     branches: [agent/phase9-empirical-consumer]
   pull_request:
@@ -71,6 +79,8 @@ jobs:
     env:
       MODEL: ${{ inputs.model || 'qwen2.5:3b' }}
       NUM_CTX: ${{ inputs.num_ctx || '32768' }}
+      NUM_PREDICT: ${{ inputs.num_predict || '4096' }}
+      REQUEST_TIMEOUT_SECONDS: ${{ inputs.request_timeout_seconds || '600' }}
       PYTHONUNBUFFERED: '1'
     steps:
       - uses: actions/checkout@v4
@@ -100,6 +110,8 @@ jobs:
           python -u tools/run_mixed_register_empirical.py \
             --model "$MODEL" \
             --num-ctx "$NUM_CTX" \
+            --num-predict "$NUM_PREDICT" \
+            --request-timeout-seconds "$REQUEST_TIMEOUT_SECONDS" \
             --source-commit "$(git rev-parse HEAD)" \
             --output dist/empirical/mixed-register
       - name: Close Phase 9 empirical questions
