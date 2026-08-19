@@ -31,16 +31,6 @@ jobs:
       - name: Apply bounded empirical runtime contract
         run: python tools/apply_empirical_runtime_bounds.py
 
-      - name: Keep workflow bytes outside the bot commit
-        run: |
-          git checkout HEAD -- .github/workflows/phase9-empirical-consumer.yml
-          rm -f tools/apply_empirical_runtime_bounds.py
-          if git diff --name-only -- .github/workflows | grep -q .; then
-            echo "Refusing to push workflow-file changes from GITHUB_TOKEN."
-            git diff --name-only -- .github/workflows
-            exit 1
-          fi
-
       - name: Compile and test bounded runner
         run: |
           python -m py_compile tools/mixed_register_empirical.py
@@ -50,6 +40,16 @@ jobs:
           python -m unittest tests.test_phase9_empirical_closure
           python -m unittest discover -s tests -p 'test_phase9*.py'
           git diff --check
+
+      - name: Keep workflow bytes outside the bot commit
+        run: |
+          git checkout HEAD -- .github/workflows/phase9-empirical-consumer.yml
+          rm -f tools/apply_empirical_runtime_bounds.py
+          if git diff --name-only -- .github/workflows | grep -q .; then
+            echo "Refusing to push workflow-file changes from GITHUB_TOKEN."
+            git diff --name-only -- .github/workflows
+            exit 1
+          fi
 
       - name: Commit non-workflow runtime changes
         run: |
