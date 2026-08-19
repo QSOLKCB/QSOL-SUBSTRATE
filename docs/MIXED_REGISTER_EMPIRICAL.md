@@ -74,6 +74,8 @@ python tools/close_mixed_register_empirical.py \
 
 The runner builds fresh tool-less, vector, and `MIXED-REGISTER/1` bundles from the checked-out commit, resolves the immutable Ollama model digest, performs the ten paired runs, normalises only explicitly visible evidence references, scores each audit with the canonical Phase 9 scorer, and writes `summary.json`.
 
+The canonical local-run defaults cap each response at 4,096 generated tokens and each Ollama request at 600 seconds. Reaching either bound is retained as a consumer/protocol failure for that exact condition; it is not silently retried, extended, or converted into a passing result. These limits prevent one malformed JSON generation from monopolising the complete matrix.
+
 The closure pass writes:
 
 ```text

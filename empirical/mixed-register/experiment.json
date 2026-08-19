@@ -9,7 +9,13 @@
     "Do local nonclaims and ADJACENT_TRUTH != INHERITED_TRUTH improve mixed-register classification?",
     "Can a cold consumer classify supported, contradicted, unavailable/unverified, and satirical claims without using plausibility or neighbouring truth as provenance?"
   ],
-  "conditions": ["micro", "standard", "full", "vector", "tool-enabled"],
+  "conditions": [
+    "micro",
+    "standard",
+    "full",
+    "vector",
+    "tool-enabled"
+  ],
   "paired_variants": {
     "guarded": "Normal delivery with local BOUNDARY nonclaims and the adjacency/satire guard treatment retained.",
     "ablated": "Same delivery with only local BOUNDARY nonclaims and the tested adjacency/formalization/satire boundary treatment removed; general UNKNOWN != FALSE semantics remain."
@@ -45,7 +51,9 @@
     "temperature": 0,
     "seed": 18437,
     "num_ctx": 32768,
-    "immutable_revision": "resolved from the exact installed Ollama tag digest at run time"
+    "immutable_revision": "resolved from the exact installed Ollama tag digest at run time",
+    "num_predict": 4096,
+    "request_timeout_seconds": 600
   },
   "cold_consumer_gate": {
     "primary_status_accuracy_min": 0.9,

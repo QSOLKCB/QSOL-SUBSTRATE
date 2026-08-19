@@ -252,6 +252,12 @@ def main() -> int:
     parser.add_argument("--model", default=runner_defaults["model"])
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--num-ctx", type=int, default=int(runner_defaults["num_ctx"]))
+    parser.add_argument("--num-predict", type=int, default=int(runner_defaults["num_predict"]))
+    parser.add_argument(
+        "--request-timeout-seconds",
+        type=int,
+        default=int(runner_defaults["request_timeout_seconds"]),
+    )
     parser.add_argument("--seed", type=int, default=int(runner_defaults["seed"]))
     parser.add_argument("--top-k", type=int, default=canonical_top_k)
     parser.add_argument(
@@ -292,7 +298,14 @@ def main() -> int:
         ) + "]")
         report_text = (mixed_dir / "report.md").read_text(encoding="utf-8")
 
-        client = OllamaClient(args.ollama_url, args.model, num_ctx=args.num_ctx, seed=args.seed)
+        client = OllamaClient(
+            args.ollama_url,
+            args.model,
+            num_ctx=args.num_ctx,
+            seed=args.seed,
+            num_predict=args.num_predict,
+            request_timeout_seconds=args.request_timeout_seconds,
+        )
         identity = client.identity()
         output_dir = _prepare_output_dir(args.output)
 
@@ -309,6 +322,12 @@ def main() -> int:
                 (output_dir / "prompts" / f"{stem}.txt").write_text(prompt, encoding="utf-8")
                 (output_dir / "carriers" / f"{stem}.txt").write_text(carrier, encoding="utf-8")
 
+                print(
+                    f"{condition}/{variant}: starting prompt_chars={len(prompt)} "
+                    f"num_ctx={args.num_ctx} num_predict={args.num_predict} "
+                    f"timeout_seconds={args.request_timeout_seconds}",
+                    flush=True,
+                )
                 raw_payload, provider_meta, raw_text = client.generate(prompt)
                 raw_path = output_dir / "raw" / f"{stem}.response.json"
                 raw_path.write_bytes(raw_text.encode("utf-8"))
@@ -391,6 +410,8 @@ def main() -> int:
         summary["source_commit"] = source_commit
         summary["seed"] = args.seed
         summary["num_ctx"] = args.num_ctx
+        summary["num_predict"] = args.num_predict
+        summary["request_timeout_seconds"] = args.request_timeout_seconds
         summary["top_k"] = args.top_k
         summary["run_count"] = len(results)
         summary["protocol_sha256"] = hashlib.sha256(
