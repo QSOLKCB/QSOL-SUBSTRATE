@@ -1,0 +1,72 @@
+name: PR16 Review Fix Applier
+
+on:
+  push:
+    branches:
+      - agent/finish-deferred-substrate-modes
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: contains(github.event.head_commit.message, '[run-pr16-review-fixes]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/finish-deferred-substrate-modes
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install validation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+
+      - name: Apply remaining review fixes
+        run: python tools/apply_pr16_review_fixes.py
+
+      - name: Compile changed Python
+        run: |
+          python -m py_compile tools/mode_core.py
+          python -m py_compile tools/run_mixed_register_empirical.py
+          python -m py_compile tools/mixed_register_empirical_closure.py
+          python -m py_compile tests/test_mode_deferred.py
+          python -m py_compile tests/test_phase9_empirical.py
+          python -m py_compile tests/test_phase9_empirical_closure.py
+
+      - name: Run focused regression tests
+        run: |
+          python -m unittest tests.test_mode_deferred
+          python -m unittest tests.test_phase9_empirical
+          python -m unittest tests.test_phase9_empirical_closure
+          python tools/validate_modes.py
+          git diff --check
+
+      - name: Commit and push fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            tools/mode_core.py \
+            tools/run_mixed_register_empirical.py \
+            tools/mixed_register_empirical_closure.py \
+            schema/mixed-register-empirical-closure.schema.json \
+            empirical/mixed-register/experiment.json \
+            docs/MIXED_REGISTER_EMPIRICAL.md \
+            CHANGELOG.md \
+            tests/test_mode_deferred.py \
+            tests/test_phase9_empirical.py \
+            tests/test_phase9_empirical_closure.py
+          git diff --cached --quiet && {
+            echo "Patch script produced no staged changes."
+            exit 1
+          }
+          git commit -m "Address remaining Codex empirical integrity review"
+          git push origin HEAD:agent/finish-deferred-substrate-modes
