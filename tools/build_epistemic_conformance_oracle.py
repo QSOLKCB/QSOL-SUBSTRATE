@@ -62,7 +62,7 @@ def main() -> int:
                 "provider": "QSOL-SUBSTRATE",
                 "runtime": "deterministic-oracle",
                 "quantization": "none",
-                "parameter_count_billion": null
+                "parameter_count_billion": None
             },
             "grader": {"id": "qsol/scoring-oracle", "revision": "1.0.0", "method": "deterministic_oracle"},
             "modules": modules
