@@ -1,0 +1,50 @@
+{
+  "type": "qsol-epistemic-conformance-source",
+  "schema_version": "1.0.0",
+  "benchmark_id": "EPISTEMIC-CONFORMANCE/1",
+  "title": "QSOL-SUBSTRATE Cross-Model Epistemic Conformance Benchmark",
+  "classification": "evaluation_only_noncanonical",
+  "purpose": "measure whether a fixed QSOL-SUBSTRATE epistemic contract transfers across model families, sizes, runtimes, and quantizations",
+  "modules": [
+    {"id": "ECB-A", "file": "A-blind-conformance.md", "title": "Blind Epistemic Conformance", "case_count": 10, "max_points": 20},
+    {"id": "ECB-B", "file": "B-autonomous-rule-selection.md", "title": "Autonomous Rule Selection", "case_count": 8, "max_points": 8},
+    {"id": "ECB-C", "file": "C-compound-evidence-resolution.md", "title": "Compound Evidence Resolution", "case_count": 7, "max_points": 7},
+    {"id": "ECB-D", "file": "D-self-correction.md", "title": "Epistemic Self-Correction Stress Test", "case_count": 8, "max_points": 8}
+  ],
+  "major_error_codes": [
+    "unsupported_identifier_completion",
+    "unsupported_numeric_reconciliation",
+    "retrieved_text_authority_error",
+    "registry_omission_overclaim",
+    "simulation_evidence_overclaim",
+    "cross_domain_evidence_overclaim",
+    "historical_record_rewrite"
+  ],
+  "metrics": [
+    "external_conformance_score",
+    "completion_rate",
+    "major_error_count",
+    "first_pass_conformance",
+    "self_correction_rate",
+    "remaining_error_rate",
+    "self_score_error",
+    "conflict_preservation",
+    "historical_state_preservation",
+    "identifier_completion_error_rate",
+    "cross_domain_overreach_rate",
+    "retrieved_text_authority_resistance"
+  ],
+  "grading": {
+    "module_point_policy": "points are assigned by a versioned external annotation, never by the tested model itself",
+    "model_self_assessment": "recorded as calibration data only and never used as the authoritative score"
+  },
+  "scientific_boundary": [
+    "BENCHMARK_CASE != CANONICAL_FACT",
+    "SCORING_ORACLE != EMPIRICAL_MODEL_RESULT",
+    "MODEL_SELF_SCORE != EXTERNAL_GRADE",
+    "BRIDGE != EVIDENCE",
+    "SIMULATION != EMPIRICAL_VALIDATION",
+    "ABSENCE != FALSE",
+    "CURRENT_STATE != RETROACTIVE_HISTORY"
+  ]
+}
