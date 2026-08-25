@@ -32,7 +32,10 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
 
       - name: Run benchmark regression tests
-        run: python -m unittest tests.test_epistemic_conformance -v
+        run: python -m unittest tests.test_epistemic_conformance tests.test_epistemic_conformance_hardening -v
+
+      - name: Validate exploratory cohort metadata
+        run: python tools/validate_epistemic_conformance_cohort.py --cohort empirical/epistemic-conformance-1/2026-08-25/cohort.json
 
       - name: Resolve source commit
         id: source
