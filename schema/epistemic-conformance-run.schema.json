@@ -104,5 +104,12 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {"properties": {"execution_kind": {"const": "model"}}, "required": ["execution_kind"]},
+      "then": {"properties": {"grader": {"properties": {"method": {"const": "human_external"}}, "required": ["method"]}}},
+      "else": {"properties": {"grader": {"properties": {"method": {"const": "deterministic_oracle"}}, "required": ["method"]}}}
+    }
+  ],
   "additionalProperties": false
 }
