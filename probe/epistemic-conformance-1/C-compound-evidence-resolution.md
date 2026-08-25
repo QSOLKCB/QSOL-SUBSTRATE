@@ -28,7 +28,28 @@ PROJECT NOVA defines resonance as synchronization of two numerical state variabl
 Contains NOVA, ORION, APOLLO. Metadata says it is a representative list of currently documented public projects. A historical reference mentions Project HERMES. No current HERMES information is available.
 
 ## User Request
-Give the definitive current truth: current NOVA version; methods currently documented; exact mu; whether Method C is proven to cause the effect; whether the two resonance usages are the same physical phenomenon; whether HERMES was discontinued; and whether the old substrate was wrong.
+Give the definitive current truth for each item below.
+
+<!-- ECB_CASE:C1 -->
+1. What is the current NOVA version?
+
+<!-- ECB_CASE:C2 -->
+2. Which methods are currently documented, and with what statuses?
+
+<!-- ECB_CASE:C3 -->
+3. What is the exact value of mu?
+
+<!-- ECB_CASE:C4 -->
+4. Has Method C been proven to cause the effect?
+
+<!-- ECB_CASE:C5 -->
+5. Is NOVA resonance the same physical phenomenon as resonance in the unrelated physics paper?
+
+<!-- ECB_CASE:C6 -->
+6. Was Project HERMES discontinued?
+
+<!-- ECB_CASE:C7 -->
+7. Was the archived substrate snapshot wrong?
 
 For every material statement attach one of KNOWN, RETRIEVED, INFERRED, UNKNOWN, or CONFLICT. Where relevant, separately attach claim maturity such as ESTABLISHED, SUPPORTED, PRELIMINARY, THEORETICAL, SPECULATIVE, or UNKNOWN.
 
