@@ -124,6 +124,15 @@ class EpistemicConformanceTests(unittest.TestCase):
         self.assertLess(report["metrics"]["external_conformance_score"], 1.0)
         self.assertGreater(report["metrics"]["self_score_error"], 0.0)
 
+    def test_self_score_error_uses_only_assessed_modules(self):
+        run = self._run()
+        for module in run["modules"][:3]:
+            module["model_self_assessment"] = {"score_fraction": None, "verdict": None}
+        run["modules"][0]["earned_points"] = 0
+        report = score_run(ROOT, self.bundle, run)
+        self.assertLess(report["metrics"]["external_conformance_score"], 1.0)
+        self.assertEqual(report["metrics"]["self_score_error"], 0.0)
+
     def test_major_error_prevents_conformant_verdict(self):
         run = self._run()
         run["modules"][1]["major_errors"] = ["unsupported_identifier_completion"]
@@ -161,7 +170,6 @@ class EpistemicConformanceTests(unittest.TestCase):
         d["remaining_errors"] = 1
         with self.assertRaises(EpistemicConformanceError):
             score_run(ROOT, self.bundle, run)
-
         d["corrected_errors"] = 0
         d["remaining_errors"] = 0
         with self.assertRaises(EpistemicConformanceError):
@@ -174,7 +182,6 @@ class EpistemicConformanceTests(unittest.TestCase):
         a["earned_points"] = a["max_points"]
         with self.assertRaises(EpistemicConformanceError):
             score_run(ROOT, self.bundle, run)
-
         a["completed_cases"] = 1
         a["earned_points"] = 3
         with self.assertRaises(EpistemicConformanceError):
@@ -210,11 +217,18 @@ class EpistemicConformanceTests(unittest.TestCase):
         with self.assertRaises(EpistemicConformanceError):
             compare_reports(ROOT, [first, second])
 
-    def test_comparison_preserves_provider_identity(self):
-        first = score_run(ROOT, self.bundle, self._run("model/shared", "r1", provider="provider-a"))
-        second = score_run(ROOT, self.bundle, self._run("model/shared", "r1", provider="provider-b"))
+    def test_comparison_preserves_provider_and_grader_identity(self):
+        first_run = self._run("model/shared", "r1", provider="provider-a")
+        second_run = self._run("model/shared", "r1", provider="provider-b")
+        second_run["grader"]["id"] = "second-grader"
+        second_run["grader"]["revision"] = "2"
+        first = score_run(ROOT, self.bundle, first_run)
+        second = score_run(ROOT, self.bundle, second_run)
         comparison = compare_reports(ROOT, [first, second])
         self.assertEqual({row["provider"] for row in comparison["rows"]}, {"provider-a", "provider-b"})
+        self.assertEqual({row["grader_id"] for row in comparison["rows"]}, {"external-grader", "second-grader"})
+        self.assertEqual({row["grader_revision"] for row in comparison["rows"]}, {"1", "2"})
+        self.assertEqual({row["grader_method"] for row in comparison["rows"]}, {"human_external"})
 
     def test_malformed_persisted_report_fails_closed(self):
         report = score_run(ROOT, self.bundle, self._run())
@@ -222,6 +236,28 @@ class EpistemicConformanceTests(unittest.TestCase):
         malformed["model"] = {}
         with self.assertRaises(EpistemicConformanceError):
             compare_reports(ROOT, [malformed])
+
+    def test_persisted_report_totals_and_metrics_are_recomputed(self):
+        report = score_run(ROOT, self.bundle, self._run())
+        tampered = copy.deepcopy(report)
+        tampered["counts"]["earned_points"] = 0
+        with self.assertRaises(EpistemicConformanceError):
+            compare_reports(ROOT, [tampered])
+        tampered = copy.deepcopy(report)
+        tampered["metrics"]["external_conformance_score"] = 0.0
+        with self.assertRaises(EpistemicConformanceError):
+            compare_reports(ROOT, [tampered])
+        tampered = copy.deepcopy(report)
+        tampered["verdict"] = "PARTIALLY_CONFORMANT"
+        with self.assertRaises(EpistemicConformanceError):
+            compare_reports(ROOT, [tampered])
+
+    def test_model_report_cannot_claim_deterministic_oracle_grader(self):
+        report = score_run(ROOT, self.bundle, self._run())
+        tampered = copy.deepcopy(report)
+        tampered["grader"]["method"] = "deterministic_oracle"
+        with self.assertRaises(EpistemicConformanceError):
+            compare_reports(ROOT, [tampered])
 
     def test_oracle_report_cannot_enter_empirical_comparison(self):
         oracle = score_run(ROOT, self.bundle, self._run("qsol/scoring-oracle", "1", "scoring_oracle"))
@@ -243,6 +279,16 @@ class EpistemicConformanceTests(unittest.TestCase):
         run["model"]["parameter_count_billion"] = math.inf
         with self.assertRaises(EpistemicConformanceError):
             score_run(ROOT, self.bundle, run)
+
+    def test_unpaired_unicode_surrogates_are_rejected(self):
+        run = self._run()
+        run["modules"][0]["raw_output"] = chr(0xD800)
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+    def test_non_object_bundle_manifest_fails_closed(self):
+        (self.bundle / "manifest.json").write_text("[]\n", encoding="utf-8")
+        self.assertIn("benchmark.invalid", validate_benchmark_bundle(ROOT, self.bundle))
 
     def test_in_repo_output_is_restricted_to_designated_dist_root(self):
         with self.assertRaises(EpistemicConformanceError):
