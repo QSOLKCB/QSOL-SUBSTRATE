@@ -3,7 +3,23 @@
   "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-run.schema.json",
   "title": "QSOL epistemic conformance empirical run",
   "type": "object",
-  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "model", "grader", "modules"],
+  "$defs": {
+    "inference": {
+      "type": "object",
+      "required": ["context_size", "temperature", "top_p", "top_k", "seed", "sampler", "extra"],
+      "properties": {
+        "context_size": {"type": ["integer", "null"], "minimum": 1},
+        "temperature": {"type": ["number", "null"], "minimum": 0},
+        "top_p": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "top_k": {"type": ["integer", "null"], "minimum": 0},
+        "seed": {"type": ["integer", "string", "null"]},
+        "sampler": {"type": "string", "minLength": 1},
+        "extra": {"type": "object"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "model", "inference", "grader", "modules"],
   "properties": {
     "type": {"const": "qsol-epistemic-conformance-run"},
     "schema_version": {"const": "1.0.0"},
@@ -42,6 +58,7 @@
       },
       "additionalProperties": false
     },
+    "inference": {"$ref": "#/$defs/inference"},
     "grader": {
       "type": "object",
       "required": ["id", "revision", "method"],
