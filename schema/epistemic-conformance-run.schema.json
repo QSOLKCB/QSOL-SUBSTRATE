@@ -99,7 +99,7 @@
       "required": ["id", "revision", "provider", "runtime", "quantization"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
-        "revision": {"type": "string", "minLength": 1},
+        "revision": {"type": ["string", "null"], "minLength": 1},
         "provider": {"type": "string", "minLength": 1},
         "runtime": {"type": "string", "minLength": 1},
         "quantization": {"type": "string", "minLength": 1},
