@@ -235,7 +235,10 @@ class EpistemicConformanceHardeningTests(unittest.TestCase):
         self.assertIn("- Provider: `` `provider ``", markdown)
         self.assertIn("- Runtime: `` runtime` ``", markdown)
         self.assertIn("- Quantization: ``Q`4``", markdown)
-        self.assertIn("sampler``x", markdown)
+        self.assertIn(
+            '- Inference: ```{"context_size":32768,"extra":{},"sampler":"sampler``x","seed":1234,"temperature":0.2,"top_k":40,"top_p":0.95}```',
+            markdown,
+        )
         self.assertIn("- Grader: ``grader`id`` / `` `g2` `` / `human_external`", markdown)
         self.assertNotIn("\\`", markdown)
 
