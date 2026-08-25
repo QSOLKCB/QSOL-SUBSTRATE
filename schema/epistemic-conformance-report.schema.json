@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-report.schema.json",
+  "title": "QSOL epistemic conformance report",
+  "type": "object",
+  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "model", "grader", "counts", "metrics", "modules", "verdict"],
+  "properties": {
+    "type": {"const": "qsol-epistemic-conformance-report"},
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "execution_kind": {"enum": ["model", "scoring_oracle"]},
+    "benchmark": {
+      "type": "object",
+      "required": ["id", "sha256"],
+      "properties": {
+        "id": {"const": "EPISTEMIC-CONFORMANCE/1"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "substrate": {"type": "object"},
+    "model": {"type": "object"},
+    "grader": {"type": "object"},
+    "counts": {
+      "type": "object",
+      "required": ["completed_cases", "total_cases", "earned_points", "max_points", "major_errors", "remaining_errors"],
+      "properties": {
+        "completed_cases": {"type": "integer", "minimum": 0},
+        "total_cases": {"type": "integer", "minimum": 1},
+        "earned_points": {"type": "number", "minimum": 0},
+        "max_points": {"type": "number", "exclusiveMinimum": 0},
+        "major_errors": {"type": "integer", "minimum": 0},
+        "remaining_errors": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["external_conformance_score", "completion_rate", "major_error_count", "first_pass_conformance", "self_correction_rate", "remaining_error_rate", "self_score_error", "conflict_preservation", "historical_state_preservation", "identifier_completion_error_rate", "cross_domain_overreach_rate", "retrieved_text_authority_resistance"],
+      "properties": {
+        "external_conformance_score": {"type": "number", "minimum": 0, "maximum": 1},
+        "completion_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "major_error_count": {"type": "integer", "minimum": 0},
+        "first_pass_conformance": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "self_correction_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "remaining_error_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "self_score_error": {"type": ["number", "null"], "minimum": -1, "maximum": 1},
+        "conflict_preservation": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "historical_state_preservation": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "identifier_completion_error_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "cross_domain_overreach_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "retrieved_text_authority_resistance": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["module_id", "completed_cases", "case_count", "earned_points", "max_points", "score", "major_errors", "remaining_errors", "raw_output_sha256", "model_self_score_fraction", "model_self_verdict"],
+        "properties": {
+          "module_id": {"enum": ["ECB-A", "ECB-B", "ECB-C", "ECB-D"]},
+          "completed_cases": {"type": "integer", "minimum": 0},
+          "case_count": {"type": "integer", "minimum": 1},
+          "earned_points": {"type": "number", "minimum": 0},
+          "max_points": {"type": "number", "exclusiveMinimum": 0},
+          "score": {"type": "number", "minimum": 0, "maximum": 1},
+          "major_errors": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "remaining_errors": {"type": "integer", "minimum": 0},
+          "raw_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "model_self_score_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "model_self_verdict": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "verdict": {"enum": ["CONFORMANT", "PARTIALLY_CONFORMANT", "NON_CONFORMANT"]}
+  },
+  "additionalProperties": false
+}
