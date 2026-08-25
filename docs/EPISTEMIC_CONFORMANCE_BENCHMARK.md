@@ -12,6 +12,7 @@ BRIDGE != EVIDENCE
 SIMULATION != EMPIRICAL_VALIDATION
 ABSENCE != FALSE
 CURRENT_STATE != RETROACTIVE_HISTORY
+PROJECTION_LABEL != EXECUTION_EVIDENCE
 ```
 
 ## Research question
@@ -38,6 +39,14 @@ Total: **33 scored cases / 43 points**.
 ECB-D explicitly says not to introduce deliberate first-pass mistakes. This removes an ambiguity observed during the initial exploratory batch, where one model treated the first pass as a request to stage failures for later correction.
 
 `completed_cases` has a strict meaning: it is the length of the contiguous prompt prefix actually completed. Point caps, secondary signal opportunities, and valid major-error case references are derived from that same frozen prefix. A run may not claim points, signal opportunities, or major errors belonging to uncompleted cases.
+
+A module with `completed_cases > 0` must retain non-whitespace `raw_output`. A zero-completion module may preserve an empty output. This keeps the empirical chain explicit:
+
+```text
+RAW MODEL OUTPUT -> EXTERNAL ANNOTATION -> SCORE
+```
+
+A score cannot stand in for missing model evidence.
 
 ## Major error classes
 
@@ -102,6 +111,10 @@ The deterministic scorer reports:
 
 `first_pass_conformance` and `self_correction_rate` are unavailable when ECB-D is incomplete. The scorer does not award perfect first-pass or self-correction behaviour when those observations were never completed.
 
+`remaining_error_rate` is calculated over **observed completed cases**, not all 33 benchmark cases. If no cases were observed, it is `null`. Uncompleted cases therefore cannot dilute an observed error or masquerade as error-free behaviour.
+
+Published ratio metrics are rounded to six decimal places. Verdict thresholds use the corresponding **unrounded** ratios. A raw score just below `0.95` cannot become `CONFORMANT` because its displayed score rounds to `0.950000`, and a raw score just below `0.60` cannot escape `NON_CONFORMANT` because its displayed score rounds upward.
+
 Every declared metric is preserved in cross-model comparison JSON. The Markdown renderer presents the primary score/calibration fields and a second epistemic-boundary table so equal aggregate scores cannot hide materially different failure profiles.
 
 The scorer performs arithmetic and validation only. It does not infer grades from free-form prose and does not use a second unversioned LLM as the primary grader.
@@ -143,6 +156,8 @@ The build records:
 
 Any changed prompt or grading contract changes the benchmark fingerprint.
 
+Filesystem failures in the build CLI are reported through the same fail-closed refusal surface as benchmark-contract errors rather than escaping as an uncaught traceback.
+
 ## Empirical run contract
 
 Empirical annotations conform to:
@@ -155,7 +170,8 @@ A comparable run binds:
 
 - benchmark ID and SHA-256;
 - QSOL-SUBSTRATE source commit and substrate SHA-256;
-- delivery description;
+- delivery description and structured `delivery_kind`;
+- model-specific projection execution evidence when applicable;
 - provider/model ID;
 - immutable model revision where available;
 - runtime;
@@ -169,6 +185,27 @@ The required inference block records `context_size`, `temperature`, `top_p`, `to
 
 Do not substitute a marketing model name for an immutable revision when a revision is available. If an exploratory run lacks an immutable revision or inference setting, retain the missing field explicitly rather than pretending the identity is exact.
 
+## Delivery identity and model-specific projection evidence
+
+`substrate.delivery` remains the human-readable delivery description. `substrate.delivery_kind` is the machine classification used by validation. Supported kinds include textual, vector, tool-enabled, model-specific projection kinds, hybrid, and an explicit `other` class.
+
+Model-specific projection conditions such as LoRA, KV cache, reusable prefix state, soft prompts, and latent/prefix delivery are not established by a string label. They require a non-null `projection_execution` block containing:
+
+- `artifact_sha256` for the executed model-specific projection artifact;
+- `execution_evidence_sha256` for the retained execution evidence;
+- a Phase 6-compatible model projection identity containing model revision, architecture, tokenizer identity/hash, dimensions, attention layout, KV-layout version, tensor/cache precision, and quantization identity.
+
+The compatibility identity must match the run's model ID, model revision, quantization, and declared projection kind. Non-projection deliveries must not carry projection-execution evidence.
+
+This follows the existing Phase 6 boundary:
+
+```text
+PROJECTION RECIPE != EXECUTED PROJECTION
+PROJECTION LABEL  != EXECUTION EVIDENCE
+```
+
+Projection evidence is **per run**, because LoRA/KV/prefix artifacts are model-specific. Cross-model comparisons require the same benchmark and shared substrate/delivery identity, while preserving each model's projection artifact and execution evidence in its own comparison row. They do not incorrectly require two different models to share one model-specific artifact hash.
+
 ## Score a run
 
 ```bash
@@ -179,7 +216,7 @@ python tools/score_epistemic_conformance.py \
   --markdown report.md
 ```
 
-The scorer validates the deterministic benchmark bundle and the run schema before calculating metrics. Persisted reports are not trusted on re-entry: comparison recomputes module scores, completion caps, counts, metrics, secondary signal denominators, calibration, case-bound major-error validity, and verdict before ranking.
+The scorer validates the deterministic benchmark bundle and the run schema before calculating metrics. Persisted reports are not trusted on re-entry: comparison recomputes module scores, completion caps, counts, metrics, secondary signal denominators, calibration, case-bound major-error validity, projection-execution semantics, and verdict before ranking.
 
 ## Compare models
 
@@ -190,15 +227,15 @@ python tools/compare_epistemic_conformance.py \
   --markdown comparison.md
 ```
 
-Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison. Provider, model parameter count, inference configuration, external grader identity, and **all twelve declared benchmark metrics** remain present in each comparison artifact.
+Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, delivery description, and delivery kind. Scoring-oracle reports are excluded from empirical comparison. Provider, model parameter count, inference configuration, per-run projection execution evidence, external grader identity, and **all twelve declared benchmark metrics** remain present in each comparison artifact.
 
-Comparison ordering is deterministic for the same report set, with `run_id` used as the final stable tie-breaker when all scientific and provenance fields tie. Standalone comparison Markdown includes the exact bound benchmark/substrate identity above the tables so it remains auditable even when separated from the JSON artifact.
+Comparison ordering is deterministic for the same report set. `run_id` is followed by a canonical serialization of the complete row as the final tie-breaker, so duplicate run IDs cannot restore caller-order dependence. Standalone comparison Markdown includes the exact bound benchmark/substrate identity above the tables so it remains auditable even when separated from the JSON artifact.
 
 Markdown table renderers escape identity fields before table interpolation so arbitrary model/provider/runtime strings cannot forge extra cells or rows. A separate follow-up hardening issue tracks pathological backticks inside report inline-code identity spans; that rendering edge case does not alter canonical JSON evidence.
 
 ## Scoring oracle boundary
 
-The deterministic scoring oracle exists only to prove that the benchmark bundle, schemas, scorer, metrics, and report plumbing agree. Its Markdown output is explicitly headed and labelled as a **non-empirical scoring-oracle self-test**. Oracle reports cannot enter empirical comparisons.
+The deterministic scoring oracle exists only to prove that the benchmark bundle, schemas, scorer, metrics, and report plumbing agree. Its Markdown output is explicitly headed and labelled as a **non-empirical scoring-oracle self-test**. Oracle reports cannot enter empirical comparisons and declare a non-projection `other` delivery kind.
 
 ## Initial exploratory cohort — 2026-08-25
 
@@ -225,4 +262,4 @@ See `empirical/epistemic-conformance-1/2026-08-25/cohort.json` for the model coh
 
 ## Interpretation boundary
 
-A strong result means the tested run preserved the benchmark's declared epistemic boundaries under the bound substrate, model, and inference identity. It does not make the benchmark a factual authority, prove a model generally reliable, or establish that the same behaviour will survive a different quantization, model revision, runtime, sampling configuration, substrate snapshot, or prompt version.
+A strong result means the tested run preserved the benchmark's declared epistemic boundaries under the bound substrate, model, inference, delivery, and where applicable projection-execution identity. It does not make the benchmark a factual authority, prove a model generally reliable, or establish that the same behaviour will survive a different quantization, model revision, runtime, sampling configuration, substrate snapshot, prompt version, or projection artifact.
