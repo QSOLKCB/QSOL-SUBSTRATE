@@ -3,6 +3,22 @@
   "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-comparison.schema.json",
   "title": "QSOL epistemic conformance comparison",
   "type": "object",
+  "$defs": {
+    "inference": {
+      "type": "object",
+      "required": ["context_size", "temperature", "top_p", "top_k", "seed", "sampler", "extra"],
+      "properties": {
+        "context_size": {"type": ["integer", "null"], "minimum": 1},
+        "temperature": {"type": ["number", "null"], "minimum": 0},
+        "top_p": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "top_k": {"type": ["integer", "null"], "minimum": 0},
+        "seed": {"type": ["integer", "string", "null"]},
+        "sampler": {"type": "string", "minLength": 1},
+        "extra": {"type": "object"}
+      },
+      "additionalProperties": false
+    }
+  },
   "required": ["type", "schema_version", "benchmark", "substrate", "rows"],
   "properties": {
     "type": {"const": "qsol-epistemic-conformance-comparison"},
@@ -32,7 +48,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["run_id", "model_id", "model_revision", "provider", "runtime", "quantization", "grader_id", "grader_revision", "grader_method", "external_conformance_score", "completion_rate", "major_error_count", "self_score_error", "verdict"],
+        "required": ["run_id", "model_id", "model_revision", "provider", "runtime", "quantization", "inference", "grader_id", "grader_revision", "grader_method", "external_conformance_score", "completion_rate", "major_error_count", "self_score_error", "verdict"],
         "properties": {
           "run_id": {"type": "string", "minLength": 1},
           "model_id": {"type": "string", "minLength": 1},
@@ -40,6 +56,7 @@
           "provider": {"type": "string", "minLength": 1},
           "runtime": {"type": "string", "minLength": 1},
           "quantization": {"type": "string", "minLength": 1},
+          "inference": {"$ref": "#/$defs/inference"},
           "grader_id": {"type": "string", "minLength": 1},
           "grader_revision": {"type": "string", "minLength": 1},
           "grader_method": {"const": "human_external"},
