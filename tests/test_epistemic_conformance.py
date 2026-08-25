@@ -174,6 +174,31 @@ class EpistemicConformanceTests(unittest.TestCase):
             with self.assertRaises(EpistemicConformanceError):
                 load_source_manifest(ROOT)
 
+    def test_source_and_grading_schemas_are_enforced(self):
+        original = ecc._load_json
+
+        def source_extra(path):
+            value = original(path)
+            if path == ROOT / ecc.SOURCE_MANIFEST:
+                value = copy.deepcopy(value)
+                value["unexpected_contract_field"] = True
+            return value
+
+        with mock.patch.object(ecc, "_load_json", side_effect=source_extra):
+            with self.assertRaises(EpistemicConformanceError):
+                load_source_manifest(ROOT)
+
+        def grading_extra(path):
+            value = original(path)
+            if path == ROOT / ecc.SOURCE_DIR / "external-grading-v1.json":
+                value = copy.deepcopy(value)
+                value["policy"]["unexpected_policy_field"] = True
+            return value
+
+        with mock.patch.object(ecc, "_load_json", side_effect=grading_extra):
+            with self.assertRaises(EpistemicConformanceError):
+                load_source_manifest(ROOT)
+
     def test_non_object_source_module_fails_closed(self):
         original = ecc._load_json
 
@@ -237,10 +262,34 @@ class EpistemicConformanceTests(unittest.TestCase):
 
     def test_major_error_prevents_conformant_verdict(self):
         run = self._run()
-        run["modules"][1]["major_errors"] = ["unsupported_identifier_completion"]
+        run["modules"][1]["major_errors"] = [
+            {"case": "B7", "code": "unsupported_identifier_completion"}
+        ]
         report = score_run(ROOT, self.bundle, run)
         self.assertEqual(report["metrics"]["major_error_count"], 1)
         self.assertEqual(report["verdict"], "NON_CONFORMANT")
+
+    def test_major_error_occurrences_preserve_repeated_codes(self):
+        run = self._run()
+        run["modules"][0]["major_errors"] = [
+            {"case": "A5", "code": "cross_domain_evidence_overclaim"},
+            {"case": "A9", "code": "cross_domain_evidence_overclaim"},
+        ]
+        report = score_run(ROOT, self.bundle, run)
+        self.assertEqual(report["metrics"]["major_error_count"], 2)
+        self.assertEqual(len(report["modules"][0]["major_errors"]), 2)
+
+    def test_major_errors_cannot_reference_uncompleted_cases(self):
+        run = self._run()
+        a = run["modules"][0]
+        a["completed_cases"] = 0
+        a["earned_points"] = 0
+        a["major_errors"] = [
+            {"case": "A1", "code": "registry_omission_overclaim"}
+        ]
+        self._zero_signals(a)
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
 
     def test_self_correction_metrics_are_separate_from_first_pass(self):
         run = self._run()
@@ -382,8 +431,11 @@ class EpistemicConformanceTests(unittest.TestCase):
             {"external-grader", "grader-b"},
         )
 
-    def test_comparison_preserves_model_size_and_self_correction_metrics(self):
+    def test_comparison_preserves_all_declared_metrics(self):
         run = self._run("model/self-correcting", "r1")
+        run["modules"][0]["signals"]["identifier_errors"] = 1
+        run["modules"][1]["signals"]["cross_domain_errors"] = 1
+        run["modules"][2]["signals"]["retrieved_text_errors"] = 1
         d = next(module for module in run["modules"] if module["module_id"] == "ECB-D")
         d["initial_errors"] = 2
         d["corrected_errors"] = 2
@@ -392,8 +444,12 @@ class EpistemicConformanceTests(unittest.TestCase):
         comparison = compare_reports(ROOT, [report])
         row = comparison["rows"][0]
         self.assertEqual(row["parameter_count_billion"], 8)
-        self.assertEqual(row["first_pass_conformance"], 0.75)
-        self.assertEqual(row["self_correction_rate"], 1.0)
+        for metric in ecc.EXPECTED_METRICS:
+            self.assertEqual(row[metric], report["metrics"][metric])
+        markdown = comparison_markdown(comparison)
+        self.assertIn("Epistemic boundary metrics", markdown)
+        self.assertIn("Identifier error rate", markdown)
+        self.assertIn("Cross-domain overreach", markdown)
 
     def test_comparison_order_is_independent_of_input_order(self):
         first_run = self._run("model/repeat", "r1")
