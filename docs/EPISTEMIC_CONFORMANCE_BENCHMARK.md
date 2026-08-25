@@ -1,6 +1,6 @@
 # QSOL-SUBSTRATE Cross-Model Epistemic Conformance Benchmark
 
-`EPISTEMIC-CONFORMANCE/1` measures whether the same QSOL-SUBSTRATE epistemic contract transfers across model families, sizes, runtimes, and quantizations.
+`EPISTEMIC-CONFORMANCE/1` measures whether the same QSOL-SUBSTRATE epistemic contract transfers across model families, sizes, runtimes, quantizations, and explicitly recorded inference configurations.
 
 It is an evaluation protocol, not a canonical truth source.
 
@@ -18,9 +18,9 @@ CURRENT_STATE != RETROACTIVE_HISTORY
 
 The benchmark asks:
 
-> How reliably does the same epistemic contract survive changes in model family, model size, runtime, and quantization?
+> How reliably does the same epistemic contract survive changes in model family, model size, runtime, quantization, and inference configuration?
 
-This complements the Phase 7 Substrate Probe question of how much substrate is needed to improve a fixed model. `EPISTEMIC-CONFORMANCE/1` instead holds the benchmark and substrate identity fixed while varying the consumer model.
+This complements the Phase 7 Substrate Probe question of how much substrate is needed to improve a fixed model. `EPISTEMIC-CONFORMANCE/1` instead holds the benchmark and substrate identity fixed while varying the consumer model or declared inference configuration.
 
 ## Modules
 
@@ -36,6 +36,8 @@ The source benchmark is frozen under `probe/epistemic-conformance-1/`.
 Total: **33 scored cases / 43 points**.
 
 ECB-D explicitly says not to introduce deliberate first-pass mistakes. This removes an ambiguity observed during the initial exploratory batch, where one model treated the first pass as a request to stage failures for later correction.
+
+`completed_cases` has a strict meaning: it is the length of the contiguous prompt prefix actually completed. Point caps and secondary signal opportunities are derived from that same frozen prefix. A run may not claim points or signal opportunities belonging to uncompleted cases.
 
 ## Major error classes
 
@@ -63,7 +65,21 @@ The run schema therefore separates:
 - self-reported score/verdict;
 - structured signal counts used for benchmark metrics.
 
-This makes `self_score_error` measurable rather than silently trusting a model that declares itself conformant.
+`self_score_error` compares the model self-score only with the externally scored subset for which the model actually supplied a self-assessment. Unassessed modules do not distort calibration.
+
+## Frozen signal opportunities
+
+Secondary evidence-boundary metrics do not trust model- or grader-supplied denominators. The versioned external grading contract assigns tracked signal tags to individual benchmark cases. For each module, the scorer derives the allowed opportunity counts from the completed prompt prefix and rejects any submitted denominator that disagrees.
+
+Tracked opportunity families are:
+
+- conflict preservation;
+- historical-state preservation;
+- identifier non-fabrication;
+- cross-domain boundary preservation;
+- retrieved-text authority resistance.
+
+This keeps secondary metrics comparable across runs and prevents denominator inflation or shrinkage from changing scores.
 
 ## Metrics
 
@@ -81,6 +97,8 @@ The deterministic scorer reports:
 - identifier-completion error rate;
 - cross-domain overreach rate;
 - retrieved-text authority resistance.
+
+`first_pass_conformance` and `self_correction_rate` are unavailable when ECB-D is incomplete. The scorer does not award perfect first-pass or self-correction behaviour when those observations were never completed.
 
 The scorer performs arithmetic and validation only. It does not infer grades from free-form prose and does not use a second unversioned LLM as the primary grader.
 
@@ -101,11 +119,12 @@ The build records:
 
 - exact source commit;
 - canonical source-manifest hash;
+- versioned external-grading contract;
 - each module hash;
 - aggregate benchmark fingerprint;
 - case and point totals.
 
-Any changed prompt changes the benchmark fingerprint.
+Any changed prompt or grading contract changes the benchmark fingerprint.
 
 ## Empirical run contract
 
@@ -124,11 +143,14 @@ A comparable run binds:
 - immutable model revision where available;
 - runtime;
 - quantization;
+- structured inference configuration;
 - external grader identity and revision;
 - raw module outputs;
 - external annotations.
 
-Do not substitute a marketing model name for an immutable revision when a revision is available. If an exploratory run lacks an immutable revision, retain it as exploratory metadata rather than pretending the identity is exact.
+The required inference block records `context_size`, `temperature`, `top_p`, `top_k`, `seed`, `sampler`, and an `extra` object for backend-specific settings. Unknown values are recorded explicitly as `null`; they are not silently omitted. Comparisons preserve the complete inference block for each row so two executions of the same model revision under different sampling conditions remain distinguishable.
+
+Do not substitute a marketing model name for an immutable revision when a revision is available. If an exploratory run lacks an immutable revision or inference setting, retain the missing field explicitly rather than pretending the identity is exact.
 
 ## Score a run
 
@@ -140,7 +162,7 @@ python tools/score_epistemic_conformance.py \
   --markdown report.md
 ```
 
-The scorer validates the deterministic benchmark bundle and the run schema before calculating metrics.
+The scorer validates the deterministic benchmark bundle and the run schema before calculating metrics. Persisted reports are not trusted on re-entry: comparison recomputes module scores, completion caps, counts, metrics, secondary signal denominators, calibration, and verdict before ranking.
 
 ## Compare models
 
@@ -151,7 +173,13 @@ python tools/compare_epistemic_conformance.py \
   --markdown comparison.md
 ```
 
-Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison.
+Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison. Provider, inference configuration, and external grader identity remain visible in each comparison row.
+
+Markdown renderers escape identity fields before table interpolation so arbitrary model/provider/runtime strings cannot forge extra cells or rows.
+
+## Scoring oracle boundary
+
+The deterministic scoring oracle exists only to prove that the benchmark bundle, schemas, scorer, metrics, and report plumbing agree. Its Markdown output is explicitly headed and labelled as a **non-empirical scoring-oracle self-test**. Oracle reports cannot enter empirical comparisons.
 
 ## Initial exploratory cohort — 2026-08-25
 
@@ -166,7 +194,7 @@ The first local-model exploration used six heterogeneous GGUF models in LM Studi
 | gpt-oss-20b-GGUF | UD-Q4_K_XL |
 | LFM2.5-8B-A1B-GGUF | Q8_0 |
 
-This cohort is intentionally recorded as **exploratory and unbound** until each raw conversation export is mapped to its exact model identity/revision. The repository must not guess that mapping from timestamps or file order.
+This cohort is intentionally recorded as **exploratory and unbound** until each raw conversation export is mapped to its exact model identity/revision and inference configuration. The repository must not guess that mapping from timestamps or file order.
 
 The initial observations motivated three benchmark-design changes now frozen in v1:
 
@@ -178,4 +206,4 @@ See `empirical/epistemic-conformance-1/2026-08-25/cohort.json` for the model coh
 
 ## Interpretation boundary
 
-A strong result means the tested run preserved the benchmark's declared epistemic boundaries under the bound substrate and model identity. It does not make the benchmark a factual authority, prove a model generally reliable, or establish that the same behaviour will survive a different quantization, model revision, runtime, sampling configuration, substrate snapshot, or prompt version.
+A strong result means the tested run preserved the benchmark's declared epistemic boundaries under the bound substrate, model, and inference identity. It does not make the benchmark a factual authority, prove a model generally reliable, or establish that the same behaviour will survive a different quantization, model revision, runtime, sampling configuration, substrate snapshot, or prompt version.
