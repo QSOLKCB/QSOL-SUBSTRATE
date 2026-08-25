@@ -152,7 +152,7 @@
     "conditions": ["naked", "micro", "standard", "full", "vector", "latent-prefix", "hybrid", "tool-enabled"]
   },
   "epistemic_conformance_build": {
-    "build_tool": "tools/build_epistemic_conformance.py",
+    "tool": "tools/build_epistemic_conformance.py",
     "validation_tool": "tools/validate_epistemic_conformance.py",
     "oracle_tool": "tools/build_epistemic_conformance_oracle.py",
     "scoring_tool": "tools/score_epistemic_conformance.py",
@@ -164,6 +164,8 @@
     "run_schema": "schema/epistemic-conformance-run.schema.json",
     "report_schema": "schema/epistemic-conformance-report.schema.json",
     "comparison_schema": "schema/epistemic-conformance-comparison.schema.json",
+    "cohort": "empirical/epistemic-conformance-1/2026-08-25/cohort.json",
+    "cohort_schema": "schema/epistemic-conformance-cohort.schema.json",
     "documentation": "docs/EPISTEMIC_CONFORMANCE_BENCHMARK.md",
     "output_root": "dist/epistemic-conformance-1",
     "benchmark_spec_version": "1.0.0",
