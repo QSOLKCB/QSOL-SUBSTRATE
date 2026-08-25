@@ -848,6 +848,7 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
             "provider": report["model"]["provider"],
             "runtime": report["model"]["runtime"],
             "quantization": report["model"]["quantization"],
+            "parameter_count_billion": report["model"].get("parameter_count_billion"),
             "inference": report["inference"],
             "grader_id": report["grader"]["id"],
             "grader_revision": report["grader"]["revision"],
@@ -855,6 +856,8 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
             "external_conformance_score": report["metrics"]["external_conformance_score"],
             "completion_rate": report["metrics"]["completion_rate"],
             "major_error_count": report["metrics"]["major_error_count"],
+            "first_pass_conformance": report["metrics"]["first_pass_conformance"],
+            "self_correction_rate": report["metrics"]["self_correction_rate"],
             "self_score_error": report["metrics"]["self_score_error"],
             "verdict": report["verdict"],
         }
@@ -870,6 +873,7 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
             row["model_id"],
             row["model_revision"],
             _stable_json_text(row["inference"]),
+            row["run_id"],
         )
     )
     comparison = {
@@ -959,16 +963,39 @@ def report_markdown(report: dict[str, Any]) -> str:
 
 
 def comparison_markdown(comparison: dict[str, Any]) -> str:
+    bound_identity = {
+        "benchmark": comparison["benchmark"],
+        "substrate": comparison["substrate"],
+    }
     lines = [
         f"# {BENCHMARK_ID} cross-model comparison",
         "",
+        "## Bound identity",
+        "",
+        f"    {_stable_json_text(bound_identity)}",
+        "",
         (
-            "| Provider | Model | Revision | Runtime | Quantization | Inference | Grader | Grader revision | "
-            "Score | Completion | Major errors | Self-score error | Verdict |"
+            "| Provider | Model | Revision | Size (B) | Runtime | Quantization | Inference | Grader | Grader revision | "
+            "Score | Completion | Major errors | First-pass | Self-correction | Self-score error | Verdict |"
         ),
-        "|---|---|---|---|---|---|---|---|---:|---:|---:|---:|---|",
+        "|---|---|---|---:|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|",
     ]
     for row in comparison["rows"]:
+        size = (
+            "-"
+            if row["parameter_count_billion"] is None
+            else f"{row['parameter_count_billion']:g}"
+        )
+        first_pass = (
+            "-"
+            if row["first_pass_conformance"] is None
+            else f"{row['first_pass_conformance']:.3f}"
+        )
+        self_correction = (
+            "-"
+            if row["self_correction_rate"] is None
+            else f"{row['self_correction_rate']:.3f}"
+        )
         self_error = (
             "-"
             if row["self_score_error"] is None
@@ -976,11 +1003,12 @@ def comparison_markdown(comparison: dict[str, Any]) -> str:
         )
         lines.append(
             f"| {_md_cell(row['provider'])} | {_md_cell(row['model_id'])} | "
-            f"{_md_cell(row['model_revision'])} | {_md_cell(row['runtime'])} | "
+            f"{_md_cell(row['model_revision'])} | {size} | {_md_cell(row['runtime'])} | "
             f"{_md_cell(row['quantization'])} | {_md_cell(row['inference'])} | "
             f"{_md_cell(row['grader_id'])} | {_md_cell(row['grader_revision'])} | "
             f"{row['external_conformance_score']:.3f} | {row['completion_rate']:.3f} | "
-            f"{row['major_error_count']} | {self_error} | {_md_cell(row['verdict'])} |"
+            f"{row['major_error_count']} | {first_pass} | {self_correction} | "
+            f"{self_error} | {_md_cell(row['verdict'])} |"
         )
     lines.append("")
     return "\n".join(lines)
