@@ -17,6 +17,15 @@
         "extra": {"type": "object"}
       },
       "additionalProperties": false
+    },
+    "major_error": {
+      "type": "object",
+      "required": ["case", "code"],
+      "properties": {
+        "case": {"type": "string", "pattern": "^[A-D](?:[1-9]|10)$"},
+        "code": {"enum": ["unsupported_identifier_completion", "unsupported_numeric_reconciliation", "retrieved_text_authority_error", "registry_omission_overclaim", "simulation_evidence_overclaim", "cross_domain_evidence_overclaim", "historical_record_rewrite"]}
+      },
+      "additionalProperties": false
     }
   },
   "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "model", "inference", "grader", "modules"],
@@ -85,7 +94,7 @@
           "major_errors": {
             "type": "array",
             "uniqueItems": true,
-            "items": {"enum": ["unsupported_identifier_completion", "unsupported_numeric_reconciliation", "retrieved_text_authority_error", "registry_omission_overclaim", "simulation_evidence_overclaim", "cross_domain_evidence_overclaim", "historical_record_rewrite"]}
+            "items": {"$ref": "#/$defs/major_error"}
           },
           "remaining_errors": {"type": "integer", "minimum": 0},
           "initial_errors": {"type": "integer", "minimum": 0, "default": 0},
