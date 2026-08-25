@@ -1012,7 +1012,15 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
 
 def _md_inline(value: Any) -> str:
     text = _stable_json_text(value) if isinstance(value, (dict, list)) or value is None else str(value)
-    return text.replace("`", "\\`").replace("\r", " ").replace("\n", " ")
+    text = text.replace("\r\n", " ").replace("\r", " ").replace("\n", " ")
+    max_backtick_run = max(
+        (len(match.group(0)) for match in re.finditer(r"`+", text)),
+        default=0,
+    )
+    delimiter = "`" * (max_backtick_run + 1)
+    if text.startswith("`") or text.endswith("`"):
+        return f"{delimiter} {text} {delimiter}"
+    return f"{delimiter}{text}{delimiter}"
 
 
 def _md_cell(value: Any) -> str:
@@ -1060,16 +1068,16 @@ def report_markdown(report: dict[str, Any]) -> str:
             "",
             f"    {_stable_json_text(bound_identity)}",
             "",
-            f"- Execution kind: `{_md_inline(report['execution_kind'])}`",
-            f"- Run: `{_md_inline(report['run_id'])}`",
-            f"- Model: `{_md_inline(report['model']['id'])}` / `{_md_inline(report['model']['revision'])}`",
-            f"- Provider: `{_md_inline(report['model']['provider'])}`",
-            f"- Runtime: `{_md_inline(report['model']['runtime'])}`",
-            f"- Quantization: `{_md_inline(report['model']['quantization'])}`",
-            f"- Delivery kind: `{_md_inline(report['substrate']['delivery_kind'])}`",
-            f"- Projection execution: `{_md_inline(report['projection_execution'])}`",
-            f"- Inference: `{_md_inline(report['inference'])}`",
-            f"- Grader: `{_md_inline(report['grader']['id'])}` / `{_md_inline(report['grader']['revision'])}` / `{_md_inline(report['grader']['method'])}`",
+            f"- Execution kind: {_md_inline(report['execution_kind'])}",
+            f"- Run: {_md_inline(report['run_id'])}",
+            f"- Model: {_md_inline(report['model']['id'])} / {_md_inline(report['model']['revision'])}",
+            f"- Provider: {_md_inline(report['model']['provider'])}",
+            f"- Runtime: {_md_inline(report['model']['runtime'])}",
+            f"- Quantization: {_md_inline(report['model']['quantization'])}",
+            f"- Delivery kind: {_md_inline(report['substrate']['delivery_kind'])}",
+            f"- Projection execution: {_md_inline(report['projection_execution'])}",
+            f"- Inference: {_md_inline(report['inference'])}",
+            f"- Grader: {_md_inline(report['grader']['id'])} / {_md_inline(report['grader']['revision'])} / {_md_inline(report['grader']['method'])}",
             f"- External conformance: `{report['metrics']['external_conformance_score']:.3f}`",
             f"- Completion: `{report['metrics']['completion_rate']:.3f}`",
             f"- Major errors: `{report['metrics']['major_error_count']}`",
