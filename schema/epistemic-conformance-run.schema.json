@@ -20,7 +20,7 @@
     },
     "substrate": {
       "type": "object",
-      "required": ["protocol", "source_commit", "substrate_sha256"],
+      "required": ["protocol", "source_commit", "substrate_sha256", "delivery"],
       "properties": {
         "protocol": {"const": "QSOL-SUBSTRATE"},
         "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
