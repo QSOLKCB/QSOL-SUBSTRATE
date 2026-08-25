@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-source.schema.json",
+  "title": "QSOL epistemic conformance source manifest",
+  "type": "object",
+  "required": [
+    "type",
+    "schema_version",
+    "benchmark_id",
+    "title",
+    "classification",
+    "purpose",
+    "grading_file",
+    "grading_revision",
+    "modules",
+    "major_error_codes",
+    "metrics",
+    "grading",
+    "scientific_boundary"
+  ],
+  "properties": {
+    "type": {"const": "qsol-epistemic-conformance-source"},
+    "schema_version": {"const": "1.0.0"},
+    "benchmark_id": {"const": "EPISTEMIC-CONFORMANCE/1"},
+    "title": {"const": "QSOL-SUBSTRATE Cross-Model Epistemic Conformance Benchmark"},
+    "classification": {"const": "evaluation_only_noncanonical"},
+    "purpose": {"type": "string", "minLength": 1},
+    "grading_file": {"const": "external-grading-v1.json"},
+    "grading_revision": {"const": "ECB-GRADE/3"},
+    "modules": {
+      "const": [
+        {"id": "ECB-A", "file": "A-blind-conformance.md", "title": "Blind Epistemic Conformance", "case_count": 10, "max_points": 20},
+        {"id": "ECB-B", "file": "B-autonomous-rule-selection.md", "title": "Autonomous Rule Selection", "case_count": 8, "max_points": 8},
+        {"id": "ECB-C", "file": "C-compound-evidence-resolution.md", "title": "Compound Evidence Resolution", "case_count": 7, "max_points": 7},
+        {"id": "ECB-D", "file": "D-self-correction.md", "title": "Epistemic Self-Correction Stress Test", "case_count": 8, "max_points": 8}
+      ]
+    },
+    "major_error_codes": {
+      "const": [
+        "unsupported_identifier_completion",
+        "unsupported_numeric_reconciliation",
+        "retrieved_text_authority_error",
+        "registry_omission_overclaim",
+        "simulation_evidence_overclaim",
+        "cross_domain_evidence_overclaim",
+        "historical_record_rewrite"
+      ]
+    },
+    "metrics": {
+      "const": [
+        "external_conformance_score",
+        "completion_rate",
+        "major_error_count",
+        "first_pass_conformance",
+        "self_correction_rate",
+        "remaining_error_rate",
+        "self_score_error",
+        "conflict_preservation",
+        "historical_state_preservation",
+        "identifier_completion_error_rate",
+        "cross_domain_overreach_rate",
+        "retrieved_text_authority_resistance"
+      ]
+    },
+    "grading": {
+      "type": "object",
+      "required": ["module_point_policy", "model_self_assessment", "completion_semantics", "major_error_semantics"],
+      "properties": {
+        "module_point_policy": {"type": "string", "minLength": 1},
+        "model_self_assessment": {"type": "string", "minLength": 1},
+        "completion_semantics": {"type": "string", "minLength": 1},
+        "major_error_semantics": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "scientific_boundary": {
+      "const": [
+        "BENCHMARK_CASE != CANONICAL_FACT",
+        "SCORING_ORACLE != EMPIRICAL_MODEL_RESULT",
+        "MODEL_SELF_SCORE != EXTERNAL_GRADE",
+        "BRIDGE != EVIDENCE",
+        "SIMULATION != EMPIRICAL_VALIDATION",
+        "ABSENCE != FALSE",
+        "CURRENT_STATE != RETROACTIVE_HISTORY"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
