@@ -18,9 +18,40 @@
       },
       "additionalProperties": false
     },
-    "substrate": {"type": "object"},
-    "model": {"type": "object"},
-    "grader": {"type": "object"},
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "source_commit", "substrate_sha256", "delivery"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "delivery": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "model": {
+      "type": "object",
+      "required": ["id", "revision", "provider", "runtime", "quantization"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "provider": {"type": "string", "minLength": 1},
+        "runtime": {"type": "string", "minLength": 1},
+        "quantization": {"type": "string", "minLength": 1},
+        "parameter_count_billion": {"type": ["number", "null"], "exclusiveMinimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "grader": {
+      "type": "object",
+      "required": ["id", "revision", "method"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "method": {"enum": ["human_external", "deterministic_oracle"]}
+      },
+      "additionalProperties": false
+    },
     "counts": {
       "type": "object",
       "required": ["completed_cases", "total_cases", "earned_points", "max_points", "major_errors", "remaining_errors"],
@@ -71,7 +102,7 @@
           "remaining_errors": {"type": "integer", "minimum": 0},
           "raw_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "model_self_score_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-          "model_self_verdict": {"type": ["string", "null"]}
+          "model_self_verdict": {"type": ["string", "null"], "enum": ["CONFORMANT", "SELF-CORRECTED", "PARTIALLY_CONFORMANT", "NON-CONFORMANT", null]}
         },
         "additionalProperties": false
       }
