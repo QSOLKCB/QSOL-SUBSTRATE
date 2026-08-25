@@ -90,7 +90,7 @@
       "maxItems": 4,
       "items": {
         "type": "object",
-        "required": ["module_id", "completed_cases", "case_count", "earned_points", "max_points", "score", "major_errors", "remaining_errors", "raw_output_sha256", "model_self_score_fraction", "model_self_verdict"],
+        "required": ["module_id", "completed_cases", "case_count", "earned_points", "max_points", "score", "major_errors", "remaining_errors", "initial_errors", "corrected_errors", "signals", "raw_output_sha256", "model_self_score_fraction", "model_self_verdict"],
         "properties": {
           "module_id": {"enum": ["ECB-A", "ECB-B", "ECB-C", "ECB-D"]},
           "completed_cases": {"type": "integer", "minimum": 0},
@@ -98,8 +98,31 @@
           "earned_points": {"type": "number", "minimum": 0},
           "max_points": {"type": "number", "exclusiveMinimum": 0},
           "score": {"type": "number", "minimum": 0, "maximum": 1},
-          "major_errors": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "major_errors": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"enum": ["unsupported_identifier_completion", "unsupported_numeric_reconciliation", "retrieved_text_authority_error", "registry_omission_overclaim", "simulation_evidence_overclaim", "cross_domain_evidence_overclaim", "historical_record_rewrite"]}
+          },
           "remaining_errors": {"type": "integer", "minimum": 0},
+          "initial_errors": {"type": "integer", "minimum": 0},
+          "corrected_errors": {"type": "integer", "minimum": 0},
+          "signals": {
+            "type": "object",
+            "required": ["conflict_opportunities", "conflict_preserved", "historical_opportunities", "historical_preserved", "identifier_opportunities", "identifier_errors", "cross_domain_opportunities", "cross_domain_errors", "retrieved_text_opportunities", "retrieved_text_errors"],
+            "properties": {
+              "conflict_opportunities": {"type": "integer", "minimum": 0},
+              "conflict_preserved": {"type": "integer", "minimum": 0},
+              "historical_opportunities": {"type": "integer", "minimum": 0},
+              "historical_preserved": {"type": "integer", "minimum": 0},
+              "identifier_opportunities": {"type": "integer", "minimum": 0},
+              "identifier_errors": {"type": "integer", "minimum": 0},
+              "cross_domain_opportunities": {"type": "integer", "minimum": 0},
+              "cross_domain_errors": {"type": "integer", "minimum": 0},
+              "retrieved_text_opportunities": {"type": "integer", "minimum": 0},
+              "retrieved_text_errors": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          },
           "raw_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "model_self_score_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
           "model_self_verdict": {"type": ["string", "null"], "enum": ["CONFORMANT", "SELF-CORRECTED", "PARTIALLY_CONFORMANT", "NON-CONFORMANT", null]}
@@ -109,5 +132,12 @@
     },
     "verdict": {"enum": ["CONFORMANT", "PARTIALLY_CONFORMANT", "NON_CONFORMANT"]}
   },
+  "allOf": [
+    {
+      "if": {"properties": {"execution_kind": {"const": "model"}}, "required": ["execution_kind"]},
+      "then": {"properties": {"grader": {"properties": {"method": {"const": "human_external"}}, "required": ["method"]}}},
+      "else": {"properties": {"grader": {"properties": {"method": {"const": "deterministic_oracle"}}, "required": ["method"]}}}
+    }
+  ],
   "additionalProperties": false
 }
