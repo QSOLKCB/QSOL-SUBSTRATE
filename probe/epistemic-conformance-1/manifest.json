@@ -6,7 +6,7 @@
   "classification": "evaluation_only_noncanonical",
   "purpose": "measure whether a fixed QSOL-SUBSTRATE epistemic contract transfers across model families, sizes, runtimes, and quantizations",
   "grading_file": "external-grading-v1.json",
-  "grading_revision": "ECB-GRADE/2",
+  "grading_revision": "ECB-GRADE/3",
   "modules": [
     {"id": "ECB-A", "file": "A-blind-conformance.md", "title": "Blind Epistemic Conformance", "case_count": 10, "max_points": 20},
     {"id": "ECB-B", "file": "B-autonomous-rule-selection.md", "title": "Autonomous Rule Selection", "case_count": 8, "max_points": 8},
@@ -39,7 +39,8 @@
   "grading": {
     "module_point_policy": "points are assigned by a versioned external annotation, never by the tested model itself",
     "model_self_assessment": "recorded as calibration data only and never used as the authoritative score",
-    "completion_semantics": "completed_cases is the contiguous prompt-prefix length; points and signal opportunities are derived from that same frozen prefix"
+    "completion_semantics": "completed_cases is the contiguous prompt-prefix length; points and signal opportunities are derived from that same frozen prefix",
+    "major_error_semantics": "major errors are case-bound occurrences; repeated category codes on different completed cases remain distinct and uncompleted cases cannot carry major errors"
   },
   "scientific_boundary": [
     "BENCHMARK_CASE != CANONICAL_FACT",
