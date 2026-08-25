@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-run.schema.json",
+  "title": "QSOL epistemic conformance empirical run",
+  "type": "object",
+  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "model", "grader", "modules"],
+  "properties": {
+    "type": {"const": "qsol-epistemic-conformance-run"},
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "execution_kind": {"enum": ["model", "scoring_oracle"]},
+    "benchmark": {
+      "type": "object",
+      "required": ["id", "sha256"],
+      "properties": {
+        "id": {"const": "EPISTEMIC-CONFORMANCE/1"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "source_commit", "substrate_sha256"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "delivery": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "model": {
+      "type": "object",
+      "required": ["id", "revision", "provider", "runtime", "quantization"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "provider": {"type": "string", "minLength": 1},
+        "runtime": {"type": "string", "minLength": 1},
+        "quantization": {"type": "string", "minLength": 1},
+        "parameter_count_billion": {"type": ["number", "null"], "exclusiveMinimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "grader": {
+      "type": "object",
+      "required": ["id", "revision", "method"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "method": {"enum": ["human_external", "deterministic_oracle"]}
+      },
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["module_id", "raw_output", "completed_cases", "earned_points", "max_points", "major_errors", "remaining_errors", "model_self_assessment", "signals"],
+        "properties": {
+          "module_id": {"enum": ["ECB-A", "ECB-B", "ECB-C", "ECB-D"]},
+          "raw_output": {"type": "string"},
+          "completed_cases": {"type": "integer", "minimum": 0},
+          "earned_points": {"type": "number", "minimum": 0},
+          "max_points": {"type": "number", "exclusiveMinimum": 0},
+          "major_errors": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"enum": ["unsupported_identifier_completion", "unsupported_numeric_reconciliation", "retrieved_text_authority_error", "registry_omission_overclaim", "simulation_evidence_overclaim", "cross_domain_evidence_overclaim", "historical_record_rewrite"]}
+          },
+          "remaining_errors": {"type": "integer", "minimum": 0},
+          "initial_errors": {"type": "integer", "minimum": 0, "default": 0},
+          "corrected_errors": {"type": "integer", "minimum": 0, "default": 0},
+          "model_self_assessment": {
+            "type": "object",
+            "required": ["score_fraction", "verdict"],
+            "properties": {
+              "score_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+              "verdict": {"type": ["string", "null"], "enum": ["CONFORMANT", "SELF-CORRECTED", "PARTIALLY_CONFORMANT", "NON-CONFORMANT", null]}
+            },
+            "additionalProperties": false
+          },
+          "signals": {
+            "type": "object",
+            "required": ["conflict_opportunities", "conflict_preserved", "historical_opportunities", "historical_preserved", "identifier_opportunities", "identifier_errors", "cross_domain_opportunities", "cross_domain_errors", "retrieved_text_opportunities", "retrieved_text_errors"],
+            "properties": {
+              "conflict_opportunities": {"type": "integer", "minimum": 0},
+              "conflict_preserved": {"type": "integer", "minimum": 0},
+              "historical_opportunities": {"type": "integer", "minimum": 0},
+              "historical_preserved": {"type": "integer", "minimum": 0},
+              "identifier_opportunities": {"type": "integer", "minimum": 0},
+              "identifier_errors": {"type": "integer", "minimum": 0},
+              "cross_domain_opportunities": {"type": "integer", "minimum": 0},
+              "cross_domain_errors": {"type": "integer", "minimum": 0},
+              "retrieved_text_opportunities": {"type": "integer", "minimum": 0},
+              "retrieved_text_errors": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
