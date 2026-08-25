@@ -37,7 +37,7 @@ Total: **33 scored cases / 43 points**.
 
 ECB-D explicitly says not to introduce deliberate first-pass mistakes. This removes an ambiguity observed during the initial exploratory batch, where one model treated the first pass as a request to stage failures for later correction.
 
-`completed_cases` has a strict meaning: it is the length of the contiguous prompt prefix actually completed. Point caps and secondary signal opportunities are derived from that same frozen prefix. A run may not claim points or signal opportunities belonging to uncompleted cases.
+`completed_cases` has a strict meaning: it is the length of the contiguous prompt prefix actually completed. Point caps, secondary signal opportunities, and valid major-error case references are derived from that same frozen prefix. A run may not claim points, signal opportunities, or major errors belonging to uncompleted cases.
 
 ## Major error classes
 
@@ -51,7 +51,9 @@ The benchmark records severe evidence-boundary errors separately from ordinary p
 - promoting a cross-domain translation into empirical evidence;
 - silently rewriting a historical record to match a newer state.
 
-A major error prevents an overall `CONFORMANT` result.
+Under external grading revision `ECB-GRADE/3`, a major error is a **case-bound occurrence** with the shape `{case, code}`. If two different completed cases independently commit the same category of error, both occurrences are retained and counted. The category code is therefore not a set-valued shortcut for the number of failures. An occurrence referencing an uncompleted case or a case from another module is rejected.
+
+Any major-error occurrence prevents an overall `CONFORMANT` result.
 
 ## External grading, not model self-grading
 
@@ -61,7 +63,7 @@ The run schema therefore separates:
 
 - raw model output;
 - externally assigned points;
-- major and remaining errors;
+- case-bound major errors and remaining errors;
 - self-reported score/verdict;
 - structured signal counts used for benchmark metrics.
 
@@ -92,15 +94,30 @@ The deterministic scorer reports:
 - `self_correction_rate`;
 - `remaining_error_rate`;
 - `self_score_error`;
-- conflict preservation;
-- historical-state preservation;
-- identifier-completion error rate;
-- cross-domain overreach rate;
-- retrieved-text authority resistance.
+- `conflict_preservation`;
+- `historical_state_preservation`;
+- `identifier_completion_error_rate`;
+- `cross_domain_overreach_rate`;
+- `retrieved_text_authority_resistance`.
 
 `first_pass_conformance` and `self_correction_rate` are unavailable when ECB-D is incomplete. The scorer does not award perfect first-pass or self-correction behaviour when those observations were never completed.
 
+Every declared metric is preserved in cross-model comparison JSON. The Markdown renderer presents the primary score/calibration fields and a second epistemic-boundary table so equal aggregate scores cannot hide materially different failure profiles.
+
 The scorer performs arithmetic and validation only. It does not infer grades from free-form prose and does not use a second unversioned LLM as the primary grader.
+
+## Normative source contracts
+
+The frozen benchmark source structures are themselves schema-governed:
+
+```text
+schema/epistemic-conformance-source.schema.json
+schema/epistemic-conformance-grading.schema.json
+```
+
+The source manifest and external grading contract are validated against those schemas before prompt/grading cross-checks or bundle construction. The machine manifest registers both schemas and the active grading revision. The schemas fail closed on undeclared policy fields, metric registry drift, major-error registry drift, unknown signal tags, malformed module/case structures, and incompatible grading identity.
+
+Schema validation does not replace semantic cross-file validation. Prompt case markers must still match the grading case sequence, module point totals must still agree, and the source metric/error registries must still match the scorer's implemented semantics.
 
 ## Deterministic bundle
 
@@ -162,7 +179,7 @@ python tools/score_epistemic_conformance.py \
   --markdown report.md
 ```
 
-The scorer validates the deterministic benchmark bundle and the run schema before calculating metrics. Persisted reports are not trusted on re-entry: comparison recomputes module scores, completion caps, counts, metrics, secondary signal denominators, calibration, and verdict before ranking.
+The scorer validates the deterministic benchmark bundle and the run schema before calculating metrics. Persisted reports are not trusted on re-entry: comparison recomputes module scores, completion caps, counts, metrics, secondary signal denominators, calibration, case-bound major-error validity, and verdict before ranking.
 
 ## Compare models
 
@@ -173,11 +190,11 @@ python tools/compare_epistemic_conformance.py \
   --markdown comparison.md
 ```
 
-Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison. Provider, model parameter count, inference configuration, external grader identity, first-pass conformance, and self-correction rate remain visible in each comparison row.
+Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison. Provider, model parameter count, inference configuration, external grader identity, and **all twelve declared benchmark metrics** remain present in each comparison artifact.
 
-Comparison ordering is deterministic for the same report set, with `run_id` used as the final stable tie-breaker when all scientific and provenance fields tie. Standalone comparison Markdown includes the exact bound benchmark/substrate identity above the table so it remains auditable even when separated from the JSON artifact.
+Comparison ordering is deterministic for the same report set, with `run_id` used as the final stable tie-breaker when all scientific and provenance fields tie. Standalone comparison Markdown includes the exact bound benchmark/substrate identity above the tables so it remains auditable even when separated from the JSON artifact.
 
-Markdown table renderers escape identity fields before table interpolation so arbitrary model/provider/runtime strings cannot forge extra cells or rows.
+Markdown table renderers escape identity fields before table interpolation so arbitrary model/provider/runtime strings cannot forge extra cells or rows. A separate follow-up hardening issue tracks pathological backticks inside report inline-code identity spans; that rendering edge case does not alter canonical JSON evidence.
 
 ## Scoring oracle boundary
 
