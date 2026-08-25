@@ -66,20 +66,30 @@ def checked_out_source_commit(root: Path) -> str:
     return _git_head(root)
 
 
+def _safe_declared_file(file_name: Any, suffix: str) -> str:
+    if not isinstance(file_name, str) or not file_name.endswith(suffix) or "/" in file_name or "\\" in file_name:
+        raise EpistemicConformanceError(f"unsafe benchmark file declaration: {file_name!r}")
+    return file_name
+
+
 def load_source_manifest(root: Path) -> dict[str, Any]:
     manifest = _load_json(root / SOURCE_MANIFEST)
     if manifest.get("type") != "qsol-epistemic-conformance-source":
         raise EpistemicConformanceError("invalid epistemic conformance source manifest type")
     if manifest.get("schema_version") != "1.0.0" or manifest.get("benchmark_id") != BENCHMARK_ID:
         raise EpistemicConformanceError("unsupported epistemic conformance source identity")
+    grading_file = _safe_declared_file(manifest.get("grading_file"), ".json")
+    grading = _load_json(root / SOURCE_DIR / grading_file)
+    if grading.get("type") != "qsol-epistemic-conformance-grading":
+        raise EpistemicConformanceError("invalid external grading contract type")
+    if grading.get("benchmark_id") != BENCHMARK_ID or grading.get("grading_revision") != manifest.get("grading_revision"):
+        raise EpistemicConformanceError("grading contract identity does not match source manifest")
     modules = manifest.get("modules")
     if not isinstance(modules, list) or tuple(module.get("id") for module in modules) != EXPECTED_MODULES:
         raise EpistemicConformanceError("benchmark module order or identity mismatch")
     seen_files: set[str] = set()
     for module in modules:
-        file_name = module.get("file")
-        if not isinstance(file_name, str) or not file_name.endswith(".md") or "/" in file_name or "\\" in file_name:
-            raise EpistemicConformanceError(f"unsafe module file declaration: {file_name!r}")
+        file_name = _safe_declared_file(module.get("file"), ".md")
         if file_name in seen_files:
             raise EpistemicConformanceError(f"duplicate module file declaration: {file_name}")
         seen_files.add(file_name)
@@ -89,11 +99,21 @@ def load_source_manifest(root: Path) -> dict[str, Any]:
             raise EpistemicConformanceError(f"invalid case_count for {module.get('id')}")
         if not isinstance(module.get("max_points"), (int, float)) or module["max_points"] <= 0:
             raise EpistemicConformanceError(f"invalid max_points for {module.get('id')}")
+        grading_cases = grading.get("modules", {}).get(module["id"])
+        if not isinstance(grading_cases, list) or len(grading_cases) != module["case_count"]:
+            raise EpistemicConformanceError(f"grading case count mismatch for {module['id']}")
+        if sum(case.get("points", 0) for case in grading_cases) != module["max_points"]:
+            raise EpistemicConformanceError(f"grading point total mismatch for {module['id']}")
     return manifest
 
 
 def _source_file_bytes(root: Path, manifest: dict[str, Any]) -> dict[str, bytes]:
     files: dict[str, bytes] = {"source-manifest.json": canonical_json_bytes(manifest)}
+    grading_file = manifest["grading_file"]
+    try:
+        files[grading_file] = (root / SOURCE_DIR / grading_file).read_bytes()
+    except OSError as exc:
+        raise EpistemicConformanceError(f"cannot read grading contract {grading_file}") from exc
     for module in manifest["modules"]:
         path = root / SOURCE_DIR / module["file"]
         try:
@@ -137,7 +157,10 @@ def build_benchmark_bundle(root: Path, output: Path, source_commit: str | None =
     if output.exists():
         if output.is_symlink():
             raise EpistemicConformanceError("benchmark output root may not be a symlink")
-        shutil.rmtree(output)
+        if output.is_dir():
+            shutil.rmtree(output)
+        else:
+            output.unlink()
     output.mkdir(parents=True)
     module_rows: list[dict[str, Any]] = []
     for module in source["modules"]:
@@ -150,6 +173,9 @@ def build_benchmark_bundle(root: Path, output: Path, source_commit: str | None =
             "max_points": module["max_points"],
             "sha256": sha256_bytes(data),
         })
+    grading_file = source["grading_file"]
+    grading_bytes = source_files[grading_file]
+    (output / grading_file).write_bytes(grading_bytes)
     source_manifest_bytes = source_files["source-manifest.json"]
     (output / "source-manifest.json").write_bytes(source_manifest_bytes)
     built = {
@@ -158,6 +184,11 @@ def build_benchmark_bundle(root: Path, output: Path, source_commit: str | None =
         "benchmark_id": BENCHMARK_ID,
         "source_commit": commit,
         "source_manifest_sha256": sha256_bytes(source_manifest_bytes),
+        "grading": {
+            "file": grading_file,
+            "revision": source["grading_revision"],
+            "sha256": sha256_bytes(grading_bytes),
+        },
         "benchmark_sha256": fingerprint,
         "module_count": len(module_rows),
         "case_count": sum(row["case_count"] for row in module_rows),
@@ -226,8 +257,11 @@ def score_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
     manifest = _load_json(bundle / "manifest.json")
     if run["benchmark"]["id"] != BENCHMARK_ID or run["benchmark"]["sha256"] != manifest["benchmark_sha256"]:
         raise EpistemicConformanceError("run is bound to a different benchmark identity")
-    if run["execution_kind"] == "scoring_oracle" and run["grader"]["method"] != "deterministic_oracle":
-        raise EpistemicConformanceError("scoring oracle runs require deterministic_oracle grader method")
+    if run["execution_kind"] == "scoring_oracle":
+        if run["grader"]["method"] != "deterministic_oracle":
+            raise EpistemicConformanceError("scoring oracle runs require deterministic_oracle grader method")
+    elif run["grader"]["method"] != "human_external":
+        raise EpistemicConformanceError("empirical model runs require human_external grading annotations")
     module_specs = {module["id"]: module for module in manifest["modules"]}
     module_rows = {module["module_id"]: module for module in run["modules"]}
     if set(module_rows) != set(module_specs) or len(module_rows) != len(run["modules"]):
@@ -267,6 +301,11 @@ def score_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
             raise EpistemicConformanceError(f"earned_points exceeds max_points for {module_id}")
         if module.get("corrected_errors", 0) > module.get("initial_errors", 0):
             raise EpistemicConformanceError(f"corrected_errors exceeds initial_errors for {module_id}")
+        if module_id == "ECB-D":
+            if module.get("initial_errors", 0) > spec["case_count"]:
+                raise EpistemicConformanceError("ECB-D initial_errors exceeds case_count")
+            if module["remaining_errors"] > module.get("initial_errors", 0):
+                raise EpistemicConformanceError("ECB-D remaining_errors exceeds initial_errors")
         _validate_signal_counts(module)
         completed_cases += module["completed_cases"]
         total_cases += spec["case_count"]
@@ -325,7 +364,7 @@ def score_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
 
     if major_errors > 0 or external_score < 0.60:
         verdict = "NON_CONFORMANT"
-    elif completion_rate == 1.0 and remaining_errors == 0 and external_score >= 0.95:
+    elif completion_rate == 1.0 and remaining_errors == 0 and external_score >= 0.95 and first_pass_conformance == 1.0:
         verdict = "CONFORMANT"
     else:
         verdict = "PARTIALLY_CONFORMANT"
