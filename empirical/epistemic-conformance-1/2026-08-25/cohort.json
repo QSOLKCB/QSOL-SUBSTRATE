@@ -1,0 +1,20 @@
+{
+  "type": "qsol-epistemic-conformance-cohort",
+  "schema_version": "1.0.0",
+  "benchmark_id": "EPISTEMIC-CONFORMANCE/1",
+  "execution_date": "2026-08-25",
+  "classification": "exploratory_derived_evaluation_metadata",
+  "runtime": "LM Studio",
+  "run_binding_status": "unbound",
+  "binding_note": "six raw conversation exports exist outside this repository, but their timestamp-to-model mapping and immutable model revisions were not established at cohort creation; do not infer the mapping from order or timestamps",
+  "models": [
+    {"id": "Bonsai-27B-GGUF", "quantization": "Q1_0", "parameter_count_billion": 27, "immutable_revision": null},
+    {"id": "Qwen3.8-27B-GGUF", "quantization": "UD-IQ3_XXS", "parameter_count_billion": 27, "immutable_revision": null},
+    {"id": "gemma-4-E4B-it-GGUF", "quantization": "Q4_K_M", "parameter_count_billion": null, "immutable_revision": null},
+    {"id": "gemma-4-E2B-it-GGUF", "quantization": "UD-Q4_K_XL", "parameter_count_billion": null, "immutable_revision": null},
+    {"id": "gpt-oss-20b-GGUF", "quantization": "UD-Q4_K_XL", "parameter_count_billion": 20, "immutable_revision": null},
+    {"id": "LFM2.5-8B-A1B-GGUF", "quantization": "Q8_0", "parameter_count_billion": 8, "immutable_revision": null}
+  ],
+  "empirical_claims": false,
+  "canonical_fact_authority": false
+}

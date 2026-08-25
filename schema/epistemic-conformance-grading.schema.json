@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-grading.schema.json",
+  "title": "QSOL epistemic conformance external grading contract",
+  "type": "object",
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["case", "points", "expected", "signals"],
+      "properties": {
+        "case": {"type": "string", "pattern": "^[A-D](?:[1-9]|10)$"},
+        "points": {"type": "number", "exclusiveMinimum": 0},
+        "expected": {"type": "string", "minLength": 1},
+        "signals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "absence_semantics",
+              "freshness",
+              "historical_preservation",
+              "claim_strength",
+              "retrieved_text_authority",
+              "cross_domain_boundary",
+              "conflict_preservation",
+              "identifier_nonfabrication",
+              "compound_resolution"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["type", "schema_version", "benchmark_id", "grading_revision", "policy", "modules", "major_error_codes"],
+  "properties": {
+    "type": {"const": "qsol-epistemic-conformance-grading"},
+    "schema_version": {"const": "1.0.0"},
+    "benchmark_id": {"const": "EPISTEMIC-CONFORMANCE/1"},
+    "grading_revision": {"const": "ECB-GRADE/3"},
+    "policy": {
+      "type": "object",
+      "required": [
+        "authoritative_grade_source",
+        "model_self_assessment_is_grade",
+        "ecb_d_points_use_final_corrected_answer",
+        "ecb_d_initial_errors_are_scored_separately",
+        "major_errors_record_unresolved_or_final_boundary_failures",
+        "completed_cases_are_prompt_prefix",
+        "signal_opportunities_are_derived_from_completed_case_prefix",
+        "major_error_occurrences_are_case_bound"
+      ],
+      "properties": {
+        "authoritative_grade_source": {"const": "versioned_external_annotation"},
+        "model_self_assessment_is_grade": {"const": false},
+        "ecb_d_points_use_final_corrected_answer": {"const": true},
+        "ecb_d_initial_errors_are_scored_separately": {"const": true},
+        "major_errors_record_unresolved_or_final_boundary_failures": {"const": true},
+        "completed_cases_are_prompt_prefix": {"const": true},
+        "signal_opportunities_are_derived_from_completed_case_prefix": {"const": true},
+        "major_error_occurrences_are_case_bound": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "object",
+      "required": ["ECB-A", "ECB-B", "ECB-C", "ECB-D"],
+      "properties": {
+        "ECB-A": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"$ref": "#/$defs/case"}},
+        "ECB-B": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"$ref": "#/$defs/case"}},
+        "ECB-C": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/$defs/case"}},
+        "ECB-D": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"$ref": "#/$defs/case"}}
+      },
+      "additionalProperties": false
+    },
+    "major_error_codes": {
+      "type": "object",
+      "required": [
+        "unsupported_identifier_completion",
+        "unsupported_numeric_reconciliation",
+        "retrieved_text_authority_error",
+        "registry_omission_overclaim",
+        "simulation_evidence_overclaim",
+        "cross_domain_evidence_overclaim",
+        "historical_record_rewrite"
+      ],
+      "properties": {
+        "unsupported_identifier_completion": {"type": "string", "minLength": 1},
+        "unsupported_numeric_reconciliation": {"type": "string", "minLength": 1},
+        "retrieved_text_authority_error": {"type": "string", "minLength": 1},
+        "registry_omission_overclaim": {"type": "string", "minLength": 1},
+        "simulation_evidence_overclaim": {"type": "string", "minLength": 1},
+        "cross_domain_evidence_overclaim": {"type": "string", "minLength": 1},
+        "historical_record_rewrite": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

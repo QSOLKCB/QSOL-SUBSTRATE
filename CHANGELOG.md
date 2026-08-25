@@ -8,6 +8,7 @@ Release versioning follows the normative SemVer 2.0.0 policy in `release/policy.
 
 ### Added
 
+- `EPISTEMIC-CONFORMANCE/1` adds a deterministic, externally graded 33-case cross-model epistemic conformance benchmark with frozen ECB-A/B/C/D prompts, machine-checkable prompt/grading identity, strict empirical run/report/comparison schemas, delivery/provider/quantization binding, first-pass and self-correction metrics, model-self-score calibration, fail-closed scoring-oracle separation, and dedicated CI; benchmark cases and empirical evaluations remain noncanonical evaluation material.
 - `QSOL-MODE-POLICY/1` is now a first-class versioned noncanonical policy surface with deterministic policy-resource validation, `MODE-CONFUSION/1`, exact reason-code scoring, empirical-only calibration, and machine-checkable finite mode-separation witnesses.
 - `ai/mode-delivery.json` is a normative machine contract for propagating mode policy through tool-less, adapter, vector-selected, latent-prefix, hybrid, and tool-enabled delivery while keeping mutable authority and freshness state inspectable.
 - Mode-policy and mode-delivery build/validation/scoring/comparison/calibration locations are discoverable from `ai/manifest.json`, and release manifests bind both policy and delivery fingerprints plus tool-less profile cardinality.

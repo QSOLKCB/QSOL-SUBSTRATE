@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-run.schema.json",
+  "title": "QSOL epistemic conformance empirical run",
+  "type": "object",
+  "$defs": {
+    "inference": {
+      "type": "object",
+      "required": ["context_size", "temperature", "top_p", "top_k", "seed", "sampler", "extra"],
+      "properties": {
+        "context_size": {"type": ["integer", "null"], "minimum": 1},
+        "temperature": {"type": ["number", "null"], "minimum": 0},
+        "top_p": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "top_k": {"type": ["integer", "null"], "minimum": 0},
+        "seed": {"type": ["integer", "string", "null"]},
+        "sampler": {"type": ["string", "null"], "minLength": 1},
+        "extra": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "major_error": {
+      "type": "object",
+      "required": ["case", "code"],
+      "properties": {
+        "case": {"type": "string", "pattern": "^[A-D](?:[1-9]|10)$"},
+        "code": {"enum": ["unsupported_identifier_completion", "unsupported_numeric_reconciliation", "retrieved_text_authority_error", "registry_omission_overclaim", "simulation_evidence_overclaim", "cross_domain_evidence_overclaim", "historical_record_rewrite"]}
+      },
+      "additionalProperties": false
+    },
+    "projection_compatibility": {
+      "type": "object",
+      "required": ["type", "schema_version", "projection_kind", "model_id", "model_revision", "architecture", "tokenizer_id", "tokenizer_sha256", "context_length", "hidden_size", "num_hidden_layers", "num_attention_heads", "kv_layout_version", "tensor_dtype", "kv_cache_dtype", "quantization_id"],
+      "properties": {
+        "type": {"const": "qsol-model-projection-compatibility"},
+        "schema_version": {"const": "1.0.0"},
+        "projection_kind": {"enum": ["soft_prompt", "virtual_tokens", "lora", "kv_cache", "prefix_state", "hybrid"]},
+        "model_id": {"type": "string", "minLength": 1},
+        "model_revision": {"type": "string", "minLength": 1},
+        "architecture": {"type": "string", "minLength": 1},
+        "tokenizer_id": {"type": "string", "minLength": 1},
+        "tokenizer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "context_length": {"type": "integer", "minimum": 1},
+        "hidden_size": {"type": "integer", "minimum": 1},
+        "num_hidden_layers": {"type": "integer", "minimum": 1},
+        "num_attention_heads": {"type": "integer", "minimum": 1},
+        "kv_layout_version": {"type": "string", "minLength": 1},
+        "tensor_dtype": {"type": "string", "minLength": 1},
+        "kv_cache_dtype": {"type": "string", "minLength": 1},
+        "quantization_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "projection_execution": {
+      "type": "object",
+      "required": ["artifact_sha256", "execution_evidence_sha256", "compatibility"],
+      "properties": {
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "execution_evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "compatibility": {"$ref": "#/$defs/projection_compatibility"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "projection_execution", "model", "inference", "grader", "modules"],
+  "properties": {
+    "type": {"const": "qsol-epistemic-conformance-run"},
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "execution_kind": {"enum": ["model", "scoring_oracle"]},
+    "benchmark": {
+      "type": "object",
+      "required": ["id", "sha256"],
+      "properties": {
+        "id": {"const": "EPISTEMIC-CONFORMANCE/1"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "substrate": {
+      "type": "object",
+      "required": ["protocol", "source_commit", "substrate_sha256", "delivery", "delivery_kind"],
+      "properties": {
+        "protocol": {"const": "QSOL-SUBSTRATE"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "delivery": {"type": "string", "minLength": 1},
+        "delivery_kind": {"enum": ["textual", "vector", "tool_enabled", "latent_prefix", "soft_prompt", "virtual_tokens", "lora", "kv_cache", "prefix_state", "hybrid", "other"]}
+      },
+      "additionalProperties": false
+    },
+    "projection_execution": {
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/projection_execution"}
+      ]
+    },
+    "model": {
+      "type": "object",
+      "required": ["id", "revision", "provider", "runtime", "quantization"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": ["string", "null"], "minLength": 1},
+        "provider": {"type": "string", "minLength": 1},
+        "runtime": {"type": "string", "minLength": 1},
+        "quantization": {"type": "string", "minLength": 1},
+        "parameter_count_billion": {"type": ["number", "null"], "exclusiveMinimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "inference": {"$ref": "#/$defs/inference"},
+    "grader": {
+      "type": "object",
+      "required": ["id", "revision", "method"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "method": {"enum": ["human_external", "deterministic_oracle"]}
+      },
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["module_id", "raw_output", "completed_cases", "earned_points", "max_points", "major_errors", "remaining_errors", "model_self_assessment", "signals"],
+        "properties": {
+          "module_id": {"enum": ["ECB-A", "ECB-B", "ECB-C", "ECB-D"]},
+          "raw_output": {"type": "string"},
+          "completed_cases": {"type": "integer", "minimum": 0},
+          "earned_points": {"type": "number", "minimum": 0},
+          "max_points": {"type": "number", "exclusiveMinimum": 0},
+          "major_errors": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/major_error"}
+          },
+          "remaining_errors": {"type": "integer", "minimum": 0},
+          "initial_errors": {"type": "integer", "minimum": 0, "default": 0},
+          "corrected_errors": {"type": "integer", "minimum": 0, "default": 0},
+          "model_self_assessment": {
+            "type": "object",
+            "required": ["score_fraction", "verdict"],
+            "properties": {
+              "score_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+              "verdict": {"type": ["string", "null"], "enum": ["CONFORMANT", "SELF-CORRECTED", "PARTIALLY_CONFORMANT", "NON-CONFORMANT", null]}
+            },
+            "additionalProperties": false
+          },
+          "signals": {
+            "type": "object",
+            "required": ["conflict_opportunities", "conflict_preserved", "historical_opportunities", "historical_preserved", "identifier_opportunities", "identifier_errors", "cross_domain_opportunities", "cross_domain_errors", "retrieved_text_opportunities", "retrieved_text_errors"],
+            "properties": {
+              "conflict_opportunities": {"type": "integer", "minimum": 0},
+              "conflict_preserved": {"type": "integer", "minimum": 0},
+              "historical_opportunities": {"type": "integer", "minimum": 0},
+              "historical_preserved": {"type": "integer", "minimum": 0},
+              "identifier_opportunities": {"type": "integer", "minimum": 0},
+              "identifier_errors": {"type": "integer", "minimum": 0},
+              "cross_domain_opportunities": {"type": "integer", "minimum": 0},
+              "cross_domain_errors": {"type": "integer", "minimum": 0},
+              "retrieved_text_opportunities": {"type": "integer", "minimum": 0},
+              "retrieved_text_errors": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"execution_kind": {"const": "model"}}, "required": ["execution_kind"]},
+      "then": {"properties": {"grader": {"properties": {"method": {"const": "human_external"}}, "required": ["method"]}}},
+      "else": {"properties": {"grader": {"properties": {"method": {"const": "deterministic_oracle"}}, "required": ["method"]}}}
+    }
+  ],
+  "additionalProperties": false
+}
