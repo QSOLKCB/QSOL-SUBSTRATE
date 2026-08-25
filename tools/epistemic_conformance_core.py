@@ -15,10 +15,35 @@ from jsonschema import Draft202012Validator, FormatChecker
 BENCHMARK_ID = "EPISTEMIC-CONFORMANCE/1"
 SOURCE_DIR = Path("probe/epistemic-conformance-1")
 SOURCE_MANIFEST = SOURCE_DIR / "manifest.json"
+SOURCE_SCHEMA = Path("schema/epistemic-conformance-source.schema.json")
+GRADING_SCHEMA = Path("schema/epistemic-conformance-grading.schema.json")
 RUN_SCHEMA = Path("schema/epistemic-conformance-run.schema.json")
 REPORT_SCHEMA = Path("schema/epistemic-conformance-report.schema.json")
 COMPARISON_SCHEMA = Path("schema/epistemic-conformance-comparison.schema.json")
 EXPECTED_MODULES = ("ECB-A", "ECB-B", "ECB-C", "ECB-D")
+EXPECTED_METRICS = (
+    "external_conformance_score",
+    "completion_rate",
+    "major_error_count",
+    "first_pass_conformance",
+    "self_correction_rate",
+    "remaining_error_rate",
+    "self_score_error",
+    "conflict_preservation",
+    "historical_state_preservation",
+    "identifier_completion_error_rate",
+    "cross_domain_overreach_rate",
+    "retrieved_text_authority_resistance",
+)
+MAJOR_ERROR_CODES = (
+    "unsupported_identifier_completion",
+    "unsupported_numeric_reconciliation",
+    "retrieved_text_authority_error",
+    "registry_omission_overclaim",
+    "simulation_evidence_overclaim",
+    "cross_domain_evidence_overclaim",
+    "historical_record_rewrite",
+)
 IN_REPO_OUTPUT_ROOT = Path("dist/epistemic-conformance-1")
 _CASE_MARKER = re.compile(r"<!--\s*ECB_CASE:([A-D]\d+)\s*-->")
 _SIGNAL_TAGS = {
@@ -181,6 +206,12 @@ def load_source_manifest(root: Path) -> dict[str, Any]:
     manifest = _load_json(root / SOURCE_MANIFEST)
     if not isinstance(manifest, dict):
         raise EpistemicConformanceError("epistemic conformance source manifest must be an object")
+    source_schema_errors = _schema_errors(root, SOURCE_SCHEMA, manifest)
+    if source_schema_errors:
+        raise EpistemicConformanceError(
+            "epistemic conformance source schema violation at: "
+            + ", ".join(source_schema_errors[:8])
+        )
     if manifest.get("type") != "qsol-epistemic-conformance-source":
         raise EpistemicConformanceError("invalid epistemic conformance source manifest type")
     if manifest.get("schema_version") != "1.0.0" or manifest.get("benchmark_id") != BENCHMARK_ID:
@@ -190,10 +221,22 @@ def load_source_manifest(root: Path) -> dict[str, Any]:
     grading = _load_json(root / SOURCE_DIR / grading_file)
     if not isinstance(grading, dict):
         raise EpistemicConformanceError("external grading contract must be an object")
+    grading_schema_errors = _schema_errors(root, GRADING_SCHEMA, grading)
+    if grading_schema_errors:
+        raise EpistemicConformanceError(
+            "epistemic conformance grading schema violation at: "
+            + ", ".join(grading_schema_errors[:8])
+        )
     if grading.get("type") != "qsol-epistemic-conformance-grading":
         raise EpistemicConformanceError("invalid external grading contract type")
     if grading.get("benchmark_id") != BENCHMARK_ID or grading.get("grading_revision") != manifest.get("grading_revision"):
         raise EpistemicConformanceError("grading contract identity does not match source manifest")
+    if tuple(manifest.get("metrics", ())) != EXPECTED_METRICS:
+        raise EpistemicConformanceError("source metric registry does not match scorer semantics")
+    if tuple(manifest.get("major_error_codes", ())) != MAJOR_ERROR_CODES:
+        raise EpistemicConformanceError("source major-error registry does not match scorer semantics")
+    if set(grading.get("major_error_codes", {})) != set(MAJOR_ERROR_CODES):
+        raise EpistemicConformanceError("grading major-error registry does not match scorer semantics")
 
     modules = manifest.get("modules")
     if not isinstance(modules, list) or len(modules) != len(EXPECTED_MODULES):
@@ -439,6 +482,21 @@ def _validate_signal_counts(
                 )
 
 
+def _validate_major_error_occurrences(
+    module: dict[str, Any], grading_cases: list[dict[str, Any]]
+) -> None:
+    completed_case_ids = {
+        case["case"] for case in grading_cases[: module["completed_cases"]]
+    }
+    for occurrence in module["major_errors"]:
+        case_id = occurrence["case"]
+        if case_id not in completed_case_ids:
+            raise EpistemicConformanceError(
+                f"major error references uncompleted or wrong-module case {case_id} "
+                f"in {module['module_id']}"
+            )
+
+
 def _max_points_for_completed_cases(
     grading_cases: list[dict[str, Any]], completed_cases: int
 ) -> float:
@@ -661,6 +719,7 @@ def _validate_report_consistency(root: Path, report: dict[str, Any]) -> None:
             grading_cases, module["completed_cases"]
         )
         _validate_signal_counts(module, expected_opportunities)
+        _validate_major_error_occurrences(module, grading_cases)
 
     execution_error = _execution_grader_error(
         report["execution_kind"], report["grader"]["method"]
@@ -768,6 +827,7 @@ def score_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
             grading_cases, module["completed_cases"]
         )
         _validate_signal_counts(module, expected_opportunities)
+        _validate_major_error_occurrences(module, grading_cases)
 
         module_reports.append(
             {
@@ -777,7 +837,7 @@ def score_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
                 "earned_points": module["earned_points"],
                 "max_points": module["max_points"],
                 "score": _rate(module["earned_points"], module["max_points"]),
-                "major_errors": module["major_errors"],
+                "major_errors": [dict(item) for item in module["major_errors"]],
                 "remaining_errors": module["remaining_errors"],
                 "initial_errors": initial,
                 "corrected_errors": corrected,
@@ -858,7 +918,13 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
             "major_error_count": report["metrics"]["major_error_count"],
             "first_pass_conformance": report["metrics"]["first_pass_conformance"],
             "self_correction_rate": report["metrics"]["self_correction_rate"],
+            "remaining_error_rate": report["metrics"]["remaining_error_rate"],
             "self_score_error": report["metrics"]["self_score_error"],
+            "conflict_preservation": report["metrics"]["conflict_preservation"],
+            "historical_state_preservation": report["metrics"]["historical_state_preservation"],
+            "identifier_completion_error_rate": report["metrics"]["identifier_completion_error_rate"],
+            "cross_domain_overreach_rate": report["metrics"]["cross_domain_overreach_rate"],
+            "retrieved_text_authority_resistance": report["metrics"]["retrieved_text_authority_resistance"],
             "verdict": report["verdict"],
         }
         for report in rows_in
@@ -905,6 +971,14 @@ def _md_cell(value: Any) -> str:
         .replace("\r", "<br>")
         .replace("\n", "<br>")
     )
+
+
+def _md_metric(value: Any, signed: bool = False) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, float):
+        return f"{value:+.3f}" if signed else f"{value:.3f}"
+    return str(value)
 
 
 def report_markdown(report: dict[str, Any]) -> str:
@@ -975,10 +1049,10 @@ def comparison_markdown(comparison: dict[str, Any]) -> str:
         f"    {_stable_json_text(bound_identity)}",
         "",
         (
-            "| Provider | Model | Revision | Size (B) | Runtime | Quantization | Inference | Grader | Grader revision | "
+            "| Run | Provider | Model | Revision | Size (B) | Runtime | Quantization | Inference | Grader | Grader revision | "
             "Score | Completion | Major errors | First-pass | Self-correction | Self-score error | Verdict |"
         ),
-        "|---|---|---|---:|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|",
+        "|---|---|---|---|---:|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|",
     ]
     for row in comparison["rows"]:
         size = (
@@ -986,29 +1060,35 @@ def comparison_markdown(comparison: dict[str, Any]) -> str:
             if row["parameter_count_billion"] is None
             else f"{row['parameter_count_billion']:g}"
         )
-        first_pass = (
-            "-"
-            if row["first_pass_conformance"] is None
-            else f"{row['first_pass_conformance']:.3f}"
-        )
-        self_correction = (
-            "-"
-            if row["self_correction_rate"] is None
-            else f"{row['self_correction_rate']:.3f}"
-        )
-        self_error = (
-            "-"
-            if row["self_score_error"] is None
-            else f"{row['self_score_error']:+.3f}"
-        )
         lines.append(
-            f"| {_md_cell(row['provider'])} | {_md_cell(row['model_id'])} | "
+            f"| {_md_cell(row['run_id'])} | {_md_cell(row['provider'])} | {_md_cell(row['model_id'])} | "
             f"{_md_cell(row['model_revision'])} | {size} | {_md_cell(row['runtime'])} | "
             f"{_md_cell(row['quantization'])} | {_md_cell(row['inference'])} | "
             f"{_md_cell(row['grader_id'])} | {_md_cell(row['grader_revision'])} | "
             f"{row['external_conformance_score']:.3f} | {row['completion_rate']:.3f} | "
-            f"{row['major_error_count']} | {first_pass} | {self_correction} | "
-            f"{self_error} | {_md_cell(row['verdict'])} |"
+            f"{row['major_error_count']} | {_md_metric(row['first_pass_conformance'])} | "
+            f"{_md_metric(row['self_correction_rate'])} | {_md_metric(row['self_score_error'], signed=True)} | "
+            f"{_md_cell(row['verdict'])} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Epistemic boundary metrics",
+            "",
+            (
+                "| Run | Remaining error rate | Conflict preservation | Historical preservation | "
+                "Identifier error rate | Cross-domain overreach | Retrieved-text resistance |"
+            ),
+            "|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for row in comparison["rows"]:
+        lines.append(
+            f"| {_md_cell(row['run_id'])} | {_md_metric(row['remaining_error_rate'])} | "
+            f"{_md_metric(row['conflict_preservation'])} | {_md_metric(row['historical_state_preservation'])} | "
+            f"{_md_metric(row['identifier_completion_error_rate'])} | {_md_metric(row['cross_domain_overreach_rate'])} | "
+            f"{_md_metric(row['retrieved_text_authority_resistance'])} |"
         )
     lines.append("")
     return "\n".join(lines)
