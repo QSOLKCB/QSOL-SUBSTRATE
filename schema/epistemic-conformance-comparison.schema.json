@@ -18,12 +18,12 @@
     },
     "substrate": {
       "type": "object",
-      "required": ["protocol", "source_commit", "substrate_sha256"],
+      "required": ["protocol", "source_commit", "substrate_sha256", "delivery"],
       "properties": {
         "protocol": {"const": "QSOL-SUBSTRATE"},
         "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
         "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "delivery": {"type": "string"}
+        "delivery": {"type": "string", "minLength": 1}
       },
       "additionalProperties": false
     },
@@ -32,11 +32,12 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["run_id", "model_id", "model_revision", "runtime", "quantization", "external_conformance_score", "completion_rate", "major_error_count", "self_score_error", "verdict"],
+        "required": ["run_id", "model_id", "model_revision", "provider", "runtime", "quantization", "external_conformance_score", "completion_rate", "major_error_count", "self_score_error", "verdict"],
         "properties": {
           "run_id": {"type": "string", "minLength": 1},
           "model_id": {"type": "string", "minLength": 1},
           "model_revision": {"type": "string", "minLength": 1},
+          "provider": {"type": "string", "minLength": 1},
           "runtime": {"type": "string", "minLength": 1},
           "quantization": {"type": "string", "minLength": 1},
           "external_conformance_score": {"type": "number", "minimum": 0, "maximum": 1},
