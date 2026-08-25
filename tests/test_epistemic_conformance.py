@@ -240,6 +240,14 @@ class EpistemicConformanceTests(unittest.TestCase):
             {0.2, 0.8},
         )
 
+    def test_unknown_sampler_is_explicit_null_and_preserved(self):
+        run = self._run("model/opaque-sampler", "r1")
+        run["inference"]["sampler"] = None
+        report = score_run(ROOT, self.bundle, run)
+        self.assertIsNone(report["inference"]["sampler"])
+        comparison = compare_reports(ROOT, [report])
+        self.assertIsNone(comparison["rows"][0]["inference"]["sampler"])
+
     def test_model_self_score_is_calibration_not_grade(self):
         run = self._run()
         for module in run["modules"]:
@@ -463,6 +471,19 @@ class EpistemicConformanceTests(unittest.TestCase):
         self.assertEqual(forward, reverse)
         self.assertEqual([row["run_id"] for row in forward["rows"]], ["run-a", "run-z"])
 
+    def test_comparison_order_is_stable_with_duplicate_run_ids(self):
+        first_run = self._run("model/repeat", "r1")
+        second_run = self._run("model/repeat", "r1")
+        first_run["run_id"] = "duplicate-run"
+        second_run["run_id"] = "duplicate-run"
+        second_run["model"]["runtime"] = "alternate-runtime"
+        second_run["model"]["quantization"] = "Q8_0"
+        first = score_run(ROOT, self.bundle, first_run)
+        second = score_run(ROOT, self.bundle, second_run)
+        forward = compare_reports(ROOT, [first, second])
+        reverse = compare_reports(ROOT, [second, first])
+        self.assertEqual(forward, reverse)
+
     def test_comparison_markdown_preserves_exact_binding_identity(self):
         report = score_run(ROOT, self.bundle, self._run())
         comparison = compare_reports(ROOT, [report])
@@ -565,6 +586,20 @@ class EpistemicConformanceTests(unittest.TestCase):
         with mock.patch.object(ecc, "_git_output", side_effect=fake_git_output):
             with self.assertRaises(EpistemicConformanceError):
                 build_benchmark_bundle(ROOT, self.base / "dirty", self.commit)
+
+    def test_dirty_source_contract_schemas_fail_closed(self):
+        original = ecc._git_output
+
+        def fake_git_output(root, args):
+            if args and args[0] == "status":
+                self.assertIn(ecc.SOURCE_SCHEMA.as_posix(), args)
+                self.assertIn(ecc.GRADING_SCHEMA.as_posix(), args)
+                return f" M {ecc.SOURCE_SCHEMA.as_posix()}\n"
+            return original(root, args)
+
+        with mock.patch.object(ecc, "_git_output", side_effect=fake_git_output):
+            with self.assertRaises(EpistemicConformanceError):
+                build_benchmark_bundle(ROOT, self.base / "dirty-schema", self.commit)
 
 
 if __name__ == "__main__":
