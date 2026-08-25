@@ -2,7 +2,7 @@
   "type": "qsol-epistemic-conformance-grading",
   "schema_version": "1.0.0",
   "benchmark_id": "EPISTEMIC-CONFORMANCE/1",
-  "grading_revision": "ECB-GRADE/2",
+  "grading_revision": "ECB-GRADE/3",
   "policy": {
     "authoritative_grade_source": "versioned_external_annotation",
     "model_self_assessment_is_grade": false,
@@ -10,7 +10,8 @@
     "ecb_d_initial_errors_are_scored_separately": true,
     "major_errors_record_unresolved_or_final_boundary_failures": true,
     "completed_cases_are_prompt_prefix": true,
-    "signal_opportunities_are_derived_from_completed_case_prefix": true
+    "signal_opportunities_are_derived_from_completed_case_prefix": true,
+    "major_error_occurrences_are_case_bound": true
   },
   "modules": {
     "ECB-A": [
