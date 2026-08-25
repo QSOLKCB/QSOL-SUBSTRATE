@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QSOLKCB/QSOL-SUBSTRATE/schema/epistemic-conformance-cohort.schema.json",
+  "title": "QSOL epistemic conformance exploratory cohort metadata",
+  "type": "object",
+  "required": [
+    "type",
+    "schema_version",
+    "benchmark_id",
+    "execution_date",
+    "classification",
+    "runtime",
+    "run_binding_status",
+    "binding_note",
+    "models",
+    "empirical_claims",
+    "canonical_fact_authority"
+  ],
+  "properties": {
+    "type": {"const": "qsol-epistemic-conformance-cohort"},
+    "schema_version": {"const": "1.0.0"},
+    "benchmark_id": {"const": "EPISTEMIC-CONFORMANCE/1"},
+    "execution_date": {"type": "string", "format": "date"},
+    "classification": {"const": "exploratory_derived_evaluation_metadata"},
+    "runtime": {"type": "string", "minLength": 1},
+    "run_binding_status": {"enum": ["unbound", "bound"]},
+    "binding_note": {"type": "string", "minLength": 1},
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["id", "quantization", "parameter_count_billion", "immutable_revision"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "quantization": {"type": "string", "minLength": 1},
+          "parameter_count_billion": {"type": ["number", "null"], "exclusiveMinimum": 0},
+          "immutable_revision": {"type": ["string", "null"], "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "empirical_claims": {"const": false},
+    "canonical_fact_authority": {"const": false}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"run_binding_status": {"const": "unbound"}},
+        "required": ["run_binding_status"]
+      },
+      "then": {
+        "properties": {
+          "models": {
+            "items": {
+              "properties": {"immutable_revision": {"type": "null"}},
+              "required": ["immutable_revision"]
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "models": {
+            "items": {
+              "properties": {"immutable_revision": {"type": "string", "minLength": 1}},
+              "required": ["immutable_revision"]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
