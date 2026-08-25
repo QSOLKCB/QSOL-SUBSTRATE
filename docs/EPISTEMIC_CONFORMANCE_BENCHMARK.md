@@ -173,9 +173,11 @@ python tools/compare_epistemic_conformance.py \
   --markdown comparison.md
 ```
 
-Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison. Provider, inference configuration, and external grader identity remain visible in each comparison row.
+Comparison fails closed unless every report uses the exact same benchmark fingerprint and exact same substrate source commit, substrate SHA-256, and delivery description. Scoring-oracle reports are excluded from empirical comparison. Provider, model parameter count, inference configuration, external grader identity, first-pass conformance, and self-correction rate remain visible in each comparison row.
 
-Markdown renderers escape identity fields before table interpolation so arbitrary model/provider/runtime strings cannot forge extra cells or rows.
+Comparison ordering is deterministic for the same report set, with `run_id` used as the final stable tie-breaker when all scientific and provenance fields tie. Standalone comparison Markdown includes the exact bound benchmark/substrate identity above the table so it remains auditable even when separated from the JSON artifact.
+
+Markdown table renderers escape identity fields before table interpolation so arbitrary model/provider/runtime strings cannot forge extra cells or rows.
 
 ## Scoring oracle boundary
 
