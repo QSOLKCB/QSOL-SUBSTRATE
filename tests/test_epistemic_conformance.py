@@ -112,7 +112,9 @@ class EpistemicConformanceTests(unittest.TestCase):
                 "source_commit": self.commit,
                 "substrate_sha256": "a" * 64,
                 "delivery": "full-text",
+                "delivery_kind": "textual",
             },
+            "projection_execution": None,
             "model": {
                 "id": model,
                 "revision": revision,
@@ -138,6 +140,31 @@ class EpistemicConformanceTests(unittest.TestCase):
                 else "human_external",
             },
             "modules": modules,
+        }
+
+    @staticmethod
+    def _projection_execution(run, projection_kind="lora"):
+        return {
+            "artifact_sha256": "b" * 64,
+            "execution_evidence_sha256": "c" * 64,
+            "compatibility": {
+                "type": "qsol-model-projection-compatibility",
+                "schema_version": "1.0.0",
+                "projection_kind": projection_kind,
+                "model_id": run["model"]["id"],
+                "model_revision": run["model"]["revision"],
+                "architecture": "test-architecture",
+                "tokenizer_id": "test-tokenizer",
+                "tokenizer_sha256": "d" * 64,
+                "context_length": 32768,
+                "hidden_size": 4096,
+                "num_hidden_layers": 32,
+                "num_attention_heads": 32,
+                "kv_layout_version": "test-kv-v1",
+                "tensor_dtype": "float16",
+                "kv_cache_dtype": "float16",
+                "quantization_id": run["model"]["quantization"],
+            },
         }
 
     @staticmethod
@@ -247,6 +274,93 @@ class EpistemicConformanceTests(unittest.TestCase):
         self.assertIsNone(report["inference"]["sampler"])
         comparison = compare_reports(ROOT, [report])
         self.assertIsNone(comparison["rows"][0]["inference"]["sampler"])
+
+    def test_projection_delivery_requires_execution_evidence(self):
+        run = self._run("model/latent", "r1")
+        run["substrate"]["delivery"] = "lora"
+        run["substrate"]["delivery_kind"] = "lora"
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+        run["projection_execution"] = self._projection_execution(run, "lora")
+        report = score_run(ROOT, self.bundle, run)
+        self.assertEqual(
+            report["projection_execution"]["compatibility"]["model_id"],
+            run["model"]["id"],
+        )
+        comparison = compare_reports(ROOT, [report])
+        self.assertEqual(
+            comparison["rows"][0]["projection_execution"]["artifact_sha256"],
+            "b" * 64,
+        )
+
+        bad = self._run("model/latent", "r1")
+        bad["substrate"]["delivery"] = "lora"
+        bad["substrate"]["delivery_kind"] = "lora"
+        bad["projection_execution"] = self._projection_execution(bad, "kv_cache")
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, bad)
+
+    def test_completed_cases_require_raw_output_evidence(self):
+        run = self._run()
+        run["modules"][0]["raw_output"] = "   "
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+        run = self._run()
+        a = run["modules"][0]
+        a["completed_cases"] = 0
+        a["earned_points"] = 0
+        a["raw_output"] = ""
+        self._zero_signals(a)
+        score_run(ROOT, self.bundle, run)
+
+    def test_verdict_thresholds_use_unrounded_external_score(self):
+        run = self._run()
+        run["modules"][0]["earned_points"] = 17.84998
+        report = score_run(ROOT, self.bundle, run)
+        self.assertEqual(report["metrics"]["external_conformance_score"], 0.95)
+        self.assertEqual(report["verdict"], "PARTIALLY_CONFORMANT")
+
+        run = self._run()
+        run["modules"][0]["earned_points"] = 2.79998
+        report = score_run(ROOT, self.bundle, run)
+        self.assertEqual(report["metrics"]["external_conformance_score"], 0.6)
+        self.assertEqual(report["verdict"], "NON_CONFORMANT")
+
+    def test_remaining_error_rate_uses_observed_cases_only(self):
+        run = self._run()
+        for module in run["modules"]:
+            module["completed_cases"] = 0
+            module["earned_points"] = 0
+            module["raw_output"] = ""
+            module["initial_errors"] = 0
+            module["corrected_errors"] = 0
+            module["remaining_errors"] = 0
+            self._zero_signals(module)
+        report = score_run(ROOT, self.bundle, run)
+        self.assertIsNone(report["metrics"]["remaining_error_rate"])
+
+        run = self._run()
+        for module in run["modules"]:
+            module["completed_cases"] = 0
+            module["earned_points"] = 0
+            module["raw_output"] = ""
+            module["initial_errors"] = 0
+            module["corrected_errors"] = 0
+            module["remaining_errors"] = 0
+            self._zero_signals(module)
+        d = run["modules"][3]
+        d["completed_cases"] = 2
+        d["earned_points"] = 2
+        d["raw_output"] = "D1 and D2 completed"
+        d["initial_errors"] = 1
+        d["corrected_errors"] = 0
+        d["remaining_errors"] = 1
+        d["signals"]["conflict_opportunities"] = 1
+        d["signals"]["conflict_preserved"] = 1
+        report = score_run(ROOT, self.bundle, run)
+        self.assertEqual(report["metrics"]["remaining_error_rate"], 0.5)
 
     def test_model_self_score_is_calibration_not_grade(self):
         run = self._run()
