@@ -5,6 +5,8 @@
   "title": "QSOL-SUBSTRATE Cross-Model Epistemic Conformance Benchmark",
   "classification": "evaluation_only_noncanonical",
   "purpose": "measure whether a fixed QSOL-SUBSTRATE epistemic contract transfers across model families, sizes, runtimes, and quantizations",
+  "grading_file": "external-grading-v1.json",
+  "grading_revision": "ECB-GRADE/1",
   "modules": [
     {"id": "ECB-A", "file": "A-blind-conformance.md", "title": "Blind Epistemic Conformance", "case_count": 10, "max_points": 20},
     {"id": "ECB-B", "file": "B-autonomous-rule-selection.md", "title": "Autonomous Rule Selection", "case_count": 8, "max_points": 8},
