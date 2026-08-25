@@ -1,17 +1,21 @@
 import copy
+import math
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
+import epistemic_conformance_core as ecc  # noqa: E402
 from epistemic_conformance_core import (  # noqa: E402
     EpistemicConformanceError,
     build_benchmark_bundle,
     checked_out_source_commit,
     compare_reports,
+    load_source_manifest,
     score_run,
     validate_benchmark_bundle,
 )
@@ -54,12 +58,12 @@ class EpistemicConformanceTests(unittest.TestCase):
             },
         }
 
-    def _run(self, model="example/model", revision="r1", execution_kind="model"):
+    def _run(self, model="example/model", revision="r1", execution_kind="model", provider="local"):
         modules = [self._module(row["id"], row["case_count"], row["max_points"]) for row in self.manifest["modules"]]
         return {
             "type": "qsol-epistemic-conformance-run",
             "schema_version": "1.0.0",
-            "run_id": f"{model}:{revision}",
+            "run_id": f"{provider}:{model}:{revision}",
             "execution_kind": execution_kind,
             "benchmark": {"id": "EPISTEMIC-CONFORMANCE/1", "sha256": self.manifest["benchmark_sha256"]},
             "substrate": {
@@ -71,7 +75,7 @@ class EpistemicConformanceTests(unittest.TestCase):
             "model": {
                 "id": model,
                 "revision": revision,
-                "provider": "local",
+                "provider": provider,
                 "runtime": "LM Studio",
                 "quantization": "Q4_K_M",
                 "parameter_count_billion": 8,
@@ -95,6 +99,13 @@ class EpistemicConformanceTests(unittest.TestCase):
         second = build_benchmark_bundle(ROOT, second_dir, self.commit)
         self.assertEqual(self.manifest["benchmark_sha256"], second["benchmark_sha256"])
         self.assertEqual(first, {path.name: path.read_bytes() for path in second_dir.iterdir()})
+
+    def test_source_case_markers_match_external_grading(self):
+        source = load_source_manifest(ROOT)
+        self.assertEqual(sum(row["case_count"] for row in source["modules"]), 33)
+        with mock.patch.object(ecc, "_prompt_case_ids", return_value=("A1",)):
+            with self.assertRaises(EpistemicConformanceError):
+                load_source_manifest(ROOT)
 
     def test_perfect_external_annotation_scores_conformant(self):
         report = score_run(ROOT, self.bundle, self._run())
@@ -131,6 +142,44 @@ class EpistemicConformanceTests(unittest.TestCase):
         self.assertEqual(report["metrics"]["self_correction_rate"], 0.75)
         self.assertGreater(report["metrics"]["remaining_error_rate"], 0)
 
+    def test_fully_corrected_first_pass_errors_can_still_be_conformant(self):
+        run = self._run()
+        d = next(module for module in run["modules"] if module["module_id"] == "ECB-D")
+        d["initial_errors"] = 3
+        d["corrected_errors"] = 3
+        d["remaining_errors"] = 0
+        report = score_run(ROOT, self.bundle, run)
+        self.assertLess(report["metrics"]["first_pass_conformance"], 1.0)
+        self.assertEqual(report["metrics"]["self_correction_rate"], 1.0)
+        self.assertEqual(report["verdict"], "CONFORMANT")
+
+    def test_ecb_d_error_accounting_must_partition_initial_errors(self):
+        run = self._run()
+        d = next(module for module in run["modules"] if module["module_id"] == "ECB-D")
+        d["initial_errors"] = 1
+        d["corrected_errors"] = 1
+        d["remaining_errors"] = 1
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+        d["corrected_errors"] = 0
+        d["remaining_errors"] = 0
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+    def test_points_cannot_be_awarded_to_uncompleted_cases(self):
+        run = self._run()
+        a = next(module for module in run["modules"] if module["module_id"] == "ECB-A")
+        a["completed_cases"] = 0
+        a["earned_points"] = a["max_points"]
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+        a["completed_cases"] = 1
+        a["earned_points"] = 3
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
     def test_signal_metrics_are_operational(self):
         run = self._run()
         run["modules"][0]["signals"]["identifier_errors"] = 1
@@ -147,6 +196,12 @@ class EpistemicConformanceTests(unittest.TestCase):
         with self.assertRaises(EpistemicConformanceError):
             score_run(ROOT, self.bundle, run)
 
+    def test_delivery_identity_is_required(self):
+        run = self._run()
+        del run["substrate"]["delivery"]
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
     def test_comparison_requires_exact_substrate_identity(self):
         first = score_run(ROOT, self.bundle, self._run("model/a", "r1"))
         second_run = self._run("model/b", "r1")
@@ -154,6 +209,19 @@ class EpistemicConformanceTests(unittest.TestCase):
         second = score_run(ROOT, self.bundle, second_run)
         with self.assertRaises(EpistemicConformanceError):
             compare_reports(ROOT, [first, second])
+
+    def test_comparison_preserves_provider_identity(self):
+        first = score_run(ROOT, self.bundle, self._run("model/shared", "r1", provider="provider-a"))
+        second = score_run(ROOT, self.bundle, self._run("model/shared", "r1", provider="provider-b"))
+        comparison = compare_reports(ROOT, [first, second])
+        self.assertEqual({row["provider"] for row in comparison["rows"]}, {"provider-a", "provider-b"})
+
+    def test_malformed_persisted_report_fails_closed(self):
+        report = score_run(ROOT, self.bundle, self._run())
+        malformed = copy.deepcopy(report)
+        malformed["model"] = {}
+        with self.assertRaises(EpistemicConformanceError):
+            compare_reports(ROOT, [malformed])
 
     def test_oracle_report_cannot_enter_empirical_comparison(self):
         oracle = score_run(ROOT, self.bundle, self._run("qsol/scoring-oracle", "1", "scoring_oracle"))
@@ -165,6 +233,36 @@ class EpistemicConformanceTests(unittest.TestCase):
         run["modules"][0]["completed_cases"] += 1
         with self.assertRaises(EpistemicConformanceError):
             score_run(ROOT, self.bundle, run)
+
+    def test_non_finite_numbers_are_rejected(self):
+        run = self._run()
+        run["modules"][0]["earned_points"] = math.nan
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+        run = self._run()
+        run["model"]["parameter_count_billion"] = math.inf
+        with self.assertRaises(EpistemicConformanceError):
+            score_run(ROOT, self.bundle, run)
+
+    def test_in_repo_output_is_restricted_to_designated_dist_root(self):
+        with self.assertRaises(EpistemicConformanceError):
+            build_benchmark_bundle(ROOT, ROOT, self.commit)
+        with self.assertRaises(EpistemicConformanceError):
+            build_benchmark_bundle(ROOT, ROOT / "dist", self.commit)
+        with self.assertRaises(EpistemicConformanceError):
+            build_benchmark_bundle(ROOT, ROOT.parent, self.commit)
+
+    def test_dirty_benchmark_sources_fail_closed(self):
+        original = ecc._git_output
+
+        def fake_git_output(root, args):
+            if args and args[0] == "status":
+                return " M probe/epistemic-conformance-1/A-blind-conformance.md\n"
+            return original(root, args)
+
+        with mock.patch.object(ecc, "_git_output", side_effect=fake_git_output):
+            with self.assertRaises(EpistemicConformanceError):
+                build_benchmark_bundle(ROOT, self.base / "dirty", self.commit)
 
 
 if __name__ == "__main__":
