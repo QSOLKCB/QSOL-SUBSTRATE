@@ -1,0 +1,90 @@
+name: Epistemic Conformance Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: epistemic-conformance / python-3.12
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-validation.txt
+
+      - name: Install validation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+
+      - name: Run benchmark regression tests
+        run: python -m unittest tests.test_epistemic_conformance -v
+
+      - name: Resolve source commit
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build substrate fingerprint
+        run: python tools/fingerprint_substrate.py --output substrate-fingerprint.json
+
+      - name: Resolve substrate SHA-256
+        id: substrate
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          value = json.loads(Path("substrate-fingerprint.json").read_text(encoding="utf-8"))["substrate_sha256"]
+          print(f"sha256={value}")
+          PY
+
+      - name: Build EPISTEMIC-CONFORMANCE/1 bundle
+        run: python tools/build_epistemic_conformance.py --source-commit "${{ steps.source.outputs.sha }}" --output dist/epistemic-conformance-1
+
+      - name: Validate EPISTEMIC-CONFORMANCE/1 bundle
+        run: python tools/validate_epistemic_conformance.py --bundle dist/epistemic-conformance-1
+
+      - name: Build non-empirical scoring oracle
+        run: python tools/build_epistemic_conformance_oracle.py --bundle dist/epistemic-conformance-1 --substrate-sha256 "${{ steps.substrate.outputs.sha256 }}" --output epistemic-conformance-oracle-run.json
+
+      - name: Score non-empirical scoring oracle
+        run: python tools/score_epistemic_conformance.py --bundle dist/epistemic-conformance-1 --run epistemic-conformance-oracle-run.json --output epistemic-conformance-oracle-report.json --markdown epistemic-conformance-oracle-report.md
+
+      - name: Assert oracle boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("epistemic-conformance-oracle-report.json").read_text(encoding="utf-8"))
+          assert report["execution_kind"] == "scoring_oracle"
+          assert report["metrics"]["external_conformance_score"] == 1.0
+          assert report["verdict"] == "CONFORMANT"
+          print("oracle_plumbing=perfect_non_empirical")
+          PY
+
+      - name: Upload benchmark validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-conformance-${{ github.sha }}
+          path: |
+            substrate-fingerprint.json
+            epistemic-conformance-oracle-run.json
+            epistemic-conformance-oracle-report.json
+            epistemic-conformance-oracle-report.md
+            dist/epistemic-conformance-1/
+          if-no-files-found: ignore
+          retention-days: 30
