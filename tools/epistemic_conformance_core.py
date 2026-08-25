@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Iterable
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, validators
 
 BENCHMARK_ID = "EPISTEMIC-CONFORMANCE/1"
 SOURCE_DIR = Path("probe/epistemic-conformance-1")
@@ -84,6 +84,14 @@ class EpistemicConformanceError(RuntimeError):
     pass
 
 
+_STRICT_INTEGER_TYPES = Draft202012Validator.TYPE_CHECKER.redefine(
+    "integer", lambda checker, instance: type(instance) is int
+)
+StrictDraft202012Validator = validators.extend(
+    Draft202012Validator, type_checker=_STRICT_INTEGER_TYPES
+)
+
+
 def _ensure_json_safe(value: Any, path: str = "<root>") -> None:
     if isinstance(value, float) and not math.isfinite(value):
         raise EpistemicConformanceError(f"non-finite numeric value at {path}")
@@ -155,7 +163,7 @@ def _schema_errors(root: Path, schema_path: Path, value: Any) -> list[str]:
     schema = _load_json(root / schema_path)
     if not isinstance(schema, dict):
         return [f"schema {schema_path} is not a JSON object"]
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    validator = StrictDraft202012Validator(schema, format_checker=FormatChecker())
     errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
     rendered: list[str] = []
     for error in errors:
@@ -545,6 +553,10 @@ def _validate_projection_execution(
             )
         return
 
+    if model["revision"] is None:
+        raise EpistemicConformanceError(
+            "model-specific projection execution requires an exact immutable model revision"
+        )
     if not isinstance(projection_execution, dict):
         raise EpistemicConformanceError(
             "model-specific projection delivery requires projection_execution evidence"
@@ -977,7 +989,7 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
             row["grader_revision"],
             row["provider"],
             row["model_id"],
-            row["model_revision"],
+            _stable_json_text(row["model_revision"]),
             _stable_json_text(row["inference"]),
             row["run_id"],
             _stable_json_text(row),
@@ -999,12 +1011,12 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
 
 
 def _md_inline(value: Any) -> str:
-    text = _stable_json_text(value) if isinstance(value, (dict, list)) else str(value)
+    text = _stable_json_text(value) if isinstance(value, (dict, list)) or value is None else str(value)
     return text.replace("`", "\\`").replace("\r", " ").replace("\n", " ")
 
 
 def _md_cell(value: Any) -> str:
-    text = _stable_json_text(value) if isinstance(value, (dict, list)) else str(value)
+    text = _stable_json_text(value) if isinstance(value, (dict, list)) or value is None else str(value)
     return (
         text.replace("\\", "\\\\")
         .replace("|", "\\|")
@@ -1029,6 +1041,11 @@ def report_markdown(report: dict[str, Any]) -> str:
         if is_oracle
         else f"# {BENCHMARK_ID} report"
     )
+    bound_identity = {
+        "benchmark": report["benchmark"],
+        "substrate": report["substrate"],
+        "projection_execution": report["projection_execution"],
+    }
     lines = [heading, ""]
     if is_oracle:
         lines.extend(
@@ -1039,6 +1056,10 @@ def report_markdown(report: dict[str, Any]) -> str:
         )
     lines.extend(
         [
+            "## Bound identity",
+            "",
+            f"    {_stable_json_text(bound_identity)}",
+            "",
             f"- Execution kind: `{_md_inline(report['execution_kind'])}`",
             f"- Run: `{_md_inline(report['run_id'])}`",
             f"- Model: `{_md_inline(report['model']['id'])}` / `{_md_inline(report['model']['revision'])}`",
