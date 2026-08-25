@@ -15,7 +15,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         manifest = build_benchmark_bundle(ROOT, args.output, args.source_commit)
-    except EpistemicConformanceError as exc:
+    except (EpistemicConformanceError, OSError) as exc:
         print(f"EPISTEMIC CONFORMANCE BUILD REFUSED: {exc}")
         return 1
     print(f"benchmark={manifest['benchmark_id']}")
