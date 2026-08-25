@@ -174,11 +174,19 @@ def checked_out_source_commit(root: Path) -> str:
 def _assert_benchmark_sources_clean(root: Path) -> None:
     status = _git_output(
         root,
-        ["status", "--porcelain", "--untracked-files=all", "--", SOURCE_DIR.as_posix()],
+        [
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            SOURCE_DIR.as_posix(),
+            SOURCE_SCHEMA.as_posix(),
+            GRADING_SCHEMA.as_posix(),
+        ],
     )
     if status.strip():
         raise EpistemicConformanceError(
-            "benchmark source files must be clean before source_commit is recorded"
+            "benchmark source files and source-contract schemas must be clean before source_commit is recorded"
         )
 
 
@@ -940,6 +948,7 @@ def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, 
             row["model_revision"],
             _stable_json_text(row["inference"]),
             row["run_id"],
+            _stable_json_text(row),
         )
     )
     comparison = {
