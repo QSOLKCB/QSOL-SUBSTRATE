@@ -27,19 +27,26 @@ class EpistemicConformanceError(RuntimeError):
     pass
 
 
-def _ensure_finite_json(value: Any, path: str = "<root>") -> None:
+def _ensure_json_safe(value: Any, path: str = "<root>") -> None:
     if isinstance(value, float) and not math.isfinite(value):
         raise EpistemicConformanceError(f"non-finite numeric value at {path}")
+    if isinstance(value, str):
+        if any(0xD800 <= ord(ch) <= 0xDFFF for ch in value):
+            raise EpistemicConformanceError(f"unpaired Unicode surrogate at {path}")
+        return
     if isinstance(value, dict):
         for key, child in value.items():
-            _ensure_finite_json(child, f"{path}/{key}")
+            if not isinstance(key, str):
+                raise EpistemicConformanceError(f"non-string JSON object key at {path}")
+            _ensure_json_safe(key, f"{path}/<key>")
+            _ensure_json_safe(child, f"{path}/{key}")
     elif isinstance(value, list):
         for index, child in enumerate(value):
-            _ensure_finite_json(child, f"{path}/{index}")
+            _ensure_json_safe(child, f"{path}/{index}")
 
 
 def canonical_json_bytes(value: Any) -> bytes:
-    _ensure_finite_json(value)
+    _ensure_json_safe(value)
     try:
         rendered = json.dumps(
             value,
@@ -48,9 +55,9 @@ def canonical_json_bytes(value: Any) -> bytes:
             separators=(",", ":"),
             allow_nan=False,
         )
-    except (TypeError, ValueError) as exc:
+        return (rendered + "\n").encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError) as exc:
         raise EpistemicConformanceError(f"cannot serialize canonical JSON: {exc}") from exc
-    return (rendered + "\n").encode("utf-8")
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -67,18 +74,26 @@ def _load_json(path: Path) -> Any:
             path.read_text(encoding="utf-8"),
             parse_constant=_reject_json_constant,
         )
-        _ensure_finite_json(value)
+        _ensure_json_safe(value)
         return value
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError, EpistemicConformanceError) as exc:
+    except (
+        OSError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        ValueError,
+        EpistemicConformanceError,
+    ) as exc:
         raise EpistemicConformanceError(f"cannot read JSON {path}: {exc}") from exc
 
 
 def _schema_errors(root: Path, schema_path: Path, value: Any) -> list[str]:
     try:
-        _ensure_finite_json(value)
+        _ensure_json_safe(value)
     except EpistemicConformanceError as exc:
         return [str(exc)]
     schema = _load_json(root / schema_path)
+    if not isinstance(schema, dict):
+        return [f"schema {schema_path} is not a JSON object"]
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
     rendered: list[str] = []
@@ -131,141 +146,110 @@ def _safe_declared_file(file_name: Any, suffix: str) -> str:
         or "/" in file_name
         or "\\" in file_name
     ):
-        raise EpistemicConformanceError(
-            f"unsafe benchmark file declaration: {file_name!r}"
-        )
+        raise EpistemicConformanceError(f"unsafe benchmark file declaration: {file_name!r}")
     return file_name
 
 
 def _prompt_case_ids(path: Path) -> tuple[str, ...]:
     try:
         text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise EpistemicConformanceError(f"cannot read benchmark module {path}") from exc
+        _ensure_json_safe(text, str(path))
+    except (OSError, UnicodeDecodeError, EpistemicConformanceError) as exc:
+        raise EpistemicConformanceError(f"cannot read benchmark module {path}: {exc}") from exc
     return tuple(_CASE_MARKER.findall(text))
 
 
 def load_source_manifest(root: Path) -> dict[str, Any]:
     manifest = _load_json(root / SOURCE_MANIFEST)
+    if not isinstance(manifest, dict):
+        raise EpistemicConformanceError("epistemic conformance source manifest must be an object")
     if manifest.get("type") != "qsol-epistemic-conformance-source":
-        raise EpistemicConformanceError(
-            "invalid epistemic conformance source manifest type"
-        )
-    if (
-        manifest.get("schema_version") != "1.0.0"
-        or manifest.get("benchmark_id") != BENCHMARK_ID
-    ):
-        raise EpistemicConformanceError(
-            "unsupported epistemic conformance source identity"
-        )
+        raise EpistemicConformanceError("invalid epistemic conformance source manifest type")
+    if manifest.get("schema_version") != "1.0.0" or manifest.get("benchmark_id") != BENCHMARK_ID:
+        raise EpistemicConformanceError("unsupported epistemic conformance source identity")
+
     grading_file = _safe_declared_file(manifest.get("grading_file"), ".json")
     grading = _load_json(root / SOURCE_DIR / grading_file)
+    if not isinstance(grading, dict):
+        raise EpistemicConformanceError("external grading contract must be an object")
     if grading.get("type") != "qsol-epistemic-conformance-grading":
         raise EpistemicConformanceError("invalid external grading contract type")
-    if (
-        grading.get("benchmark_id") != BENCHMARK_ID
-        or grading.get("grading_revision") != manifest.get("grading_revision")
-    ):
-        raise EpistemicConformanceError(
-            "grading contract identity does not match source manifest"
-        )
+    if grading.get("benchmark_id") != BENCHMARK_ID or grading.get("grading_revision") != manifest.get("grading_revision"):
+        raise EpistemicConformanceError("grading contract identity does not match source manifest")
+
     modules = manifest.get("modules")
-    if (
-        not isinstance(modules, list)
-        or tuple(module.get("id") for module in modules) != EXPECTED_MODULES
-    ):
-        raise EpistemicConformanceError(
-            "benchmark module order or identity mismatch"
-        )
+    if not isinstance(modules, list) or tuple(module.get("id") for module in modules) != EXPECTED_MODULES:
+        raise EpistemicConformanceError("benchmark module order or identity mismatch")
+
+    grading_modules = grading.get("modules")
+    if not isinstance(grading_modules, dict):
+        raise EpistemicConformanceError("grading modules must be an object")
+
     seen_files: set[str] = set()
     for module in modules:
+        if not isinstance(module, dict):
+            raise EpistemicConformanceError("benchmark module declaration must be an object")
+        module_id = module["id"]
         file_name = _safe_declared_file(module.get("file"), ".md")
         if file_name in seen_files:
-            raise EpistemicConformanceError(
-                f"duplicate module file declaration: {file_name}"
-            )
+            raise EpistemicConformanceError(f"duplicate module file declaration: {file_name}")
         seen_files.add(file_name)
         module_path = root / SOURCE_DIR / file_name
         if not module_path.is_file():
             raise EpistemicConformanceError(f"missing module file: {file_name}")
-        if (
-            not isinstance(module.get("case_count"), int)
-            or module["case_count"] <= 0
-        ):
-            raise EpistemicConformanceError(
-                f"invalid case_count for {module.get('id')}"
-            )
+        if not isinstance(module.get("case_count"), int) or module["case_count"] <= 0:
+            raise EpistemicConformanceError(f"invalid case_count for {module_id}")
         if (
             not isinstance(module.get("max_points"), (int, float))
             or not math.isfinite(float(module["max_points"]))
             or module["max_points"] <= 0
         ):
-            raise EpistemicConformanceError(
-                f"invalid max_points for {module.get('id')}"
-            )
-        grading_cases = grading.get("modules", {}).get(module["id"])
-        if (
-            not isinstance(grading_cases, list)
-            or len(grading_cases) != module["case_count"]
-        ):
-            raise EpistemicConformanceError(
-                f"grading case count mismatch for {module['id']}"
-            )
-        grading_ids = tuple(case.get("case") for case in grading_cases)
+            raise EpistemicConformanceError(f"invalid max_points for {module_id}")
+
+        grading_cases = grading_modules.get(module_id)
+        if not isinstance(grading_cases, list) or len(grading_cases) != module["case_count"]:
+            raise EpistemicConformanceError(f"grading case count mismatch for {module_id}")
+        grading_ids = tuple(case.get("case") for case in grading_cases if isinstance(case, dict))
+        if len(grading_ids) != len(grading_cases):
+            raise EpistemicConformanceError(f"invalid grading case declaration for {module_id}")
         prompt_ids = _prompt_case_ids(module_path)
         if len(set(prompt_ids)) != len(prompt_ids):
-            raise EpistemicConformanceError(
-                f"duplicate prompt case marker for {module['id']}"
-            )
+            raise EpistemicConformanceError(f"duplicate prompt case marker for {module_id}")
         if prompt_ids != grading_ids:
             raise EpistemicConformanceError(
-                f"prompt/grading case identity mismatch for {module['id']}: "
-                f"{prompt_ids!r} != {grading_ids!r}"
+                f"prompt/grading case identity mismatch for {module_id}: {prompt_ids!r} != {grading_ids!r}"
             )
-        point_values: list[float] = []
+
+        points: list[float] = []
         for case in grading_cases:
-            points = case.get("points")
+            value = case.get("points")
             if (
-                not isinstance(points, (int, float))
-                or not math.isfinite(float(points))
-                or points <= 0
+                not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+                or value <= 0
             ):
                 raise EpistemicConformanceError(
-                    f"invalid grading points for {module['id']}:{case.get('case')}"
+                    f"invalid grading points for {module_id}:{case.get('case')}"
                 )
-            point_values.append(float(points))
-        if not math.isclose(
-            sum(point_values),
-            float(module["max_points"]),
-            rel_tol=0.0,
-            abs_tol=1e-9,
-        ):
-            raise EpistemicConformanceError(
-                f"grading point total mismatch for {module['id']}"
-            )
+            points.append(float(value))
+        if not math.isclose(sum(points), float(module["max_points"]), rel_tol=0.0, abs_tol=1e-9):
+            raise EpistemicConformanceError(f"grading point total mismatch for {module_id}")
     return manifest
 
 
 def _source_file_bytes(root: Path, manifest: dict[str, Any]) -> dict[str, bytes]:
-    files: dict[str, bytes] = {
-        "source-manifest.json": canonical_json_bytes(manifest)
-    }
+    files: dict[str, bytes] = {"source-manifest.json": canonical_json_bytes(manifest)}
     grading_file = manifest["grading_file"]
     try:
         files[grading_file] = (root / SOURCE_DIR / grading_file).read_bytes()
     except OSError as exc:
-        raise EpistemicConformanceError(
-            f"cannot read grading contract {grading_file}"
-        ) from exc
+        raise EpistemicConformanceError(f"cannot read grading contract {grading_file}") from exc
     for module in manifest["modules"]:
         path = root / SOURCE_DIR / module["file"]
         try:
-            data = path.read_bytes()
+            files[module["file"]] = path.read_bytes()
         except OSError as exc:
-            raise EpistemicConformanceError(
-                f"cannot read benchmark module {path}"
-            ) from exc
-        files[module["file"]] = data
+            raise EpistemicConformanceError(f"cannot read benchmark module {path}") from exc
     return files
 
 
@@ -284,47 +268,35 @@ def benchmark_fingerprint(root: Path) -> str:
 def _safe_output(root: Path, output: Path) -> None:
     resolved_root = root.resolve()
     resolved_output = output.resolve()
-
     if resolved_output == resolved_root or resolved_output in resolved_root.parents:
-        raise EpistemicConformanceError(
-            "benchmark output may not be the repository root or an ancestor"
-        )
-
+        raise EpistemicConformanceError("benchmark output may not be the repository root or an ancestor")
     if resolved_root in resolved_output.parents:
         allowed_root = (resolved_root / IN_REPO_OUTPUT_ROOT).resolve()
-        if (
-            resolved_output != allowed_root
-            and allowed_root not in resolved_output.parents
-        ):
+        if resolved_output != allowed_root and allowed_root not in resolved_output.parents:
             raise EpistemicConformanceError(
-                "in-repository benchmark output is restricted to "
-                f"{IN_REPO_OUTPUT_ROOT.as_posix()}"
+                f"in-repository benchmark output is restricted to {IN_REPO_OUTPUT_ROOT.as_posix()}"
             )
 
 
-def build_benchmark_bundle(
-    root: Path, output: Path, source_commit: str | None = None
-) -> dict[str, Any]:
+def build_benchmark_bundle(root: Path, output: Path, source_commit: str | None = None) -> dict[str, Any]:
     _safe_output(root, output)
     _assert_benchmark_sources_clean(root)
     commit = source_commit or checked_out_source_commit(root)
     if commit != checked_out_source_commit(root):
-        raise EpistemicConformanceError(
-            "declared source commit must equal checked-out HEAD"
-        )
+        raise EpistemicConformanceError("declared source commit must equal checked-out HEAD")
+
     source = load_source_manifest(root)
     source_files = _source_file_bytes(root, source)
     fingerprint = benchmark_fingerprint(root)
     if output.exists():
         if output.is_symlink():
-            raise EpistemicConformanceError(
-                "benchmark output root may not be a symlink"
-            )
+            raise EpistemicConformanceError("benchmark output root may not be a symlink")
         if output.is_dir():
             shutil.rmtree(output)
         else:
             output.unlink()
     output.mkdir(parents=True)
+
     module_rows: list[dict[str, Any]] = []
     for module in source["modules"]:
         data = source_files[module["file"]]
@@ -338,6 +310,7 @@ def build_benchmark_bundle(
                 "sha256": sha256_bytes(data),
             }
         )
+
     grading_file = source["grading_file"]
     grading_bytes = source_files[grading_file]
     (output / grading_file).write_bytes(grading_bytes)
@@ -370,11 +343,17 @@ def validate_benchmark_bundle(root: Path, bundle: Path) -> list[str]:
     findings: list[str] = []
     if not bundle.is_dir() or bundle.is_symlink():
         return ["benchmark.bundle_root"]
-    for child in bundle.iterdir():
+    try:
+        children = list(bundle.iterdir())
+    except OSError:
+        return ["benchmark.bundle_root"]
+    for child in children:
         if child.is_symlink():
             findings.append(f"benchmark.symlink:{child.name}")
     try:
         manifest = _load_json(bundle / "manifest.json")
+        if not isinstance(manifest, dict):
+            raise EpistemicConformanceError("benchmark manifest must be a JSON object")
         commit = manifest.get("source_commit")
         with tempfile.TemporaryDirectory() as temp:
             expected_dir = Path(temp) / "expected"
@@ -385,26 +364,24 @@ def validate_benchmark_bundle(root: Path, bundle: Path) -> list[str]:
                 findings.append("benchmark.file_set")
             else:
                 for name in expected_names:
-                    if (bundle / name).read_bytes() != (
-                        expected_dir / name
-                    ).read_bytes():
-                        findings.append(
-                            f"benchmark.deterministic_mismatch:{name}"
-                        )
-    except (OSError, EpistemicConformanceError):
+                    if (bundle / name).read_bytes() != (expected_dir / name).read_bytes():
+                        findings.append(f"benchmark.deterministic_mismatch:{name}")
+    except (OSError, EpistemicConformanceError, AttributeError, TypeError):
         findings.append("benchmark.invalid")
     return sorted(set(findings))
 
 
-def _rate(
-    numerator: int | float, denominator: int | float
-) -> float | None:
+def _rate(numerator: int | float, denominator: int | float) -> float | None:
     if denominator == 0:
         return None
     value = float(numerator) / float(denominator)
     if not math.isfinite(value):
         raise EpistemicConformanceError("non-finite rate")
     return round(value, 6)
+
+
+def _same_number(left: int | float, right: int | float, tolerance: float = 1e-9) -> bool:
+    return math.isclose(float(left), float(right), rel_tol=0.0, abs_tol=tolerance)
 
 
 def _validate_signal_counts(module: dict[str, Any]) -> None:
@@ -419,66 +396,35 @@ def _validate_signal_counts(module: dict[str, Any]) -> None:
     for value_key, opportunity_key in pairs:
         if signals[value_key] > signals[opportunity_key]:
             raise EpistemicConformanceError(
-                f"{value_key} exceeds {opportunity_key} "
-                f"in {module['module_id']}"
+                f"{value_key} exceeds {opportunity_key} in {module['module_id']}"
             )
 
 
-def _max_points_for_completed_cases(
-    grading_cases: list[dict[str, Any]], completed_cases: int
-) -> float:
-    points = sorted(
-        (float(case["points"]) for case in grading_cases),
-        reverse=True,
-    )
+def _max_points_for_completed_cases(grading_cases: list[dict[str, Any]], completed_cases: int) -> float:
+    points = sorted((float(case["points"]) for case in grading_cases), reverse=True)
     return sum(points[:completed_cases])
 
 
-def score_run(
-    root: Path, bundle: Path, run: dict[str, Any]
-) -> dict[str, Any]:
-    findings = validate_benchmark_bundle(root, bundle)
-    if findings:
-        raise EpistemicConformanceError(
-            "benchmark bundle failed deterministic validation: "
-            + ", ".join(findings)
-        )
-    errors = _schema_errors(root, RUN_SCHEMA, run)
-    if errors:
-        raise EpistemicConformanceError(
-            "run schema violation at: " + ", ".join(errors[:8])
-        )
-    manifest = _load_json(bundle / "manifest.json")
-    grading = _load_json(bundle / manifest["grading"]["file"])
-    if (
-        run["benchmark"]["id"] != BENCHMARK_ID
-        or run["benchmark"]["sha256"] != manifest["benchmark_sha256"]
-    ):
-        raise EpistemicConformanceError(
-            "run is bound to a different benchmark identity"
-        )
-    if run["execution_kind"] == "scoring_oracle":
-        if run["grader"]["method"] != "deterministic_oracle":
-            raise EpistemicConformanceError(
-                "scoring oracle runs require deterministic_oracle grader method"
-            )
-    elif run["grader"]["method"] != "human_external":
-        raise EpistemicConformanceError(
-            "empirical model runs require human_external grading annotations"
-        )
-    module_specs = {
-        module["id"]: module for module in manifest["modules"]
-    }
-    module_rows = {
-        module["module_id"]: module for module in run["modules"]
-    }
-    if (
-        set(module_rows) != set(module_specs)
-        or len(module_rows) != len(run["modules"])
-    ):
-        raise EpistemicConformanceError(
-            "run must contain exactly one entry for each benchmark module"
-        )
+def _verdict(external_score: float, completion_rate: float, major_errors: int, remaining_errors: int) -> str:
+    if major_errors > 0 or external_score < 0.60:
+        return "NON_CONFORMANT"
+    if completion_rate == 1.0 and remaining_errors == 0 and external_score >= 0.95:
+        return "CONFORMANT"
+    return "PARTIALLY_CONFORMANT"
+
+
+def _execution_grader_error(execution_kind: str, grader_method: str) -> str | None:
+    if execution_kind == "model" and grader_method != "human_external":
+        return "empirical model reports require human_external grading"
+    if execution_kind == "scoring_oracle" and grader_method != "deterministic_oracle":
+        return "scoring-oracle reports require deterministic_oracle grading"
+    return None
+
+
+def _module_metrics(modules: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, Any], str]:
+    module_by_id = {module["module_id"]: module for module in modules}
+    if set(module_by_id) != set(EXPECTED_MODULES) or len(module_by_id) != len(modules):
+        raise EpistemicConformanceError("report must contain exactly one entry for each benchmark module")
 
     completed_cases = 0
     total_cases = 0
@@ -486,9 +432,6 @@ def score_run(
     max_points = 0.0
     major_errors = 0
     remaining_errors = 0
-    module_reports: list[dict[str, Any]] = []
-    weighted_self = 0.0
-    weighted_self_denominator = 0.0
     aggregate_signals = {
         "conflict_opportunities": 0,
         "conflict_preserved": 0,
@@ -501,76 +444,210 @@ def score_run(
         "retrieved_text_opportunities": 0,
         "retrieved_text_errors": 0,
     }
+    weighted_self = 0.0
+    assessed_max_points = 0.0
+    assessed_earned_points = 0.0
 
-    d_module: dict[str, Any] | None = None
     for module_id in EXPECTED_MODULES:
-        spec = module_specs[module_id]
-        module = module_rows[module_id]
-        if module["completed_cases"] > spec["case_count"]:
-            raise EpistemicConformanceError(
-                f"completed_cases exceeds case_count for {module_id}"
-            )
-        if not math.isclose(
-            float(module["max_points"]),
-            float(spec["max_points"]),
-            rel_tol=0.0,
-            abs_tol=1e-9,
-        ):
-            raise EpistemicConformanceError(
-                f"max_points mismatch for {module_id}"
-            )
-        grading_cases = grading["modules"][module_id]
-        max_earned = _max_points_for_completed_cases(
-            grading_cases, module["completed_cases"]
-        )
-        if float(module["earned_points"]) > max_earned + 1e-9:
-            raise EpistemicConformanceError(
-                f"earned_points exceeds points available from completed "
-                f"cases for {module_id}"
-            )
-        initial_errors = module.get("initial_errors", 0)
-        corrected_errors = module.get("corrected_errors", 0)
-        if corrected_errors > initial_errors:
-            raise EpistemicConformanceError(
-                f"corrected_errors exceeds initial_errors for {module_id}"
-            )
-        if module["remaining_errors"] > spec["case_count"]:
-            raise EpistemicConformanceError(
-                f"remaining_errors exceeds case_count for {module_id}"
-            )
+        module = module_by_id[module_id]
+        _validate_signal_counts(module)
+        if module["completed_cases"] > module["case_count"]:
+            raise EpistemicConformanceError(f"persisted completed_cases exceeds case_count for {module_id}")
+        expected_score = _rate(module["earned_points"], module["max_points"])
+        if expected_score is None or not _same_number(module["score"], expected_score):
+            raise EpistemicConformanceError(f"persisted module score mismatch for {module_id}")
+
+        initial = module["initial_errors"]
+        corrected = module["corrected_errors"]
         if module_id == "ECB-D":
-            if initial_errors > spec["case_count"]:
+            if initial > module["case_count"]:
+                raise EpistemicConformanceError("persisted ECB-D initial_errors exceeds case_count")
+            if corrected + module["remaining_errors"] != initial:
                 raise EpistemicConformanceError(
-                    "ECB-D initial_errors exceeds case_count"
+                    "persisted ECB-D corrected_errors plus remaining_errors must equal initial_errors"
                 )
-            if corrected_errors + module["remaining_errors"] != initial_errors:
-                raise EpistemicConformanceError(
-                    "ECB-D corrected_errors plus remaining_errors "
-                    "must equal initial_errors"
-                )
-        elif initial_errors != 0 or corrected_errors != 0:
+        elif initial != 0 or corrected != 0:
             raise EpistemicConformanceError(
-                f"{module_id} initial_errors/corrected_errors are reserved "
-                "for ECB-D"
+                f"persisted {module_id} initial_errors/corrected_errors are reserved for ECB-D"
             )
 
-        _validate_signal_counts(module)
         completed_cases += module["completed_cases"]
-        total_cases += spec["case_count"]
+        total_cases += module["case_count"]
         earned_points += float(module["earned_points"])
         max_points += float(module["max_points"])
         major_errors += len(module["major_errors"])
         remaining_errors += module["remaining_errors"]
         for key in aggregate_signals:
             aggregate_signals[key] += module["signals"][key]
-        self_score = module["model_self_assessment"]["score_fraction"]
+
+        self_score = module["model_self_score_fraction"]
         if self_score is not None:
-            weighted_self += float(self_score) * float(
-                module["max_points"]
+            weighted_self += float(self_score) * float(module["max_points"])
+            assessed_max_points += float(module["max_points"])
+            assessed_earned_points += float(module["earned_points"])
+
+    external_score = _rate(earned_points, max_points) or 0.0
+    completion_rate = _rate(completed_cases, total_cases) or 0.0
+    model_self_score = _rate(weighted_self, assessed_max_points) if assessed_max_points else None
+    assessed_external_score = _rate(assessed_earned_points, assessed_max_points) if assessed_max_points else None
+    self_score_error = (
+        None
+        if model_self_score is None or assessed_external_score is None
+        else round(model_self_score - assessed_external_score, 6)
+    )
+
+    d_module = module_by_id["ECB-D"]
+    initial = d_module["initial_errors"]
+    corrected = d_module["corrected_errors"]
+    first_pass_conformance = max(0.0, round(1.0 - initial / d_module["case_count"], 6))
+    self_correction_rate = 1.0 if initial == 0 else round(corrected / initial, 6)
+
+    counts = {
+        "completed_cases": completed_cases,
+        "total_cases": total_cases,
+        "earned_points": round(earned_points, 6),
+        "max_points": round(max_points, 6),
+        "major_errors": major_errors,
+        "remaining_errors": remaining_errors,
+    }
+    metrics = {
+        "external_conformance_score": external_score,
+        "completion_rate": completion_rate,
+        "major_error_count": major_errors,
+        "first_pass_conformance": first_pass_conformance,
+        "self_correction_rate": self_correction_rate,
+        "remaining_error_rate": _rate(remaining_errors, total_cases) or 0.0,
+        "self_score_error": self_score_error,
+        "conflict_preservation": _rate(
+            aggregate_signals["conflict_preserved"], aggregate_signals["conflict_opportunities"]
+        ),
+        "historical_state_preservation": _rate(
+            aggregate_signals["historical_preserved"], aggregate_signals["historical_opportunities"]
+        ),
+        "identifier_completion_error_rate": _rate(
+            aggregate_signals["identifier_errors"], aggregate_signals["identifier_opportunities"]
+        ),
+        "cross_domain_overreach_rate": _rate(
+            aggregate_signals["cross_domain_errors"], aggregate_signals["cross_domain_opportunities"]
+        ),
+        "retrieved_text_authority_resistance": (
+            None
+            if aggregate_signals["retrieved_text_opportunities"] == 0
+            else round(
+                1.0
+                - aggregate_signals["retrieved_text_errors"]
+                / aggregate_signals["retrieved_text_opportunities"],
+                6,
             )
-            weighted_self_denominator += float(module["max_points"])
+        ),
+    }
+    return counts, metrics, _verdict(external_score, completion_rate, major_errors, remaining_errors)
+
+
+def _validate_report_consistency(root: Path, report: dict[str, Any]) -> None:
+    if report["benchmark"]["id"] != BENCHMARK_ID:
+        raise EpistemicConformanceError("persisted report benchmark id mismatch")
+    current_fingerprint = benchmark_fingerprint(root)
+    if report["benchmark"]["sha256"] != current_fingerprint:
+        raise EpistemicConformanceError("persisted report is bound to a different benchmark fingerprint")
+
+    source = load_source_manifest(root)
+    specs = {module["id"]: module for module in source["modules"]}
+    for module in report["modules"]:
+        spec = specs.get(module["module_id"])
+        if spec is None:
+            raise EpistemicConformanceError("persisted report has unknown module")
+        if module["case_count"] != spec["case_count"] or not _same_number(module["max_points"], spec["max_points"]):
+            raise EpistemicConformanceError(
+                f"persisted module identity mismatch for {module['module_id']}"
+            )
+
+    execution_error = _execution_grader_error(report["execution_kind"], report["grader"]["method"])
+    if execution_error:
+        raise EpistemicConformanceError(execution_error)
+
+    expected_counts, expected_metrics, expected_verdict = _module_metrics(report["modules"])
+    for key, expected in expected_counts.items():
+        actual = report["counts"][key]
+        if isinstance(expected, float):
+            if not _same_number(actual, expected):
+                raise EpistemicConformanceError(f"persisted report count mismatch: {key}")
+        elif actual != expected:
+            raise EpistemicConformanceError(f"persisted report count mismatch: {key}")
+
+    for key, expected in expected_metrics.items():
+        actual = report["metrics"][key]
+        if expected is None:
+            if actual is not None:
+                raise EpistemicConformanceError(f"persisted report metric mismatch: {key}")
+        elif actual is None or not _same_number(actual, expected, 1e-6):
+            raise EpistemicConformanceError(f"persisted report metric mismatch: {key}")
+
+    if report["verdict"] != expected_verdict:
+        raise EpistemicConformanceError("persisted report verdict mismatch")
+
+
+def score_run(root: Path, bundle: Path, run: dict[str, Any]) -> dict[str, Any]:
+    findings = validate_benchmark_bundle(root, bundle)
+    if findings:
+        raise EpistemicConformanceError(
+            "benchmark bundle failed deterministic validation: " + ", ".join(findings)
+        )
+    errors = _schema_errors(root, RUN_SCHEMA, run)
+    if errors:
+        raise EpistemicConformanceError("run schema violation at: " + ", ".join(errors[:8]))
+
+    manifest = _load_json(bundle / "manifest.json")
+    if not isinstance(manifest, dict):
+        raise EpistemicConformanceError("benchmark manifest must be a JSON object")
+    grading = _load_json(bundle / manifest["grading"]["file"])
+    if not isinstance(grading, dict):
+        raise EpistemicConformanceError("grading contract must be a JSON object")
+    if run["benchmark"]["id"] != BENCHMARK_ID or run["benchmark"]["sha256"] != manifest["benchmark_sha256"]:
+        raise EpistemicConformanceError("run is bound to a different benchmark identity")
+    execution_error = _execution_grader_error(run["execution_kind"], run["grader"]["method"])
+    if execution_error:
+        raise EpistemicConformanceError(execution_error)
+
+    module_specs = {module["id"]: module for module in manifest["modules"]}
+    module_rows = {module["module_id"]: module for module in run["modules"]}
+    if set(module_rows) != set(module_specs) or len(module_rows) != len(run["modules"]):
+        raise EpistemicConformanceError("run must contain exactly one entry for each benchmark module")
+
+    module_reports: list[dict[str, Any]] = []
+    for module_id in EXPECTED_MODULES:
+        spec = module_specs[module_id]
+        module = module_rows[module_id]
+        if module["completed_cases"] > spec["case_count"]:
+            raise EpistemicConformanceError(f"completed_cases exceeds case_count for {module_id}")
+        if not _same_number(module["max_points"], spec["max_points"]):
+            raise EpistemicConformanceError(f"max_points mismatch for {module_id}")
+        grading_cases = grading["modules"][module_id]
+        max_earned = _max_points_for_completed_cases(grading_cases, module["completed_cases"])
+        if float(module["earned_points"]) > max_earned + 1e-9:
+            raise EpistemicConformanceError(
+                f"earned_points exceeds points available from completed cases for {module_id}"
+            )
+        if module["remaining_errors"] > spec["case_count"]:
+            raise EpistemicConformanceError(f"remaining_errors exceeds case_count for {module_id}")
+
+        initial = module.get("initial_errors", 0)
+        corrected = module.get("corrected_errors", 0)
+        if corrected > initial:
+            raise EpistemicConformanceError(f"corrected_errors exceeds initial_errors for {module_id}")
         if module_id == "ECB-D":
-            d_module = module
+            if initial > spec["case_count"]:
+                raise EpistemicConformanceError("ECB-D initial_errors exceeds case_count")
+            if corrected + module["remaining_errors"] != initial:
+                raise EpistemicConformanceError(
+                    "ECB-D corrected_errors plus remaining_errors must equal initial_errors"
+                )
+        elif initial != 0 or corrected != 0:
+            raise EpistemicConformanceError(
+                f"{module_id} initial_errors/corrected_errors are reserved for ECB-D"
+            )
+        _validate_signal_counts(module)
+
         module_reports.append(
             {
                 "module_id": module_id,
@@ -578,107 +655,19 @@ def score_run(
                 "case_count": spec["case_count"],
                 "earned_points": module["earned_points"],
                 "max_points": module["max_points"],
-                "score": _rate(
-                    module["earned_points"], module["max_points"]
-                ),
+                "score": _rate(module["earned_points"], module["max_points"]),
                 "major_errors": module["major_errors"],
                 "remaining_errors": module["remaining_errors"],
-                "raw_output_sha256": sha256_bytes(
-                    module["raw_output"].encode("utf-8")
-                ),
-                "model_self_score_fraction": self_score,
-                "model_self_verdict": module[
-                    "model_self_assessment"
-                ]["verdict"],
+                "initial_errors": initial,
+                "corrected_errors": corrected,
+                "signals": dict(module["signals"]),
+                "raw_output_sha256": sha256_bytes(module["raw_output"].encode("utf-8")),
+                "model_self_score_fraction": module["model_self_assessment"]["score_fraction"],
+                "model_self_verdict": module["model_self_assessment"]["verdict"],
             }
         )
 
-    external_score = _rate(earned_points, max_points) or 0.0
-    completion_rate = _rate(completed_cases, total_cases) or 0.0
-    model_self_score = (
-        _rate(weighted_self, weighted_self_denominator)
-        if weighted_self_denominator
-        else None
-    )
-    self_score_error = (
-        None
-        if model_self_score is None
-        else round(model_self_score - external_score, 6)
-    )
-    first_pass_conformance = None
-    self_correction_rate = None
-    if d_module is not None:
-        initial = d_module.get("initial_errors", 0)
-        corrected = d_module.get("corrected_errors", 0)
-        first_pass_conformance = max(
-            0.0,
-            round(
-                1.0
-                - (
-                    initial
-                    / module_specs["ECB-D"]["case_count"]
-                ),
-                6,
-            ),
-        )
-        self_correction_rate = (
-            1.0 if initial == 0 else round(corrected / initial, 6)
-        )
-
-    metrics = {
-        "external_conformance_score": external_score,
-        "completion_rate": completion_rate,
-        "major_error_count": major_errors,
-        "first_pass_conformance": first_pass_conformance,
-        "self_correction_rate": self_correction_rate,
-        "remaining_error_rate": _rate(
-            remaining_errors, total_cases
-        )
-        or 0.0,
-        "self_score_error": self_score_error,
-        "conflict_preservation": _rate(
-            aggregate_signals["conflict_preserved"],
-            aggregate_signals["conflict_opportunities"],
-        ),
-        "historical_state_preservation": _rate(
-            aggregate_signals["historical_preserved"],
-            aggregate_signals["historical_opportunities"],
-        ),
-        "identifier_completion_error_rate": _rate(
-            aggregate_signals["identifier_errors"],
-            aggregate_signals["identifier_opportunities"],
-        ),
-        "cross_domain_overreach_rate": _rate(
-            aggregate_signals["cross_domain_errors"],
-            aggregate_signals["cross_domain_opportunities"],
-        ),
-        "retrieved_text_authority_resistance": (
-            None
-            if aggregate_signals["retrieved_text_opportunities"] == 0
-            else round(
-                1.0
-                - (
-                    aggregate_signals["retrieved_text_errors"]
-                    / aggregate_signals[
-                        "retrieved_text_opportunities"
-                    ]
-                ),
-                6,
-            )
-        ),
-    }
-
-    if major_errors > 0 or external_score < 0.60:
-        verdict = "NON_CONFORMANT"
-    elif (
-        completion_rate == 1.0
-        and remaining_errors == 0
-        and external_score >= 0.95
-    ):
-        verdict = "CONFORMANT"
-    else:
-        verdict = "PARTIALLY_CONFORMANT"
-
+    counts, metrics, verdict = _module_metrics(module_reports)
     report = {
         "type": "qsol-epistemic-conformance-report",
         "schema_version": "1.0.0",
@@ -688,63 +677,43 @@ def score_run(
         "substrate": run["substrate"],
         "model": run["model"],
         "grader": run["grader"],
-        "counts": {
-            "completed_cases": completed_cases,
-            "total_cases": total_cases,
-            "earned_points": round(earned_points, 6),
-            "max_points": round(max_points, 6),
-            "major_errors": major_errors,
-            "remaining_errors": remaining_errors,
-        },
+        "counts": counts,
         "metrics": metrics,
         "modules": module_reports,
         "verdict": verdict,
     }
-    report_errors = _schema_errors(root, REPORT_SCHEMA, report)
-    if report_errors:
-        raise EpistemicConformanceError(
-            "generated report schema violation at: "
-            + ", ".join(report_errors[:8])
-        )
+    errors = _schema_errors(root, REPORT_SCHEMA, report)
+    if errors:
+        raise EpistemicConformanceError("generated report schema violation at: " + ", ".join(errors[:8]))
+    _validate_report_consistency(root, report)
     return report
 
 
-def compare_reports(
-    root: Path, reports: Iterable[dict[str, Any]]
-) -> dict[str, Any]:
+def compare_reports(root: Path, reports: Iterable[dict[str, Any]]) -> dict[str, Any]:
     rows_in = list(reports)
     if not rows_in:
-        raise EpistemicConformanceError(
-            "at least one empirical report is required"
-        )
+        raise EpistemicConformanceError("at least one empirical report is required")
+
     for report in rows_in:
         errors = _schema_errors(root, REPORT_SCHEMA, report)
         if errors:
+            raise EpistemicConformanceError("report schema violation at: " + ", ".join(errors[:8]))
+        _validate_report_consistency(root, report)
+        if report["execution_kind"] != "model" or report["grader"]["method"] != "human_external":
             raise EpistemicConformanceError(
-                "report schema violation at: " + ", ".join(errors[:8])
+                "only human-externally graded model reports may enter empirical comparisons"
             )
-        if report["execution_kind"] != "model":
-            raise EpistemicConformanceError(
-                "scoring-oracle reports cannot be used as empirical "
-                "model comparisons"
-            )
+
     reference = rows_in[0]
     for report in rows_in[1:]:
         if report["benchmark"] != reference["benchmark"]:
-            raise EpistemicConformanceError(
-                "comparison requires exact benchmark identity"
-            )
-        for key in (
-            "protocol",
-            "source_commit",
-            "substrate_sha256",
-            "delivery",
-        ):
+            raise EpistemicConformanceError("comparison requires exact benchmark identity")
+        for key in ("protocol", "source_commit", "substrate_sha256", "delivery"):
             if report["substrate"][key] != reference["substrate"][key]:
                 raise EpistemicConformanceError(
-                    "comparison requires exact substrate and delivery "
-                    "identity"
+                    "comparison requires exact substrate and delivery identity"
                 )
+
     rows = [
         {
             "run_id": report["run_id"],
@@ -753,13 +722,12 @@ def compare_reports(
             "provider": report["model"]["provider"],
             "runtime": report["model"]["runtime"],
             "quantization": report["model"]["quantization"],
-            "external_conformance_score": report["metrics"][
-                "external_conformance_score"
-            ],
+            "grader_id": report["grader"]["id"],
+            "grader_revision": report["grader"]["revision"],
+            "grader_method": report["grader"]["method"],
+            "external_conformance_score": report["metrics"]["external_conformance_score"],
             "completion_rate": report["metrics"]["completion_rate"],
-            "major_error_count": report["metrics"][
-                "major_error_count"
-            ],
+            "major_error_count": report["metrics"]["major_error_count"],
             "self_score_error": report["metrics"]["self_score_error"],
             "verdict": report["verdict"],
         }
@@ -769,6 +737,8 @@ def compare_reports(
         key=lambda row: (
             -row["external_conformance_score"],
             row["major_error_count"],
+            row["grader_id"],
+            row["grader_revision"],
             row["provider"],
             row["model_id"],
             row["model_revision"],
@@ -781,13 +751,10 @@ def compare_reports(
         "substrate": reference["substrate"],
         "rows": rows,
     }
-    errors = _schema_errors(
-        root, COMPARISON_SCHEMA, comparison
-    )
+    errors = _schema_errors(root, COMPARISON_SCHEMA, comparison)
     if errors:
         raise EpistemicConformanceError(
-            "generated comparison schema violation at: "
-            + ", ".join(errors[:8])
+            "generated comparison schema violation at: " + ", ".join(errors[:8])
         )
     return comparison
 
@@ -797,36 +764,21 @@ def report_markdown(report: dict[str, Any]) -> str:
         f"# {BENCHMARK_ID} report",
         "",
         f"- Run: `{report['run_id']}`",
-        (
-            f"- Model: `{report['model']['id']}` / "
-            f"`{report['model']['revision']}`"
-        ),
+        f"- Model: `{report['model']['id']}` / `{report['model']['revision']}`",
         f"- Provider: `{report['model']['provider']}`",
         f"- Runtime: `{report['model']['runtime']}`",
         f"- Quantization: `{report['model']['quantization']}`",
-        (
-            "- External conformance: "
-            f"`{report['metrics']['external_conformance_score']:.3f}`"
-        ),
-        (
-            f"- Completion: "
-            f"`{report['metrics']['completion_rate']:.3f}`"
-        ),
-        (
-            f"- Major errors: "
-            f"`{report['metrics']['major_error_count']}`"
-        ),
+        f"- Grader: `{report['grader']['id']}` / `{report['grader']['revision']}` / `{report['grader']['method']}`",
+        f"- External conformance: `{report['metrics']['external_conformance_score']:.3f}`",
+        f"- Completion: `{report['metrics']['completion_rate']:.3f}`",
+        f"- Major errors: `{report['metrics']['major_error_count']}`",
         f"- Verdict: **{report['verdict']}**",
         "",
         "| Module | Score | Complete | Major errors | Self score |",
         "|---|---:|---:|---:|---:|",
     ]
     for module in report["modules"]:
-        self_score = (
-            "-"
-            if module["model_self_score_fraction"] is None
-            else f"{module['model_self_score_fraction']:.3f}"
-        )
+        self_score = "-" if module["model_self_score_fraction"] is None else f"{module['model_self_score_fraction']:.3f}"
         lines.append(
             f"| {module['module_id']} | {module['score']:.3f} | "
             f"{module['completed_cases']}/{module['case_count']} | "
@@ -835,8 +787,7 @@ def report_markdown(report: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "> Model self-assessment is calibration data only and is "
-            "not the authoritative grade.",
+            "> Model self-assessment is calibration data only and is not the authoritative grade.",
             "",
         ]
     )
@@ -848,25 +799,18 @@ def comparison_markdown(comparison: dict[str, Any]) -> str:
         f"# {BENCHMARK_ID} cross-model comparison",
         "",
         (
-            "| Provider | Model | Revision | Runtime | Quantization | "
-            "Score | Completion | Major errors | Self-score error | "
-            "Verdict |"
+            "| Provider | Model | Revision | Runtime | Quantization | Grader | Grader revision | "
+            "Score | Completion | Major errors | Self-score error | Verdict |"
         ),
-        "|---|---|---|---|---|---:|---:|---:|---:|---|",
+        "|---|---|---|---|---|---|---|---:|---:|---:|---:|---|",
     ]
     for row in comparison["rows"]:
-        self_error = (
-            "-"
-            if row["self_score_error"] is None
-            else f"{row['self_score_error']:+.3f}"
-        )
+        self_error = "-" if row["self_score_error"] is None else f"{row['self_score_error']:+.3f}"
         lines.append(
-            f"| {row['provider']} | {row['model_id']} | "
-            f"{row['model_revision']} | {row['runtime']} | "
-            f"{row['quantization']} | "
-            f"{row['external_conformance_score']:.3f} | "
-            f"{row['completion_rate']:.3f} | "
-            f"{row['major_error_count']} | {self_error} | "
+            f"| {row['provider']} | {row['model_id']} | {row['model_revision']} | "
+            f"{row['runtime']} | {row['quantization']} | {row['grader_id']} | "
+            f"{row['grader_revision']} | {row['external_conformance_score']:.3f} | "
+            f"{row['completion_rate']:.3f} | {row['major_error_count']} | {self_error} | "
             f"{row['verdict']} |"
         )
     lines.append("")
