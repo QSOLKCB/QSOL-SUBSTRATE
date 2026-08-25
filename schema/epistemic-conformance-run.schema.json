@@ -26,9 +26,42 @@
         "code": {"enum": ["unsupported_identifier_completion", "unsupported_numeric_reconciliation", "retrieved_text_authority_error", "registry_omission_overclaim", "simulation_evidence_overclaim", "cross_domain_evidence_overclaim", "historical_record_rewrite"]}
       },
       "additionalProperties": false
+    },
+    "projection_compatibility": {
+      "type": "object",
+      "required": ["type", "schema_version", "projection_kind", "model_id", "model_revision", "architecture", "tokenizer_id", "tokenizer_sha256", "context_length", "hidden_size", "num_hidden_layers", "num_attention_heads", "kv_layout_version", "tensor_dtype", "kv_cache_dtype", "quantization_id"],
+      "properties": {
+        "type": {"const": "qsol-model-projection-compatibility"},
+        "schema_version": {"const": "1.0.0"},
+        "projection_kind": {"enum": ["soft_prompt", "virtual_tokens", "lora", "kv_cache", "prefix_state", "hybrid"]},
+        "model_id": {"type": "string", "minLength": 1},
+        "model_revision": {"type": "string", "minLength": 1},
+        "architecture": {"type": "string", "minLength": 1},
+        "tokenizer_id": {"type": "string", "minLength": 1},
+        "tokenizer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "context_length": {"type": "integer", "minimum": 1},
+        "hidden_size": {"type": "integer", "minimum": 1},
+        "num_hidden_layers": {"type": "integer", "minimum": 1},
+        "num_attention_heads": {"type": "integer", "minimum": 1},
+        "kv_layout_version": {"type": "string", "minLength": 1},
+        "tensor_dtype": {"type": "string", "minLength": 1},
+        "kv_cache_dtype": {"type": "string", "minLength": 1},
+        "quantization_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "projection_execution": {
+      "type": "object",
+      "required": ["artifact_sha256", "execution_evidence_sha256", "compatibility"],
+      "properties": {
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "execution_evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "compatibility": {"$ref": "#/$defs/projection_compatibility"}
+      },
+      "additionalProperties": false
     }
   },
-  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "model", "inference", "grader", "modules"],
+  "required": ["type", "schema_version", "run_id", "execution_kind", "benchmark", "substrate", "projection_execution", "model", "inference", "grader", "modules"],
   "properties": {
     "type": {"const": "qsol-epistemic-conformance-run"},
     "schema_version": {"const": "1.0.0"},
@@ -45,14 +78,21 @@
     },
     "substrate": {
       "type": "object",
-      "required": ["protocol", "source_commit", "substrate_sha256", "delivery"],
+      "required": ["protocol", "source_commit", "substrate_sha256", "delivery", "delivery_kind"],
       "properties": {
         "protocol": {"const": "QSOL-SUBSTRATE"},
         "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
         "substrate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "delivery": {"type": "string", "minLength": 1}
+        "delivery": {"type": "string", "minLength": 1},
+        "delivery_kind": {"enum": ["textual", "vector", "tool_enabled", "latent_prefix", "soft_prompt", "virtual_tokens", "lora", "kv_cache", "prefix_state", "hybrid", "other"]}
       },
       "additionalProperties": false
+    },
+    "projection_execution": {
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/projection_execution"}
+      ]
     },
     "model": {
       "type": "object",
