@@ -382,6 +382,40 @@ class EpistemicConformanceTests(unittest.TestCase):
             {"external-grader", "grader-b"},
         )
 
+    def test_comparison_preserves_model_size_and_self_correction_metrics(self):
+        run = self._run("model/self-correcting", "r1")
+        d = next(module for module in run["modules"] if module["module_id"] == "ECB-D")
+        d["initial_errors"] = 2
+        d["corrected_errors"] = 2
+        d["remaining_errors"] = 0
+        report = score_run(ROOT, self.bundle, run)
+        comparison = compare_reports(ROOT, [report])
+        row = comparison["rows"][0]
+        self.assertEqual(row["parameter_count_billion"], 8)
+        self.assertEqual(row["first_pass_conformance"], 0.75)
+        self.assertEqual(row["self_correction_rate"], 1.0)
+
+    def test_comparison_order_is_independent_of_input_order(self):
+        first_run = self._run("model/repeat", "r1")
+        second_run = self._run("model/repeat", "r1")
+        first_run["run_id"] = "run-z"
+        second_run["run_id"] = "run-a"
+        first = score_run(ROOT, self.bundle, first_run)
+        second = score_run(ROOT, self.bundle, second_run)
+        forward = compare_reports(ROOT, [first, second])
+        reverse = compare_reports(ROOT, [second, first])
+        self.assertEqual(forward, reverse)
+        self.assertEqual([row["run_id"] for row in forward["rows"]], ["run-a", "run-z"])
+
+    def test_comparison_markdown_preserves_exact_binding_identity(self):
+        report = score_run(ROOT, self.bundle, self._run())
+        comparison = compare_reports(ROOT, [report])
+        markdown = comparison_markdown(comparison)
+        self.assertIn(comparison["benchmark"]["sha256"], markdown)
+        self.assertIn(comparison["substrate"]["source_commit"], markdown)
+        self.assertIn(comparison["substrate"]["substrate_sha256"], markdown)
+        self.assertIn('"delivery":"full-text"', markdown)
+
     def test_markdown_escapes_identity_table_metacharacters(self):
         run = self._run(model="name | injected\nrow", provider="prov|ider")
         report = score_run(ROOT, self.bundle, run)
