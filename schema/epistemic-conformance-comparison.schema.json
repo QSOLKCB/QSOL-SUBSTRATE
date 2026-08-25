@@ -65,7 +65,13 @@
           "major_error_count",
           "first_pass_conformance",
           "self_correction_rate",
+          "remaining_error_rate",
           "self_score_error",
+          "conflict_preservation",
+          "historical_state_preservation",
+          "identifier_completion_error_rate",
+          "cross_domain_overreach_rate",
+          "retrieved_text_authority_resistance",
           "verdict"
         ],
         "properties": {
@@ -85,7 +91,13 @@
           "major_error_count": {"type": "integer", "minimum": 0},
           "first_pass_conformance": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
           "self_correction_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "remaining_error_rate": {"type": "number", "minimum": 0, "maximum": 1},
           "self_score_error": {"type": ["number", "null"], "minimum": -1, "maximum": 1},
+          "conflict_preservation": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "historical_state_preservation": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "identifier_completion_error_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "cross_domain_overreach_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "retrieved_text_authority_resistance": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
           "verdict": {"enum": ["CONFORMANT", "PARTIALLY_CONFORMANT", "NON_CONFORMANT"]}
         },
         "additionalProperties": false
