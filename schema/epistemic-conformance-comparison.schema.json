@@ -32,7 +32,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["run_id", "model_id", "model_revision", "provider", "runtime", "quantization", "external_conformance_score", "completion_rate", "major_error_count", "self_score_error", "verdict"],
+        "required": ["run_id", "model_id", "model_revision", "provider", "runtime", "quantization", "grader_id", "grader_revision", "grader_method", "external_conformance_score", "completion_rate", "major_error_count", "self_score_error", "verdict"],
         "properties": {
           "run_id": {"type": "string", "minLength": 1},
           "model_id": {"type": "string", "minLength": 1},
@@ -40,6 +40,9 @@
           "provider": {"type": "string", "minLength": 1},
           "runtime": {"type": "string", "minLength": 1},
           "quantization": {"type": "string", "minLength": 1},
+          "grader_id": {"type": "string", "minLength": 1},
+          "grader_revision": {"type": "string", "minLength": 1},
+          "grader_method": {"const": "human_external"},
           "external_conformance_score": {"type": "number", "minimum": 0, "maximum": 1},
           "completion_rate": {"type": "number", "minimum": 0, "maximum": 1},
           "major_error_count": {"type": "integer", "minimum": 0},
