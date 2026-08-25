@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from epistemic_conformance_core import (  # noqa: E402
     EpistemicConformanceError,
+    _md_inline,
     build_benchmark_bundle,
     checked_out_source_commit,
     compare_reports,
@@ -197,6 +198,46 @@ class EpistemicConformanceHardeningTests(unittest.TestCase):
         self.assertIn(report["substrate"]["source_commit"], markdown)
         self.assertIn(report["substrate"]["substrate_sha256"], markdown)
         self.assertIn('"delivery":"full-text"', markdown)
+
+    def test_markdown_inline_code_uses_longer_backtick_delimiters(self):
+        cases = {
+            "plain": "`plain`",
+            "mid`tick": "``mid`tick``",
+            "two``ticks": "```two``ticks```",
+            "`edge`": "`` `edge` ``",
+            "```": "```` ``` ````",
+            "line\nbreak": "`line break`",
+        }
+        for value, expected in cases.items():
+            with self.subTest(value=value):
+                self.assertEqual(_md_inline(value), expected)
+
+        structured = {"sampler": "family``variant"}
+        self.assertEqual(
+            _md_inline(structured),
+            '```{"sampler":"family``variant"}```',
+        )
+
+    def test_report_markdown_keeps_adversarial_identities_inside_code_spans(self):
+        run = self._run("rev``two")
+        run["run_id"] = "run```id"
+        run["model"]["id"] = "model`one"
+        run["model"]["provider"] = "`provider"
+        run["model"]["runtime"] = "runtime`"
+        run["model"]["quantization"] = "Q`4"
+        run["inference"]["sampler"] = "sampler``x"
+        run["grader"]["id"] = "grader`id"
+        run["grader"]["revision"] = "`g2`"
+
+        markdown = report_markdown(score_run(ROOT, self.bundle, run))
+        self.assertIn("- Run: ````run```id````", markdown)
+        self.assertIn("- Model: ``model`one`` / ```rev``two```", markdown)
+        self.assertIn("- Provider: `` `provider ``", markdown)
+        self.assertIn("- Runtime: `` runtime` ``", markdown)
+        self.assertIn("- Quantization: ``Q`4``", markdown)
+        self.assertIn("sampler``x", markdown)
+        self.assertIn("- Grader: ``grader`id`` / `` `g2` `` / `human_external`", markdown)
+        self.assertNotIn("\\`", markdown)
 
     def test_exploratory_cohort_is_schema_governed_and_unbound(self):
         self.assertEqual(validate_cohort(ROOT), [])
