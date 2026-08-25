@@ -91,7 +91,9 @@ def main() -> int:
                 "source_commit": manifest["source_commit"],
                 "substrate_sha256": args.substrate_sha256,
                 "delivery": args.delivery,
+                "delivery_kind": "other",
             },
+            "projection_execution": None,
             "model": {
                 "id": "qsol/scoring-oracle",
                 "revision": "EPISTEMIC-CONFORMANCE/1",
